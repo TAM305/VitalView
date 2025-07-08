@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key>
+	<string>com.tam305.vitalview</string>
+	<key>CFBundleName</key>
+	<string>VitalView</string>
+	<key>CFBundleDisplayName</key>
+	<string>VitalView</string>
+	<key>CFBundleVersion</key>
+	<string>2</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>This app uses HealthKit to read your health data and display your vital signs and blood test results. Your data is never shared or transmitted.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>This app uses HealthKit to update your health data if you choose to add or modify records. Your data is never shared or transmitted.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Biometric authentication is used to secure your health data and ensure only you can access or manage it.</string>
+</dict>
+</plist>

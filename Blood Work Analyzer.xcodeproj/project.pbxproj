@@ -1,0 +1,568 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		384A0FAF2E1C7CD100CA1637 /* Documentation.docc in Sources */ = {isa = PBXBuildFile; fileRef = 384A0FAE2E1C7CD000CA1637 /* Documentation.docc */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		38B1599B2DD54CC9007B7E32 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 38B159852DD54CC7007B7E32 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 38B1598C2DD54CC7007B7E32;
+			remoteInfo = "Blood Work Analyzer";
+		};
+		38B159A52DD54CC9007B7E32 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 38B159852DD54CC7007B7E32 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 38B1598C2DD54CC7007B7E32;
+			remoteInfo = "Blood Work Analyzer";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		384A0FAE2E1C7CD000CA1637 /* Documentation.docc */ = {isa = PBXFileReference; lastKnownFileType = folder.documentationcatalog; path = Documentation.docc; sourceTree = "<group>"; };
+		38B1598D2DD54CC7007B7E32 /* Blood Work Analyzer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Blood Work Analyzer.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		38B1599A2DD54CC9007B7E32 /* Blood Work AnalyzerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Blood Work AnalyzerTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		38B159A42DD54CC9007B7E32 /* Blood Work AnalyzerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Blood Work AnalyzerUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		38B1598F2DD54CC7007B7E32 /* Blood Work Analyzer */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "Blood Work Analyzer";
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		38B1598A2DD54CC7007B7E32 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		38B159972DD54CC9007B7E32 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		38B159A12DD54CC9007B7E32 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		38B159842DD54CC7007B7E32 = {
+			isa = PBXGroup;
+			children = (
+				384A0FAE2E1C7CD000CA1637 /* Documentation.docc */,
+				38B1598F2DD54CC7007B7E32 /* Blood Work Analyzer */,
+				38B1598E2DD54CC7007B7E32 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		38B1598E2DD54CC7007B7E32 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				38B1598D2DD54CC7007B7E32 /* Blood Work Analyzer.app */,
+				38B1599A2DD54CC9007B7E32 /* Blood Work AnalyzerTests.xctest */,
+				38B159A42DD54CC9007B7E32 /* Blood Work AnalyzerUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		38B1598C2DD54CC7007B7E32 /* Blood Work Analyzer */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 38B159AE2DD54CC9007B7E32 /* Build configuration list for PBXNativeTarget "Blood Work Analyzer" */;
+			buildPhases = (
+				38B159892DD54CC7007B7E32 /* Sources */,
+				38B1598A2DD54CC7007B7E32 /* Frameworks */,
+				38B1598B2DD54CC7007B7E32 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				38B1598F2DD54CC7007B7E32 /* Blood Work Analyzer */,
+			);
+			name = "Blood Work Analyzer";
+			packageProductDependencies = (
+			);
+			productName = "Blood Work Analyzer";
+			productReference = 38B1598D2DD54CC7007B7E32 /* Blood Work Analyzer.app */;
+			productType = "com.apple.product-type.application";
+		};
+		38B159992DD54CC9007B7E32 /* Blood Work AnalyzerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 38B159B12DD54CC9007B7E32 /* Build configuration list for PBXNativeTarget "Blood Work AnalyzerTests" */;
+			buildPhases = (
+				38B159962DD54CC9007B7E32 /* Sources */,
+				38B159972DD54CC9007B7E32 /* Frameworks */,
+				38B159982DD54CC9007B7E32 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				38B1599C2DD54CC9007B7E32 /* PBXTargetDependency */,
+			);
+			name = "Blood Work AnalyzerTests";
+			packageProductDependencies = (
+			);
+			productName = "Blood Work AnalyzerTests";
+			productReference = 38B1599A2DD54CC9007B7E32 /* Blood Work AnalyzerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		38B159A32DD54CC9007B7E32 /* Blood Work AnalyzerUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 38B159B42DD54CC9007B7E32 /* Build configuration list for PBXNativeTarget "Blood Work AnalyzerUITests" */;
+			buildPhases = (
+				38B159A02DD54CC9007B7E32 /* Sources */,
+				38B159A12DD54CC9007B7E32 /* Frameworks */,
+				38B159A22DD54CC9007B7E32 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				38B159A62DD54CC9007B7E32 /* PBXTargetDependency */,
+			);
+			name = "Blood Work AnalyzerUITests";
+			packageProductDependencies = (
+			);
+			productName = "Blood Work AnalyzerUITests";
+			productReference = 38B159A42DD54CC9007B7E32 /* Blood Work AnalyzerUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		38B159852DD54CC7007B7E32 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1630;
+				LastUpgradeCheck = 1630;
+				TargetAttributes = {
+					38B1598C2DD54CC7007B7E32 = {
+						CreatedOnToolsVersion = 16.3;
+					};
+					38B159992DD54CC9007B7E32 = {
+						CreatedOnToolsVersion = 16.3;
+						TestTargetID = 38B1598C2DD54CC7007B7E32;
+					};
+					38B159A32DD54CC9007B7E32 = {
+						CreatedOnToolsVersion = 16.3;
+						TestTargetID = 38B1598C2DD54CC7007B7E32;
+					};
+				};
+			};
+			buildConfigurationList = 38B159882DD54CC7007B7E32 /* Build configuration list for PBXProject "Blood Work Analyzer" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 38B159842DD54CC7007B7E32;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 38B1598E2DD54CC7007B7E32 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				38B1598C2DD54CC7007B7E32 /* Blood Work Analyzer */,
+				38B159992DD54CC9007B7E32 /* Blood Work AnalyzerTests */,
+				38B159A32DD54CC9007B7E32 /* Blood Work AnalyzerUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		38B1598B2DD54CC7007B7E32 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		38B159982DD54CC9007B7E32 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		38B159A22DD54CC9007B7E32 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		38B159892DD54CC7007B7E32 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				384A0FAF2E1C7CD100CA1637 /* Documentation.docc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		38B159962DD54CC9007B7E32 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		38B159A02DD54CC9007B7E32 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		38B1599C2DD54CC9007B7E32 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 38B1598C2DD54CC7007B7E32 /* Blood Work Analyzer */;
+			targetProxy = 38B1599B2DD54CC9007B7E32 /* PBXContainerItemProxy */;
+		};
+		38B159A62DD54CC9007B7E32 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 38B1598C2DD54CC7007B7E32 /* Blood Work Analyzer */;
+			targetProxy = 38B159A52DD54CC9007B7E32 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		38B159AC2DD54CC9007B7E32 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = WR5Y9UNS6H;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		38B159AD2DD54CC9007B7E32 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = WR5Y9UNS6H;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		38B159AF2DD54CC9007B7E32 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Blood Work Analyzer/Blood Work Analyzer.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WR5Y9UNS6H;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Blood-Work-Analyzer-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = VitalView;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Biometric authentication is used to secure your health data and ensure only you can access or manage it.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "This app uses HealthKit to read your health data and display your vital signs and blood test results. Your data is never shared or transmitted.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "This app uses HealthKit to update your health data if you choose to add or modify records. Your data is never shared or transmitted.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tam305.vitalview;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		38B159B02DD54CC9007B7E32 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Blood Work Analyzer/Blood Work Analyzer.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WR5Y9UNS6H;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Blood-Work-Analyzer-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = VitalView;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Biometric authentication is used to secure your health data and ensure only you can access or manage it.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "This app uses HealthKit to read your health data and display your vital signs and blood test results. Your data is never shared or transmitted.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "This app uses HealthKit to update your health data if you choose to add or modify records. Your data is never shared or transmitted.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tam305.vitalview;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		38B159B22DD54CC9007B7E32 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WR5Y9UNS6H;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "fm.bloodworkanalyzer.Bloodworkanalyzer.Blood-Work-AnalyzerTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Blood Work Analyzer.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Blood Work Analyzer";
+			};
+			name = Debug;
+		};
+		38B159B32DD54CC9007B7E32 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WR5Y9UNS6H;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "fm.bloodworkanalyzer.Bloodworkanalyzer.Blood-Work-AnalyzerTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Blood Work Analyzer.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Blood Work Analyzer";
+			};
+			name = Release;
+		};
+		38B159B52DD54CC9007B7E32 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WR5Y9UNS6H;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "fm.bloodworkanalyzer.Bloodworkanalyzer.Blood-Work-AnalyzerUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "Blood Work Analyzer";
+			};
+			name = Debug;
+		};
+		38B159B62DD54CC9007B7E32 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WR5Y9UNS6H;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "fm.bloodworkanalyzer.Bloodworkanalyzer.Blood-Work-AnalyzerUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "Blood Work Analyzer";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		38B159882DD54CC7007B7E32 /* Build configuration list for PBXProject "Blood Work Analyzer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				38B159AC2DD54CC9007B7E32 /* Debug */,
+				38B159AD2DD54CC9007B7E32 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		38B159AE2DD54CC9007B7E32 /* Build configuration list for PBXNativeTarget "Blood Work Analyzer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				38B159AF2DD54CC9007B7E32 /* Debug */,
+				38B159B02DD54CC9007B7E32 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		38B159B12DD54CC9007B7E32 /* Build configuration list for PBXNativeTarget "Blood Work AnalyzerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				38B159B22DD54CC9007B7E32 /* Debug */,
+				38B159B32DD54CC9007B7E32 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		38B159B42DD54CC9007B7E32 /* Build configuration list for PBXNativeTarget "Blood Work AnalyzerUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				38B159B52DD54CC9007B7E32 /* Debug */,
+				38B159B62DD54CC9007B7E32 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 38B159852DD54CC7007B7E32 /* Project object */;
+}
