@@ -387,7 +387,7 @@
 				CODE_SIGN_ENTITLEMENTS = "Blood Work Analyzer/Blood Work Analyzer.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = WR5Y9UNS6H;
+				DEVELOPMENT_TEAM = DQ7UAHND6N;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Blood-Work-Analyzer-Info.plist";
@@ -423,7 +423,7 @@
 				CODE_SIGN_ENTITLEMENTS = "Blood Work Analyzer/Blood Work Analyzer.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = WR5Y9UNS6H;
+				DEVELOPMENT_TEAM = DQ7UAHND6N;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Blood-Work-Analyzer-Info.plist";
