@@ -23,13 +23,19 @@ struct ContentView: View {
         NavigationView {
             VStack {
                 // Header with blood drop and app title
-                HStack {
-                    AnimatedBloodDropView(size: 50, color: .red, isAnimating: true)
-                    
+                ZStack {
+                    // Centered app title
                     Text("VitalView")
                         .font(.largeTitle)
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
+                    
+                    // Blood drop icon positioned to the left
+                    HStack {
+                        AnimatedBloodDropView(size: 50, color: .red, isAnimating: true)
+                            .padding(.leading, 20)
+                        Spacer()
+                    }
                 }
                 .padding(.top)
                 

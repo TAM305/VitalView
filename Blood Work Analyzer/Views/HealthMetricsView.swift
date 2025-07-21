@@ -195,6 +195,7 @@ struct HealthMetricsView: View {
                     Text("Health Metrics Dashboard")
                         .font(.title)
                         .fontWeight(.bold)
+                        .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.horizontal, 12)
                         .padding(.top, 16)
                     
