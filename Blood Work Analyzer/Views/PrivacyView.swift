@@ -66,7 +66,9 @@ struct PrivacyView: View {
                 }
             }
             .padding()
+            .frame(maxWidth: .infinity)
         }
         .navigationTitle("Privacy")
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 } 

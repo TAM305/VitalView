@@ -196,6 +196,7 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .onAppear {
                 checkBiometricAvailability()
             }
@@ -260,6 +261,8 @@ struct SettingsView: View {
                 Text(alertMessage)
             }
         }
+        .navigationViewStyle(StackNavigationViewStyle())
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
