@@ -186,6 +186,7 @@ struct HealthMetricsView: View {
         let unit: String
         let icon: String
         let color: Color
+        let date: Date? // Add optional date parameter
     }
     
     var body: some View {
@@ -243,37 +244,26 @@ struct HealthMetricsView: View {
                         Spacer().frame(height: 32)
                         
                         let metrics: [Metric] = [
-                            Metric(title: "Heart Rate", value: heartRate.value.map { "\(Int($0))" } ?? "--", unit: "BPM", icon: "heart.fill", color: .red),
-                            Metric(title: "Blood Pressure", value: (bloodPressure.systolic != nil && bloodPressure.diastolic != nil) ? "\(Int(bloodPressure.systolic!))/\(Int(bloodPressure.diastolic!))" : "--/--", unit: "mmHg", icon: "waveform.path.ecg", color: .blue),
-                            Metric(title: "Oxygen", value: oxygenSaturation.value.map { "\(Int($0))" } ?? "--", unit: "%", icon: "lungs.fill", color: .green),
-                            Metric(title: "Temperature", value: temperature.value.map { String(format: "%.1f", $0) } ?? "--", unit: "°F", icon: "thermometer", color: .orange),
-                            Metric(title: "Respiratory Rate", value: respiratoryRate.value.map { String(format: "%.1f", $0) } ?? "--", unit: "breaths/min", icon: "lungs", color: .purple),
-                            Metric(title: "Heart Rate Variability", value: heartRateVariability.value.map { String(format: "%.1f", $0) } ?? "--", unit: "ms", icon: "waveform.path.ecg.rectangle", color: .purple),
-                            Metric(title: "Latest ECG", value: (!ecgData.isEmpty ? String(format: "%.1f", ecgData.first?.value ?? 0) : "--"), unit: "mV", icon: "waveform.path.ecg", color: .red)
+                            Metric(title: "Heart Rate", value: heartRate.value.map { "\(Int($0))" } ?? "--", unit: "BPM", icon: "heart.fill", color: .red, date: heartRate.date),
+                            Metric(title: "Blood Pressure", value: (bloodPressure.systolic != nil && bloodPressure.diastolic != nil) ? "\(Int(bloodPressure.systolic!))/\(Int(bloodPressure.diastolic!))" : "--/--", unit: "mmHg", icon: "waveform.path.ecg", color: .blue, date: bloodPressure.date),
+                            Metric(title: "Oxygen", value: oxygenSaturation.value.map { "\(Int($0))" } ?? "--", unit: "%", icon: "lungs.fill", color: .green, date: oxygenSaturation.date),
+                            Metric(title: "Temperature", value: temperature.value.map { String(format: "%.1f", $0) } ?? "--", unit: "°F", icon: "thermometer", color: .orange, date: temperature.date),
+                            Metric(title: "Respiratory Rate", value: respiratoryRate.value.map { String(format: "%.1f", $0) } ?? "--", unit: "breaths/min", icon: "lungs", color: .purple, date: respiratoryRate.date),
+                            Metric(title: "Heart Rate Variability", value: heartRateVariability.value.map { String(format: "%.1f", $0) } ?? "--", unit: "ms", icon: "waveform.path.ecg.rectangle", color: .purple, date: heartRateVariability.date),
+                            Metric(title: "Latest ECG", value: (!ecgData.isEmpty ? String(format: "%.1f", ecgData.first?.value ?? 0) : "--"), unit: "mV", icon: "waveform.path.ecg", color: .red, date: ecgData.first?.date)
                         ]
 
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                             ForEach(metrics) { metric in
-                                if metric.title == "Heart Rate Variability" {
-                                    MetricCard(
-                                        title: metric.title,
-                                        value: metric.value,
-                                        unit: metric.unit,
-                                        icon: metric.icon,
-                                        color: metric.color,
-                                        date: heartRateVariability.date
-                                    )
-                                    .frame(height: 110)
-                                } else {
-                                    MetricCard(
-                                        title: metric.title,
-                                        value: metric.value,
-                                        unit: metric.unit,
-                                        icon: metric.icon,
-                                        color: metric.color
-                                    )
-                                    .frame(height: 110)
-                                }
+                                MetricCard(
+                                    title: metric.title,
+                                    value: metric.value,
+                                    unit: metric.unit,
+                                    icon: metric.icon,
+                                    color: metric.color,
+                                    date: metric.date
+                                )
+                                .frame(height: 110)
                             }
                         }
                         .padding(.horizontal, 12)
@@ -1914,7 +1904,7 @@ struct MetricCard: View {
     
     // Format the reading label based on title and date
     private var readingLabel: String {
-        if title == "Heart Rate Variability" && date != nil {
+        if date != nil {
             let formatter = DateFormatter()
             formatter.dateStyle = .medium
             formatter.timeStyle = .short
