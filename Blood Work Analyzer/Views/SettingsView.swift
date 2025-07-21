@@ -265,6 +265,8 @@ struct SettingsView: View {
 
 // MARK: - About App View
 struct AboutAppView: View {
+    @Environment(\.dismiss) private var dismiss
+    
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
     }
@@ -316,13 +318,13 @@ struct AboutAppView: View {
                         .fontWeight(.bold)
                     
                     VStack(alignment: .leading, spacing: 12) {
-                        FeatureRow(icon: "heart.fill", title: "Health Metrics Dashboard", description: "Monitor vital signs including heart rate, blood pressure, oxygen saturation, and more")
+                        FeatureRow(icon: "heart.fill", title: "Vital Signs Monitoring", description: "Track heart rate, blood pressure, oxygen saturation, and more through HealthKit integration")
                         
-                        FeatureRow(icon: "chart.line.uptrend.xyaxis", title: "Trend Analysis", description: "Track changes in your health metrics over time with interactive charts")
+                        FeatureRow(icon: "drop.fill", title: "Blood Test Analysis", description: "Enter and analyze blood test results with automatic reference range validation")
                         
-                        FeatureRow(icon: "drop.fill", title: "Blood Test Management", description: "Record and analyze various types of blood tests with detailed explanations")
+                        FeatureRow(icon: "chart.line.uptrend.xyaxis", title: "Trend Analysis", description: "Visualize your health data over time with interactive charts and trend analysis")
                         
-                        FeatureRow(icon: "lock.shield", title: "Privacy First", description: "Your health data stays on your device with optional biometric authentication")
+                        FeatureRow(icon: "lock.shield", title: "Privacy First", description: "All data stored locally with biometric authentication for maximum security")
                         
                         FeatureRow(icon: "square.and.arrow.up", title: "Data Export", description: "Export your health data for backup or sharing with healthcare providers")
                     }
@@ -374,7 +376,7 @@ struct AboutAppView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Done") {
-                    // This will be handled by the sheet presentation
+                    dismiss()
                 }
             }
         }
