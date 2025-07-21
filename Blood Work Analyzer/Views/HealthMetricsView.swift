@@ -253,14 +253,26 @@ struct HealthMetricsView: View {
 
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                             ForEach(metrics) { metric in
-                                MetricCard(
-                                    title: metric.title,
-                                    value: metric.value,
-                                    unit: metric.unit,
-                                    icon: metric.icon,
-                                    color: metric.color
-                                )
-                                .frame(height: 110)
+                                if metric.title == "Heart Rate Variability" {
+                                    MetricCard(
+                                        title: metric.title,
+                                        value: metric.value,
+                                        unit: metric.unit,
+                                        icon: metric.icon,
+                                        color: metric.color,
+                                        date: heartRateVariability.date
+                                    )
+                                    .frame(height: 110)
+                                } else {
+                                    MetricCard(
+                                        title: metric.title,
+                                        value: metric.value,
+                                        unit: metric.unit,
+                                        icon: metric.icon,
+                                        color: metric.color
+                                    )
+                                    .frame(height: 110)
+                                }
                             }
                         }
                         .padding(.horizontal, 12)
@@ -1871,8 +1883,40 @@ struct MetricCard: View {
     let unit: String
     let icon: String
     let color: Color
+    let date: Date? // Add optional date parameter
     @State private var showingExplanation = false
     @State private var animate = false
+    
+    // Initialize without date for backward compatibility
+    init(title: String, value: String, unit: String, icon: String, color: Color) {
+        self.title = title
+        self.value = value
+        self.unit = unit
+        self.icon = icon
+        self.color = color
+        self.date = nil
+    }
+    
+    // Initialize with date
+    init(title: String, value: String, unit: String, icon: String, color: Color, date: Date?) {
+        self.title = title
+        self.value = value
+        self.unit = unit
+        self.icon = icon
+        self.color = color
+        self.date = date
+    }
+    
+    // Format the reading label based on title and date
+    private var readingLabel: String {
+        if title == "Heart Rate Variability" && date != nil {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            formatter.timeStyle = .short
+            return "Last reading as of \(formatter.string(from: date!))"
+        }
+        return "Current Reading"
+    }
     
     var explanation: String {
         switch title {
@@ -1941,7 +1985,7 @@ struct MetricCard: View {
                         .padding(.bottom, 8)
                         
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Current Reading")
+                            Text(readingLabel)
                                 .font(.headline)
                             Text("\(value) \(unit)")
                                 .font(.title2)
