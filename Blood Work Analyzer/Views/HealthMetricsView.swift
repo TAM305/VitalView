@@ -1874,14 +1874,6 @@ struct MetricCard: View {
     @State private var showingExplanation = false
     @State private var animate = false
     
-    // Special formatting for Heart Rate Variability
-    private var displayValue: String {
-        if title == "Heart Rate Variability" && value != "--" {
-            return "Current: \(value)"
-        }
-        return value
-    }
-    
     var explanation: String {
         switch title {
         case "Heart Rate":
@@ -1919,9 +1911,8 @@ struct MetricCard: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                 
-                Text(displayValue)
-                    .font(.system(size: title == "Heart Rate Variability" ? 20 : 28, weight: .bold, design: .rounded))
-                    .multilineTextAlignment(.center)
+                Text(value)
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
                 
                 Text(unit)
                     .font(.caption)
