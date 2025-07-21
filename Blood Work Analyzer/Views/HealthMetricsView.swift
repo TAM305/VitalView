@@ -279,8 +279,11 @@ struct HealthMetricsView: View {
                         .padding(.horizontal, 12)
                     }
                 }
+                .frame(maxWidth: .infinity)
             }
             .background(Color(UIColor.systemBackground))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            
             VStack {
                 Spacer()
                 HStack {
@@ -312,6 +315,7 @@ struct HealthMetricsView: View {
             }
             .ignoresSafeArea(edges: .bottom)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(isPresented: $showingAddTest) {
             NavigationView {
                 VStack(spacing: 0) {

@@ -21,7 +21,7 @@ struct ContentView: View {
     
     var body: some View {
         NavigationView {
-            VStack {
+            VStack(spacing: 0) {
                 // Header with blood drop and app title
                 ZStack {
                     // Centered app title
@@ -38,10 +38,14 @@ struct ContentView: View {
                     }
                 }
                 .padding(.top)
+                .frame(maxWidth: .infinity)
                 
                 HealthMetricsView(viewModel: viewModel)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .navigationViewStyle(StackNavigationViewStyle())
     }
 }
 
