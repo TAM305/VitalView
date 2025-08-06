@@ -1,7 +1,8 @@
 import CoreData
 import LocalAuthentication
+import SwiftUI
 
-public struct PersistenceController {
+public class PersistenceController: ObservableObject {
     public static let shared = PersistenceController()
     private static var isAuthenticated = false
     
