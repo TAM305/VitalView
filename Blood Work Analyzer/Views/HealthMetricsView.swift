@@ -312,11 +312,11 @@ struct HealthMetricsView: View {
                     // Progress indicator with labels
                     VStack(spacing: 8) {
                         HStack(spacing: 4) {
-                            ForEach(1...5, id: \.self) { step in
+                            ForEach(1...6, id: \.self) { step in
                                 Circle()
                                     .fill(step <= currentStep ? Color.blue : Color.gray.opacity(0.3))
                                     .frame(width: 12, height: 12)
-                                if step < 5 {
+                                if step < 6 {
                                     Rectangle()
                                         .fill(step < currentStep ? Color.blue : Color.gray.opacity(0.3))
                                         .frame(height: 2)
@@ -346,6 +346,10 @@ struct HealthMetricsView: View {
                             Text("Track Trends")
                                 .font(.caption)
                                 .foregroundColor(currentStep == 5 ? .blue : .gray)
+                            Spacer()
+                            Text("Final Save")
+                                .font(.caption)
+                                .foregroundColor(currentStep == 6 ? .blue : .gray)
                         }
                         .padding(.horizontal)
                     }
@@ -535,8 +539,11 @@ struct HealthMetricsView: View {
                                             
                                             HStack {
                                                 Button(action: {
-                                                    // Show trend tracking options
-                                                    showingTrendTracking = true
+                                                    // Enable trend tracking and navigate to step 5
+                                                    trendTrackingEnabled = true
+                                                    withAnimation {
+                                                        currentStep = 5
+                                                    }
                                                 }) {
                                                     HStack {
                                                         Image(systemName: "chart.line.uptrend.xyaxis")
@@ -551,7 +558,7 @@ struct HealthMetricsView: View {
                                                 Spacer()
                                                 
                                                 Button(action: {
-                                                    // Skip trend tracking
+                                                    // Skip trend tracking and proceed to save
                                                     trendTrackingEnabled = false
                                                 }) {
                                                     Text("Skip")
@@ -680,6 +687,190 @@ struct HealthMetricsView: View {
                             }
                         }
                         .tag(5)
+                        
+                        // Step 6: Final Save
+                        VStack(spacing: 20) {
+                            Text("Save Test")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .padding(.top, 20)
+                            
+                            Text("Review your test information and save to your health records")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
+                            
+                            ScrollView {
+                                VStack(alignment: .leading, spacing: 16) {
+                                    // Test Summary
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Label("Test Summary", systemImage: "doc.text")
+                                            .font(.headline)
+                                        
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Type: \(selectedTestType ?? "Unknown")")
+                                                .font(.subheadline)
+                                            Text("Date: \(testDate.formatted(date: .long, time: .omitted))")
+                                                .font(.subheadline)
+                                            if trendTrackingEnabled {
+                                                Text("Trend Tracking: Enabled")
+                                                    .font(.subheadline)
+                                                    .foregroundColor(.green)
+                                            }
+                                        }
+                                        .padding()
+                                        .background(Color(.systemGray6))
+                                        .cornerRadius(8)
+                                    }
+                                    
+                                    // Save Button
+                                    Button(action: {
+                                        // Create test results based on the selected test type
+                                        var results: [TestResult] = []
+                                        
+                                        switch selectedTestType {
+                                        case "CBC":
+                                            if let wbcValue = Double(wbc) {
+                                                results.append(TestResult(
+                                                    name: "White Blood Cells",
+                                                    value: wbcValue,
+                                                    unit: "K/µL",
+                                                    referenceRange: "4.5-11.0",
+                                                    explanation: "Measures immune cells. High levels may indicate infection or inflammation; low levels may suggest immune suppression."
+                                                ))
+                                            }
+                                            if let rbcValue = Double(rbc) {
+                                                results.append(TestResult(
+                                                    name: "Red Blood Cells",
+                                                    value: rbcValue,
+                                                    unit: "M/µL",
+                                                    referenceRange: "4.5-5.5",
+                                                    explanation: "Carries oxygen. Low levels = anemia; high levels = dehydration or other conditions."
+                                                ))
+                                            }
+                                            if let hgbValue = Double(hgb) {
+                                                results.append(TestResult(
+                                                    name: "Hemoglobin",
+                                                    value: hgbValue,
+                                                    unit: "g/dL",
+                                                    referenceRange: "13.5-17.5",
+                                                    explanation: "Protein in RBCs that carries oxygen. Low = anemia."
+                                                ))
+                                            }
+                                            if let hctValue = Double(hct) {
+                                                results.append(TestResult(
+                                                    name: "Hematocrit",
+                                                    value: hctValue,
+                                                    unit: "%",
+                                                    referenceRange: "41-50",
+                                                    explanation: "% of blood volume made of RBCs. Reflects hydration and oxygen-carrying capacity."
+                                                ))
+                                            }
+                                            if let pltValue = Double(plt) {
+                                                results.append(TestResult(
+                                                    name: "Platelets",
+                                                    value: pltValue,
+                                                    unit: "K/µL",
+                                                    referenceRange: "150-450",
+                                                    explanation: "Platelets help with clotting. Low = bleeding risk; high = clotting risk."
+                                                ))
+                                            }
+                                            
+                                        case "CMP":
+                                            if let glucoseValue = Double(glucose) {
+                                                results.append(TestResult(
+                                                    name: "Glucose",
+                                                    value: glucoseValue,
+                                                    unit: "mg/dL",
+                                                    referenceRange: "70-100",
+                                                    explanation: "Measures blood sugar levels"
+                                                ))
+                                            }
+                                            if let calciumValue = Double(calcium) {
+                                                results.append(TestResult(
+                                                    name: "Calcium",
+                                                    value: calciumValue,
+                                                    unit: "mg/dL",
+                                                    referenceRange: "8.5-10.5",
+                                                    explanation: "Essential for bone health and muscle function"
+                                                ))
+                                            }
+                                            // Add other CMP results...
+                                            
+                                        case "Lipid":
+                                            if let totalCholValue = Double(totalCholesterol) {
+                                                results.append(TestResult(
+                                                    name: "Total Cholesterol",
+                                                    value: totalCholValue,
+                                                    unit: "mg/dL",
+                                                    referenceRange: "<200",
+                                                    explanation: "Total cholesterol level. High levels increase heart disease risk."
+                                                ))
+                                            }
+                                            // Add other lipid results...
+                                            
+                                        default:
+                                            break
+                                        }
+                                        
+                                        // Create the blood test
+                                        let test = BloodTest(
+                                            testType: selectedTestType ?? "Unknown",
+                                            testDate: testDate,
+                                            results: results
+                                        )
+                                        
+                                        // Save to Core Data
+                                        let context = PersistenceController.shared.container.viewContext
+                                        let testEntity = BloodTestEntity(context: context)
+                                        testEntity.id = test.id
+                                        testEntity.testType = test.testType
+                                        testEntity.testDate = test.testDate
+                                        
+                                        // Save results
+                                        for result in test.results {
+                                            let resultEntity = TestResultEntity(context: context)
+                                            resultEntity.id = result.id
+                                            resultEntity.name = result.name
+                                            resultEntity.value = result.value
+                                            resultEntity.unit = result.unit
+                                            resultEntity.referenceRange = result.referenceRange
+                                            resultEntity.explanation = result.explanation
+                                            resultEntity.setValue(testEntity, forKey: "test")
+                                        }
+                                        
+                                        // Save to Core Data
+                                        do {
+                                            try context.save()
+                                            
+                                            // If trend tracking is enabled, set up tracking
+                                            if trendTrackingEnabled {
+                                                setupTrendTracking(for: test)
+                                            }
+                                            
+                                            showingAddTest = false
+                                        } catch {
+                                            print("Failed to save test: \(error.localizedDescription)")
+                                        }
+                                    }) {
+                                        HStack {
+                                            Image(systemName: "checkmark.circle.fill")
+                                            Text("Save Test")
+                                        }
+                                        .padding()
+                                        .foregroundColor(.white)
+                                        .background(Color.blue)
+                                        .cornerRadius(10)
+                                    }
+                                }
+                                .padding()
+                                .background(Color(UIColor.systemBackground))
+                                .cornerRadius(12)
+                                .padding(.horizontal)
+                            }
+                        }
+                        .tag(6)
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
                     
@@ -702,7 +893,7 @@ struct HealthMetricsView: View {
                         
                         Spacer()
                         
-                        if currentStep < 5 {
+                        if currentStep < 6 {
                             Button(action: {
                                 withAnimation {
                                     currentStep += 1
@@ -718,173 +909,8 @@ struct HealthMetricsView: View {
                                 .cornerRadius(10)
                             }
                         } else {
-                            Button(action: {
-                                // Create test results based on the selected test type
-                                var results: [TestResult] = []
-                                
-                                switch selectedTestType {
-                                case "CBC":
-                                    if let wbcValue = Double(wbc) {
-                                        results.append(TestResult(
-                                            name: "White Blood Cells",
-                                            value: wbcValue,
-                                            unit: "K/µL",
-                                            referenceRange: "4.5-11.0",
-                                            explanation: "Measures immune cells. High levels may indicate infection or inflammation; low levels may suggest immune suppression."
-                                        ))
-                                    }
-                                    if let rbcValue = Double(rbc) {
-                                        results.append(TestResult(
-                                            name: "Red Blood Cells",
-                                            value: rbcValue,
-                                            unit: "M/µL",
-                                            referenceRange: "4.5-5.5",
-                                            explanation: "Carries oxygen. Low levels = anemia; high levels = dehydration or other conditions."
-                                        ))
-                                    }
-                                    if let hgbValue = Double(hgb) {
-                                        results.append(TestResult(
-                                            name: "Hemoglobin",
-                                            value: hgbValue,
-                                            unit: "g/dL",
-                                            referenceRange: "13.5-17.5",
-                                            explanation: "Protein in RBCs that carries oxygen. Low = anemia."
-                                        ))
-                                    }
-                                    if let hctValue = Double(hct) {
-                                        results.append(TestResult(
-                                            name: "Hematocrit",
-                                            value: hctValue,
-                                            unit: "%",
-                                            referenceRange: "41-50",
-                                            explanation: "% of blood volume made of RBCs. Reflects hydration and oxygen-carrying capacity."
-                                        ))
-                                    }
-                                    if let pltValue = Double(plt) {
-                                        results.append(TestResult(
-                                            name: "Platelets",
-                                            value: pltValue,
-                                            unit: "K/µL",
-                                            referenceRange: "150-450",
-                                            explanation: "Platelets help with clotting. Low = bleeding risk; high = clotting risk."
-                                        ))
-                                    }
-                                    
-                                case "CMP":
-                                    if let glucoseValue = Double(glucose) {
-                                        results.append(TestResult(
-                                            name: "Glucose",
-                                            value: glucoseValue,
-                                            unit: "mg/dL",
-                                            referenceRange: "70-100",
-                                            explanation: "Measures blood sugar levels"
-                                        ))
-                                    }
-                                    if let calciumValue = Double(calcium) {
-                                        results.append(TestResult(
-                                            name: "Calcium",
-                                            value: calciumValue,
-                                            unit: "mg/dL",
-                                            referenceRange: "8.5-10.5",
-                                            explanation: "Essential for bone health and muscle function"
-                                        ))
-                                    }
-                                    // Add other CMP results...
-                                    
-                                case "Lipid":
-                                    if let totalCholValue = Double(totalCholesterol) {
-                                        results.append(TestResult(
-                                            name: "Total Cholesterol",
-                                            value: totalCholValue,
-                                            unit: "mg/dL",
-                                            referenceRange: "120-240",
-                                            explanation: "Total amount of cholesterol in blood"
-                                        ))
-                                    }
-                                    if let hdlValue = Double(hdl) {
-                                        results.append(TestResult(
-                                            name: "HDL",
-                                            value: hdlValue,
-                                            unit: "mg/dL",
-                                            referenceRange: "40-60",
-                                            explanation: "High-Density Lipoprotein, often called 'good' cholesterol"
-                                        ))
-                                    }
-                                    if let ldlValue = Double(ldl) {
-                                        results.append(TestResult(
-                                            name: "LDL",
-                                            value: ldlValue,
-                                            unit: "mg/dL",
-                                            referenceRange: "0-130",
-                                            explanation: "Low-Density Lipoprotein, often called 'bad' cholesterol"
-                                        ))
-                                    }
-                                    if let trigValue = Double(triglycerides) {
-                                        results.append(TestResult(
-                                            name: "Triglycerides",
-                                            value: trigValue,
-                                            unit: "mg/dL",
-                                            referenceRange: "0-150",
-                                            explanation: "Type of fat in blood"
-                                        ))
-                                    }
-                                    
-                                // Add other test types...
-                                default:
-                                    break
-                                }
-                                
-                                // Create and save the blood test
-                                let test = BloodTest(
-                                    date: testDate,
-                                    testType: selectedTestType ?? "Unknown",
-                                    results: results
-                                )
-                                
-                                // Get the view context from the environment
-                                let context = PersistenceController.shared.container.viewContext
-                                
-                                // Create BloodTestEntity
-                                let testEntity = NSEntityDescription.insertNewObject(forEntityName: "BloodTestEntity", into: context)
-                                testEntity.setValue(test.id, forKey: "id")
-                                testEntity.setValue(test.date, forKey: "date")
-                                testEntity.setValue(test.testType, forKey: "testType")
-                                
-                                // Create TestResultEntity for each result
-                                for result in test.results {
-                                    let resultEntity = NSEntityDescription.insertNewObject(forEntityName: "TestResultEntity", into: context)
-                                    resultEntity.setValue(result.id, forKey: "id")
-                                    resultEntity.setValue(result.name, forKey: "name")
-                                    resultEntity.setValue(result.value, forKey: "value")
-                                    resultEntity.setValue(result.unit, forKey: "unit")
-                                    resultEntity.setValue(result.referenceRange, forKey: "referenceRange")
-                                    resultEntity.setValue(result.explanation, forKey: "explanation")
-                                    resultEntity.setValue(testEntity, forKey: "test")
-                                }
-                                
-                                // Save to Core Data
-                                do {
-                                    try context.save()
-                                    
-                                    // If trend tracking is enabled, set up tracking
-                                    if trendTrackingEnabled {
-                                        setupTrendTracking(for: test)
-                                    }
-                                    
-                                    showingAddTest = false
-                                } catch {
-                                    print("Failed to save test: \(error.localizedDescription)")
-                                }
-                            }) {
-                                HStack {
-                                    Image(systemName: "checkmark.circle.fill")
-                                    Text("Save Test")
-                                }
-                                .padding()
-                                .foregroundColor(.white)
-                                .background(Color.blue)
-                                .cornerRadius(10)
-                            }
+                            // Step 6 is the final step, no next button needed
+                            EmptyView()
                         }
                     }
                     .padding()
