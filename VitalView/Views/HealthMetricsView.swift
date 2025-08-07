@@ -331,9 +331,11 @@ struct HealthMetricsView: View {
                         
                         Spacer().frame(height: 32)
                         
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                        let gridColumns = [GridItem(.flexible()), GridItem(.flexible())]
+                        
+                        LazyVGrid(columns: gridColumns, spacing: 12) {
                             ForEach(healthMetrics) { metric in
-                                MetricCard(
+                                let card = MetricCard(
                                     title: metric.title,
                                     value: metric.value,
                                     unit: metric.unit,
@@ -341,7 +343,7 @@ struct HealthMetricsView: View {
                                     color: metric.color,
                                     date: metric.date
                                 )
-                                .frame(height: 110)
+                                card.frame(height: 110)
                             }
                         }
                         .padding(.horizontal, 12)
@@ -449,22 +451,24 @@ struct HealthMetricsView: View {
                                 .padding(.horizontal)
                             
                             ScrollView {
+                                let testTypes = [
+                                    ("Complete Blood Count (CBC)", "Checks red blood cells, white blood cells, hemoglobin, hematocrit, and platelets.", "CBC"),
+                                    ("Comprehensive Metabolic Panel (CMP)", "Measures glucose, electrolytes, kidney function, and liver enzymes.", "CMP"),
+                                    ("Lipid Panel", "Evaluates cholesterol levels and triglycerides.", "Lipid"),
+                                    ("Hemoglobin A1c", "Measures average blood sugar levels over 2-3 months.", "A1c"),
+                                    ("Thyroid Function Tests", "Measures TSH, T3, and T4 levels.", "Thyroid"),
+                                    ("Vitamin D Test", "Measures 25-hydroxyvitamin D levels.", "VitaminD"),
+                                    ("C-Reactive Protein (CRP)", "Measures inflammation levels in the body.", "CRP"),
+                                    ("Liver Function Tests", "Evaluates liver health through various enzymes.", "Liver"),
+                                    ("Iron Studies", "Measures iron levels and storage.", "Iron"),
+                                    ("Prostate-Specific Antigen (PSA)", "Measures PSA levels for prostate health screening.", "PSA"),
+                                    ("Urinalysis", "Assesses kidney health, hydration, and signs of infection or diabetes.", "Urinalysis"),
+                                    ("Kidney Function Tests", "Evaluates kidney function and protein levels.", "Kidney")
+                                ]
+                                
                                 LazyVGrid(columns: [GridItem(.flexible())], spacing: 12) {
-                                    ForEach([
-                                        ("Complete Blood Count (CBC)", "Checks red blood cells, white blood cells, hemoglobin, hematocrit, and platelets.", "CBC"),
-                                        ("Comprehensive Metabolic Panel (CMP)", "Measures glucose, electrolytes, kidney function, and liver enzymes.", "CMP"),
-                                        ("Lipid Panel", "Evaluates cholesterol levels and triglycerides.", "Lipid"),
-                                        ("Hemoglobin A1c", "Measures average blood sugar levels over 2-3 months.", "A1c"),
-                                        ("Thyroid Function Tests", "Measures TSH, T3, and T4 levels.", "Thyroid"),
-                                        ("Vitamin D Test", "Measures 25-hydroxyvitamin D levels.", "VitaminD"),
-                                        ("C-Reactive Protein (CRP)", "Measures inflammation levels in the body.", "CRP"),
-                                        ("Liver Function Tests", "Evaluates liver health through various enzymes.", "Liver"),
-                                        ("Iron Studies", "Measures iron levels and storage.", "Iron"),
-                                        ("Prostate-Specific Antigen (PSA)", "Measures PSA levels for prostate health screening.", "PSA"),
-                                        ("Urinalysis", "Assesses kidney health, hydration, and signs of infection or diabetes.", "Urinalysis"),
-                                        ("Kidney Function Tests", "Evaluates kidney function and protein levels.", "Kidney")
-                                    ], id: \.0) { test in
-                                        TestTypeButton(
+                                    ForEach(testTypes, id: \.0) { test in
+                                        let button = TestTypeButton(
                                             title: test.0,
                                             description: test.1,
                                             action: {
@@ -474,6 +478,7 @@ struct HealthMetricsView: View {
                                                 }
                                             }
                                         )
+                                        button
                                     }
                                 }
                                 .padding(.horizontal)
