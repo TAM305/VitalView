@@ -9,7 +9,6 @@ struct HealthMetricsView: View {
     @State private var isAuthorized = false
     @State private var showingAddTest = false
     @State private var showingTrends = false
-    @State private var showingSettings = false
     @State private var selectedMetric = "Heart Rate"
     @State private var isLoadingTrends = false
     @State private var trendData: [String: [HealthReading]] = [:]
@@ -86,11 +85,7 @@ struct HealthMetricsView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingSettings) {
-            NavigationView {
-                SettingsView(viewModel: BloodTestViewModel(context: PersistenceController.shared.container.viewContext))
-            }
-        }
+
         .onAppear {
             requestHealthKitAuthorization()
         }
@@ -119,17 +114,6 @@ struct HealthMetricsView: View {
                         Text("Add Blood Test")
                             .font(.headline)
                             .foregroundColor(.red)
-                    }
-                }
-                Spacer()
-                Button(action: { showingSettings = true }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "gearshape.fill")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(.gray)
-                        Text("Settings")
-                            .font(.headline)
-                            .foregroundColor(.gray)
                     }
                 }
             }

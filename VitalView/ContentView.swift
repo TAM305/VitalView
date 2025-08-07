@@ -13,6 +13,7 @@ struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @StateObject private var viewModel: BloodTestViewModel
     @State private var showBloodTests = false
+    @State private var showingSettings = false
     
     init() {
         let context = PersistenceController.shared.container.viewContext
@@ -44,6 +45,23 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .navigationTitle("VitalView")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        showingSettings = true
+                    }) {
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: 20))
+                    }
+                }
+            }
+            .sheet(isPresented: $showingSettings) {
+                NavigationView {
+                    SettingsView(viewModel: BloodTestViewModel(context: PersistenceController.shared.container.viewContext))
+                }
+            }
         }
         .navigationViewStyle(StackNavigationViewStyle())
     }
