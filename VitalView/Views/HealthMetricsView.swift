@@ -51,15 +51,7 @@ struct HealthMetricsView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(isPresented: $showingAddTest) {
-            AddTestSheetView(
-                isPresented: $showingAddTest,
-                currentStep: $currentStep,
-                selectedTestType: $selectedTestType,
-                testValues: $testValues,
-                testDate: $testDate,
-                showTrends: $showTrends,
-                testResults: $testResults
-            )
+            AddTestSheetView(isPresented: $showingAddTest)
         }
         .sheet(isPresented: $showingTrends) {
             NavigationView {
@@ -94,6 +86,11 @@ struct HealthMetricsView: View {
                 }
             }
         }
+        .sheet(isPresented: $showingSettings) {
+            NavigationView {
+                SettingsView(viewModel: BloodTestViewModel(context: PersistenceController.shared.container.viewContext))
+            }
+        }
         .onAppear {
             requestHealthKitAuthorization()
         }
@@ -122,6 +119,17 @@ struct HealthMetricsView: View {
                         Text("Add Blood Test")
                             .font(.headline)
                             .foregroundColor(.red)
+                    }
+                }
+                Spacer()
+                Button(action: { showingSettings = true }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.gray)
+                        Text("Settings")
+                            .font(.headline)
+                            .foregroundColor(.gray)
                     }
                 }
             }
