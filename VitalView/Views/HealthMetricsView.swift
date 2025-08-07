@@ -277,113 +277,55 @@ struct HealthMetricsView: View {
         ]
     }
     
+
+    
+    private var bottomButtonsView: some View {
+        VStack {
+            Spacer()
+            HStack {
+                Button(action: { showingTrends = true }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "chart.line.uptrend.xyaxis")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.blue)
+                        Text("Trend")
+                            .font(.headline)
+                            .foregroundColor(.blue)
+                    }
+                }
+                Spacer()
+                Button(action: { showingAddTest = true }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "drop.fill")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.red)
+                        Text("Add Blood Test")
+                            .font(.headline)
+                            .foregroundColor(.red)
+                    }
+                }
+            }
+            .padding(.horizontal, 36)
+            .padding(.vertical, 12)
+            .padding(.bottom, 24)
+        }
+        .ignoresSafeArea(edges: .bottom)
+    }
+    
     var body: some View {
         ZStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Health Metrics Dashboard")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.horizontal, 12)
-                        .padding(.top, 16)
-                    
-                    HStack {
-                        Spacer()
-                        Button(action: { 
-                            print("\n=== Manual Refresh Triggered ===")
-                            fetchLatestVitalSigns() 
-                        }) {
-                            HStack {
-                                Image(systemName: "arrow.clockwise")
-                                    .font(.system(size: 20))
-                                Text("Refresh")
-                                    .font(.subheadline)
-                            }
-                            .foregroundColor(.blue)
-                        }
-                        .padding(.trailing, 12)
-                    }
-                    
-                    if !isAuthorized {
-                        VStack(spacing: 12) {
-                            Text("HealthKit Access Required")
-                                .font(.headline)
-                            Text("Please authorize access to your health data to view your metrics.")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                            Button("Authorize HealthKit") {
-                                requestHealthKitAuthorization()
-                            }
-                            .buttonStyle(.borderedProminent)
-                        }
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(Color(.systemBackground))
-                        .cornerRadius(12)
-                        .shadow(radius: 2)
-                        .padding(.horizontal)
-                    } else {
-                        Text("This dashboard displays your latest vital signs and health metrics from HealthKit.")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal, 12)
-                        
-                        Spacer().frame(height: 32)
-                        
-                        let gridColumns = [GridItem(.flexible()), GridItem(.flexible())]
-                        
-                        LazyVGrid(columns: gridColumns, spacing: 12) {
-                            ForEach(healthMetrics) { metric in
-                                let card = MetricCard(
-                                    title: metric.title,
-                                    value: metric.value,
-                                    unit: metric.unit,
-                                    icon: metric.icon,
-                                    color: metric.color,
-                                    date: metric.date
-                                )
-                                card.frame(height: 110)
-                            }
-                        }
-                        .padding(.horizontal, 12)
-                    }
+            DashboardContentView(
+                isAuthorized: isAuthorized,
+                healthMetrics: healthMetrics,
+                onRefresh: {
+                    print("\n=== Manual Refresh Triggered ===")
+                    fetchLatestVitalSigns()
+                },
+                onAuthorize: {
+                    requestHealthKitAuthorization()
                 }
-                .frame(maxWidth: .infinity)
-            }
-            .background(Color(UIColor.systemBackground))
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            
-            VStack {
-                Spacer()
-                HStack {
-                    Button(action: { showingTrends = true }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "chart.line.uptrend.xyaxis")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundColor(.blue)
-                            Text("Trend")
-                                .font(.headline)
-                                .foregroundColor(.blue)
-                        }
-                    }
-                    Spacer()
-                    Button(action: { showingAddTest = true }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "drop.fill")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundColor(.red)
-                            Text("Add Blood Test")
-                                .font(.headline)
-                                .foregroundColor(.red)
-                        }
-                    }
-                }
-                .padding(.horizontal, 36)
-                .padding(.vertical, 12)
-                .padding(.bottom, 24)
-            }
-            .ignoresSafeArea(edges: .bottom)
+            )
+            bottomButtonsView
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(isPresented: $showingAddTest) {
