@@ -213,6 +213,9 @@ struct HealthMetricsView: View {
     }
     
     private func requestHealthKitAuthorization() {
+        print("=== HealthKit Authorization Debug ===")
+        print("HealthKit available: \(HKHealthStore.isHealthDataAvailable())")
+        
         // Check if HealthKit is available
         guard HKHealthStore.isHealthDataAvailable() else {
             print("HealthKit is not available on this device")
@@ -238,14 +241,21 @@ struct HealthMetricsView: View {
             typesToRead.insert(basalTemperatureType)
         }
         
+        print("Requesting authorization for \(typesToRead.count) health data types")
+        
         // Request authorization
         healthStore.requestAuthorization(toShare: nil, read: typesToRead) { success, error in
             DispatchQueue.main.async {
+                print("Authorization result: success=\(success), error=\(error?.localizedDescription ?? "none")")
                 if success {
+                    print("HealthKit authorization successful!")
                     isAuthorized = true
                     fetchLatestVitalSigns()
                 } else {
                     print("HealthKit authorization failed: \(error?.localizedDescription ?? "Unknown error")")
+                    if let error = error {
+                        print("Error details: \(error)")
+                    }
                 }
             }
         }
