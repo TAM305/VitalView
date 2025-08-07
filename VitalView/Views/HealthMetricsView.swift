@@ -221,6 +221,14 @@ struct HealthMetricsView: View {
     }
     
     private func requestHealthKitAuthorization() {
+        // Check if HealthKit is available
+        guard HKHealthStore.isHealthDataAvailable() else {
+            print("HealthKit is not available on this device")
+            // Allow user to continue with manual data entry even without HealthKit
+            isAuthorized = true
+            return
+        }
+        
         // Define the types we want to read from HealthKit
         var typesToRead: Set<HKObjectType> = [
             HKObjectType.quantityType(forIdentifier: .heartRate)!,

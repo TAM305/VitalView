@@ -1,4 +1,5 @@
 import SwiftUI
+import HealthKit
 
 struct DashboardContentView: View {
     let isAuthorized: Bool
@@ -34,13 +35,27 @@ struct DashboardContentView: View {
                     VStack(spacing: 12) {
                         Text("HealthKit Access Required")
                             .font(.headline)
-                        Text("Please authorize access to your health data to view your metrics.")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        Button("Authorize HealthKit") {
-                            onAuthorize()
+                        
+                        if HKHealthStore.isHealthDataAvailable() {
+                            Text("Please authorize access to your health data to view your metrics.")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            Button("Authorize HealthKit") {
+                                onAuthorize()
+                            }
+                            .buttonStyle(.borderedProminent)
+                        } else {
+                            Text("HealthKit is not available on this device. Please test on a physical iPhone to access health data.")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                            
+                            Button("Continue Without HealthKit") {
+                                // Allow user to continue with manual data entry
+                                onAuthorize() // This will be handled by the parent view
+                            }
+                            .buttonStyle(.bordered)
                         }
-                        .buttonStyle(.borderedProminent)
                     }
                     .padding()
                     .frame(maxWidth: .infinity)
