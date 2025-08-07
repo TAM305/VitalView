@@ -296,7 +296,7 @@ struct HealthMetricsView: View {
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
         let query = HKSampleQuery(sampleType: heartRateType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
-            DispatchQueue.main.async {
+                DispatchQueue.main.async {
                 if let sample = samples?.first as? HKQuantitySample {
                     let value = sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
                     self.heartRate = HealthData(value: value, date: sample.endDate)
@@ -305,16 +305,16 @@ struct HealthMetricsView: View {
         }
         healthStore.execute(query)
     }
-    
+
     private func fetchBloodPressure() {
         guard let systolicType = HKObjectType.quantityType(forIdentifier: .bloodPressureSystolic),
               let diastolicType = HKObjectType.quantityType(forIdentifier: .bloodPressureDiastolic) else { return }
         
         let predicate = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(-24*60*60), end: Date(), options: .strictEndDate)
-        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+            let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
         let systolicQuery = HKSampleQuery(sampleType: systolicType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
-            DispatchQueue.main.async {
+                    DispatchQueue.main.async {
                 if let sample = samples?.first as? HKQuantitySample {
                     let systolic = sample.quantity.doubleValue(for: HKUnit.millimeterOfMercury())
                     self.bloodPressure.systolic = systolic
@@ -340,17 +340,17 @@ struct HealthMetricsView: View {
         guard let oxygenType = HKObjectType.quantityType(forIdentifier: .oxygenSaturation) else { return }
         
         let predicate = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(-24*60*60), end: Date(), options: .strictEndDate)
-        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+            let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
         let query = HKSampleQuery(sampleType: oxygenType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
-            DispatchQueue.main.async {
+                    DispatchQueue.main.async {
                 if let sample = samples?.first as? HKQuantitySample {
                     let value = sample.quantity.doubleValue(for: HKUnit.percent())
                     self.oxygenSaturation = HealthData(value: value * 100, date: sample.endDate)
                 }
+                }
             }
-        }
-        healthStore.execute(query)
+            healthStore.execute(query)
     }
     
     private func fetchBodyTemperature() {
@@ -360,7 +360,7 @@ struct HealthMetricsView: View {
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
         let query = HKSampleQuery(sampleType: temperatureType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
-            DispatchQueue.main.async {
+                DispatchQueue.main.async {
                 if let sample = samples?.first as? HKQuantitySample {
                     let value = sample.quantity.doubleValue(for: HKUnit.degreeFahrenheit())
                     self.temperature = HealthData(value: value, date: sample.endDate)
@@ -377,14 +377,14 @@ struct HealthMetricsView: View {
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
         let query = HKSampleQuery(sampleType: respiratoryType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
-            DispatchQueue.main.async {
+                    DispatchQueue.main.async {
                 if let sample = samples?.first as? HKQuantitySample {
                     let value = sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
                     self.respiratoryRate = HealthData(value: value, date: sample.endDate)
                 }
+                }
             }
-        }
-        healthStore.execute(query)
+            healthStore.execute(query)
     }
     
     private func fetchHeartRateVariability() {
@@ -394,14 +394,14 @@ struct HealthMetricsView: View {
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
         let query = HKSampleQuery(sampleType: hrvType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
-            DispatchQueue.main.async {
+                DispatchQueue.main.async {
                 if let sample = samples?.first as? HKQuantitySample {
                     let value = sample.quantity.doubleValue(for: HKUnit.secondUnit(with: .milli))
                     self.heartRateVariability = HealthData(value: value, date: sample.endDate)
                 }
+                }
             }
-        }
-        healthStore.execute(query)
+            healthStore.execute(query)
     }
     
     private func fetchECGData() {

@@ -6,6 +6,7 @@ struct DashboardContentView: View {
     let healthMetrics: [Metric]
     let onRefresh: () -> Void
     let onAuthorize: () -> Void
+    @State private var selectedMetric = "Heart Rate"
     
     var body: some View {
         ScrollView {
@@ -71,44 +72,75 @@ struct DashboardContentView: View {
                     
                     Spacer().frame(height: 32)
                     
-                    let gridColumns = [GridItem(.flexible()), GridItem(.flexible())]
+                    // Tab Selection
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 16) {
+                            ForEach(healthMetrics) { metric in
+                                Button(action: {
+                                    selectedMetric = metric.title
+                                }) {
+                                    VStack(spacing: 4) {
+                                        Image(systemName: metric.icon)
+                                            .font(.title2)
+                                            .foregroundColor(selectedMetric == metric.title ? metric.color : .secondary)
+                                        Text(metric.title)
+                                            .font(.caption)
+                                            .foregroundColor(selectedMetric == metric.title ? metric.color : .secondary)
+                                    }
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 12)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(selectedMetric == metric.title ? metric.color.opacity(0.1) : Color.clear)
+                                    )
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                    }
                     
-                    LazyVGrid(columns: gridColumns, spacing: 12) {
-                        ForEach(healthMetrics) { metric in
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack {
-                                    Image(systemName: metric.icon)
-                                        .foregroundColor(metric.color)
-                                        .font(.title2)
-                                    Spacer()
-                                    Text(metric.value)
+                    Spacer().frame(height: 20)
+                    
+                    // Selected Metric Detail View
+                    if let selectedMetricData = healthMetrics.first(where: { $0.title == selectedMetric }) {
+                        VStack(alignment: .leading, spacing: 16) {
+                            HStack {
+                                Image(systemName: selectedMetricData.icon)
+                                    .font(.largeTitle)
+                                    .foregroundColor(selectedMetricData.color)
+                                VStack(alignment: .leading) {
+                                    Text(selectedMetricData.title)
                                         .font(.title2)
                                         .fontWeight(.bold)
-                                        .foregroundColor(.primary)
-                                }
-                                
-                                Text(metric.title)
-                                    .font(.headline)
-                                    .foregroundColor(.primary)
-                                
-                                Text(metric.unit)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                
-                                if let date = metric.date {
-                                    Text(date, style: .time)
-                                        .font(.caption2)
+                                    Text(selectedMetricData.value)
+                                        .font(.title)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(selectedMetricData.color)
+                                    Text(selectedMetricData.unit)
+                                        .font(.subheadline)
                                         .foregroundColor(.secondary)
                                 }
+                                Spacer()
                             }
                             .padding()
                             .background(Color(.systemBackground))
                             .cornerRadius(12)
                             .shadow(radius: 2)
-                            .frame(height: 110)
+                            
+                            if let date = selectedMetricData.date {
+                                HStack {
+                                    Image(systemName: "clock")
+                                        .foregroundColor(.secondary)
+                                    Text("Last updated: \(date, style: .time)")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                }
+                                .padding(.horizontal)
+                            }
                         }
+                        .padding(.horizontal, 12)
                     }
-                    .padding(.horizontal, 12)
                 }
             }
             .frame(maxWidth: .infinity)
