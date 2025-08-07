@@ -16,8 +16,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "38B1598C2DD54CC7007B7E32"
-               BuildableName = "Blood Work Analyzer.app"
-               BlueprintName = "Blood Work Analyzer"
+               BuildableName = "VitalView.app"
+               BlueprintName = "VitalView"
                ReferencedContainer = "container:VitalView.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -36,8 +36,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "38B159992DD54CC9007B7E32"
-               BuildableName = "Blood Work AnalyzerTests.xctest"
-               BlueprintName = "Blood Work AnalyzerTests"
+               BuildableName = "VitalViewTests.xctest"
+               BlueprintName = "VitalViewTests"
                ReferencedContainer = "container:VitalView.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -47,8 +47,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "38B159A32DD54CC9007B7E32"
-               BuildableName = "Blood Work AnalyzerUITests.xctest"
-               BlueprintName = "Blood Work AnalyzerUITests"
+               BuildableName = "VitalViewUITests.xctest"
+               BlueprintName = "VitalViewUITests"
                ReferencedContainer = "container:VitalView.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -69,8 +69,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "38B1598C2DD54CC7007B7E32"
-            BuildableName = "Blood Work Analyzer.app"
-            BlueprintName = "Blood Work Analyzer"
+            BuildableName = "VitalView.app"
+            BlueprintName = "VitalView"
             ReferencedContainer = "container:VitalView.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -86,8 +86,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "38B1598C2DD54CC7007B7E32"
-            BuildableName = "Blood Work Analyzer.app"
-            BlueprintName = "Blood Work Analyzer"
+            BuildableName = "VitalView.app"
+            BlueprintName = "VitalView"
             ReferencedContainer = "container:VitalView.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
