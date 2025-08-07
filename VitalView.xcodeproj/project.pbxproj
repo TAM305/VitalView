@@ -16,14 +16,14 @@
 			containerPortal = 38B159852DD54CC7007B7E32 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 38B1598C2DD54CC7007B7E32;
-			remoteInfo = "Blood Work Analyzer";
+			remoteInfo = "VitalView";
 		};
 		38B159A52DD54CC9007B7E32 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 38B159852DD54CC7007B7E32 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 38B1598C2DD54CC7007B7E32;
-			remoteInfo = "Blood Work Analyzer";
+			remoteInfo = "VitalView";
 		};
 /* End PBXContainerItemProxy section */
 
@@ -497,12 +497,12 @@
 				DEVELOPMENT_TEAM = WR5Y9UNS6H;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "fm.bloodworkanalyzer.Bloodworkanalyzer.Blood-Work-AnalyzerUITests";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.tam305.vitalview.VitalViewUITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = "Blood Work Analyzer";
+				TEST_TARGET_NAME = "VitalView";
 			};
 			name = Debug;
 		};
@@ -514,12 +514,12 @@
 				DEVELOPMENT_TEAM = WR5Y9UNS6H;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "fm.bloodworkanalyzer.Bloodworkanalyzer.Blood-Work-AnalyzerUITests";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.tam305.vitalview.VitalViewUITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = "Blood Work Analyzer";
+				TEST_TARGET_NAME = "VitalView";
 			};
 			name = Release;
 		};
