@@ -22,8 +22,7 @@
 	<string>This app uses HealthKit to read your health data and display your vital signs and blood test results. Your data is never shared or transmitted.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>This app uses HealthKit to update your health data if you choose to add or modify records. Your data is never shared or transmitted.</string>
-	<key>NSFaceIDUsageDescription</key>
-	<string>Biometric authentication is used to secure your health data and ensure only you can access or manage it.</string>
+
 	<key>NSPrivacyPolicyURL</key>
 	<string>https://vitvu.com/privacy</string>
 	<key>UIRequiredDeviceCapabilities</key>
