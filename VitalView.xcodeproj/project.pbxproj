@@ -174,7 +174,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 38B159882DD54CC7007B7E32 /* Build configuration list for PBXProject "VitalVieww" */;
+			buildConfigurationList = 38B159882DD54CC7007B7E32 /* Build configuration list for PBXProject "VitalView" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -526,7 +526,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		38B159882DD54CC7007B7E32 /* Build configuration list for PBXProject "VitalVieww" */ = {
+		38B159882DD54CC7007B7E32 /* Build configuration list for PBXProject "VitalView" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				38B159AC2DD54CC9007B7E32 /* Debug */,
