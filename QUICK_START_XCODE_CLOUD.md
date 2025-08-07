@@ -57,8 +57,8 @@
 
 3. **Configure Build Settings**
    ```
-   Target: Blood Work Analyzer
-   Scheme: Blood Work Analyzer
+   Target: VitalView
+   Scheme: VitalView
    Configuration: Release
    Code Signing: Automatic
    ```

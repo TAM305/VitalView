@@ -16,7 +16,7 @@
 
 1. **Open your project in Xcode**
    ```
-   Open "Blood Work Analyzer.xcodeproj"
+   Open "VitalView.xcodeproj"
    ```
 
 2. **Navigate to Xcode Cloud**
@@ -43,8 +43,8 @@
 ### 3. **Set Up Build Configuration**
 
 1. **Select your target**
-   - Choose "Blood Work Analyzer" target
-   - Ensure "Blood Work Analyzer" scheme is selected
+   - Choose "VitalView" target
+   - Ensure "VitalView" scheme is selected
 
 2. **Configure build settings:**
    ```
@@ -86,7 +86,7 @@
 
 ### **Required Entitlements**
 
-Your app already has the correct entitlements in `Blood Work Analyzer.entitlements`:
+Your app already has the correct entitlements in `VitalView.entitlements`:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
