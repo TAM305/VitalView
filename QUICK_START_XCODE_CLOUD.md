@@ -30,9 +30,9 @@
 3. **Configure App Information**
    ```
    App Name: VitalView
-   Subtitle: Blood Work Analyzer
-   Keywords: health, blood, analyzer, vital signs
-   Description: Comprehensive blood work analysis with HealthKit integration
+   Subtitle: Health Monitoring
+   Keywords: health, vital signs, monitoring, blood work
+   Description: Comprehensive health monitoring with HealthKit integration
    ```
 
 ---
