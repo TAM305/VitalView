@@ -6,6 +6,8 @@
 	<string>com.tam305.vitalview</string>
 	<key>CFBundleExecutable</key>
 	<string>VitalView</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
 	<key>CFBundleName</key>
 	<string>VitalView</string>
 	<key>CFBundleDisplayName</key>
