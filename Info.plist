@@ -27,7 +27,6 @@
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>healthkit</string>
-		<string>faceid</string>
 	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
