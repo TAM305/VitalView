@@ -27,7 +27,7 @@
 	<string>https://vitvu.com/privacy</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>healthkit</string>
+		<string>arm64</string>
 	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
