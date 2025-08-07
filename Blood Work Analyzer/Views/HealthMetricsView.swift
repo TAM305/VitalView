@@ -243,14 +243,90 @@ struct HealthMetricsView: View {
                         
                         Spacer().frame(height: 32)
                         
+                        // Create metrics array with simpler expressions
+                        let heartRateMetric = Metric(
+                            title: "Heart Rate",
+                            value: heartRate.value.map { "\(Int($0))" } ?? "--",
+                            unit: "BPM",
+                            icon: "heart.fill",
+                            color: .red,
+                            date: heartRate.date
+                        )
+                        
+                        let bloodPressureValue: String
+                        if let systolic = bloodPressure.systolic, let diastolic = bloodPressure.diastolic {
+                            bloodPressureValue = "\(Int(systolic))/\(Int(diastolic))"
+                        } else {
+                            bloodPressureValue = "--/--"
+                        }
+                        let bloodPressureMetric = Metric(
+                            title: "Blood Pressure",
+                            value: bloodPressureValue,
+                            unit: "mmHg",
+                            icon: "waveform.path.ecg",
+                            color: .blue,
+                            date: bloodPressure.date
+                        )
+                        
+                        let oxygenMetric = Metric(
+                            title: "Oxygen",
+                            value: oxygenSaturation.value.map { "\(Int($0))" } ?? "--",
+                            unit: "%",
+                            icon: "lungs.fill",
+                            color: .green,
+                            date: oxygenSaturation.date
+                        )
+                        
+                        let temperatureMetric = Metric(
+                            title: "Temperature",
+                            value: temperature.value.map { String(format: "%.1f", $0) } ?? "--",
+                            unit: "°F",
+                            icon: "thermometer",
+                            color: .orange,
+                            date: temperature.date
+                        )
+                        
+                        let respiratoryRateMetric = Metric(
+                            title: "Respiratory Rate",
+                            value: respiratoryRate.value.map { String(format: "%.1f", $0) } ?? "--",
+                            unit: "breaths/min",
+                            icon: "lungs",
+                            color: .purple,
+                            date: respiratoryRate.date
+                        )
+                        
+                        let hrvMetric = Metric(
+                            title: "Heart Rate Variability",
+                            value: heartRateVariability.value.map { String(format: "%.1f", $0) } ?? "--",
+                            unit: "ms",
+                            icon: "waveform.path.ecg.rectangle",
+                            color: .purple,
+                            date: heartRateVariability.date
+                        )
+                        
+                        let ecgValue: String
+                        if !ecgData.isEmpty, let firstECG = ecgData.first {
+                            ecgValue = String(format: "%.1f", firstECG.value)
+                        } else {
+                            ecgValue = "--"
+                        }
+                        let ecgMetric = Metric(
+                            title: "Latest ECG",
+                            value: ecgValue,
+                            unit: "mV",
+                            icon: "waveform.path.ecg",
+                            color: .red,
+                            date: ecgData.first?.date
+                        )
+                        
                         let metrics: [Metric] = [
-                            Metric(title: "Heart Rate", value: heartRate.value.map { "\(Int($0))" } ?? "--", unit: "BPM", icon: "heart.fill", color: .red, date: heartRate.date),
-                            Metric(title: "Blood Pressure", value: (bloodPressure.systolic != nil && bloodPressure.diastolic != nil) ? "\(Int(bloodPressure.systolic!))/\(Int(bloodPressure.diastolic!))" : "--/--", unit: "mmHg", icon: "waveform.path.ecg", color: .blue, date: bloodPressure.date),
-                            Metric(title: "Oxygen", value: oxygenSaturation.value.map { "\(Int($0))" } ?? "--", unit: "%", icon: "lungs.fill", color: .green, date: oxygenSaturation.date),
-                            Metric(title: "Temperature", value: temperature.value.map { String(format: "%.1f", $0) } ?? "--", unit: "°F", icon: "thermometer", color: .orange, date: temperature.date),
-                            Metric(title: "Respiratory Rate", value: respiratoryRate.value.map { String(format: "%.1f", $0) } ?? "--", unit: "breaths/min", icon: "lungs", color: .purple, date: respiratoryRate.date),
-                            Metric(title: "Heart Rate Variability", value: heartRateVariability.value.map { String(format: "%.1f", $0) } ?? "--", unit: "ms", icon: "waveform.path.ecg.rectangle", color: .purple, date: heartRateVariability.date),
-                            Metric(title: "Latest ECG", value: (!ecgData.isEmpty ? String(format: "%.1f", ecgData.first?.value ?? 0) : "--"), unit: "mV", icon: "waveform.path.ecg", color: .red, date: ecgData.first?.date)
+                            heartRateMetric,
+                            bloodPressureMetric,
+                            oxygenMetric,
+                            temperatureMetric,
+                            respiratoryRateMetric,
+                            hrvMetric,
+                            ecgMetric
                         ]
 
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
