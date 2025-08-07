@@ -2,7 +2,7 @@ import SwiftUI
 
 struct DashboardContentView: View {
     let isAuthorized: Bool
-    let healthMetrics: [HealthMetricsView.Metric]
+    let healthMetrics: [Metric]
     let onRefresh: () -> Void
     let onAuthorize: () -> Void
     
@@ -60,15 +60,37 @@ struct DashboardContentView: View {
                     
                     LazyVGrid(columns: gridColumns, spacing: 12) {
                         ForEach(healthMetrics) { metric in
-                            let card = MetricCard(
-                                title: metric.title,
-                                value: metric.value,
-                                unit: metric.unit,
-                                icon: metric.icon,
-                                color: metric.color,
-                                date: metric.date
-                            )
-                            card.frame(height: 110)
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Image(systemName: metric.icon)
+                                        .foregroundColor(metric.color)
+                                        .font(.title2)
+                                    Spacer()
+                                    Text(metric.value)
+                                        .font(.title2)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.primary)
+                                }
+                                
+                                Text(metric.title)
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                                
+                                Text(metric.unit)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                
+                                if let date = metric.date {
+                                    Text(date, style: .time)
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .padding()
+                            .background(Color(.systemBackground))
+                            .cornerRadius(12)
+                            .shadow(radius: 2)
+                            .frame(height: 110)
                         }
                     }
                     .padding(.horizontal, 12)

@@ -40,7 +40,7 @@ struct ContentView: View {
                 .padding(.top)
                 .frame(maxWidth: .infinity)
                 
-                HealthMetricsView(viewModel: viewModel)
+                HealthMetricsView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
