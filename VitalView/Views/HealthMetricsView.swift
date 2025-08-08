@@ -447,9 +447,10 @@ struct HealthMetricsView: View {
             let voltageQuery = HKElectrocardiogramQuery(ecg) { query, result in
                 switch result {
                 case let .measurement(measurement):
-                    if let voltageValue = measurement.quantity.doubleValue(for: .voltUnit(with: .milli)) {
+                    if let quantity = measurement.quantity {
+                        let voltageValue = quantity.doubleValue(for: HKUnit.volt().unitDivided(by: .milli()))
                         DispatchQueue.main.async {
-                            self.ecgData = [ECGReading(value: voltageValue, date: measurement.timeSinceSampleStart)]
+                            self.ecgData = [ECGReading(value: voltageValue, date: ecg.startDate.addingTimeInterval(measurement.timeSinceSampleStart))]
                         }
                     }
                 case .done:
