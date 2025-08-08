@@ -9,6 +9,7 @@ struct HealthMetricsView: View {
     @State private var isAuthorized = false
     @State private var showingAddTest = false
     @State private var showingTrends = false
+    @State private var showingBloodTestTrends = false
     @State private var selectedMetric = "Heart Rate"
     @State private var isLoadingTrends = false
     @State private var trendData: [String: [HealthReading]] = [:]
@@ -69,6 +70,9 @@ struct HealthMetricsView: View {
         .sheet(isPresented: $showingTrends) {
             TrendsChartView()
         }
+        .sheet(isPresented: $showingBloodTestTrends) {
+            BloodTestTrendsView(viewModel: BloodTestViewModel(context: PersistenceController.shared.container.viewContext))
+        }
         .sheet(isPresented: $showManualTemperatureEntry) {
             ManualTemperatureEntryView(isPresented: $showManualTemperatureEntry) { temperature in
                 // Save the manually entered temperature
@@ -96,9 +100,20 @@ struct HealthMetricsView: View {
                         Image(systemName: "chart.line.uptrend.xyaxis")
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundColor(.blue)
-                        Text("Trend")
+                        Text("Health Trends")
                             .font(.headline)
                             .foregroundColor(.blue)
+                    }
+                }
+                Spacer()
+                Button(action: { showingBloodTestTrends = true }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "chart.bar.fill")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.purple)
+                        Text("Blood Trends")
+                            .font(.headline)
+                            .foregroundColor(.purple)
                     }
                 }
                 Spacer()
