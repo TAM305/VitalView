@@ -1,5 +1,6 @@
 import SwiftUI
 import Charts
+import HealthKit
 
 struct TrendsChartView: View {
     @Environment(\.dismiss) private var dismiss
@@ -114,10 +115,10 @@ struct TrendsChartView: View {
         .onAppear {
             loadChartData()
         }
-        .onChange(of: selectedMetric) { _ in
+        .onChange(of: selectedMetric) {
             loadChartData()
         }
-        .onChange(of: timeRange) { _ in
+        .onChange(of: timeRange) {
             loadChartData()
         }
     }
