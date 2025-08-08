@@ -19,7 +19,7 @@ struct HealthMetricsView: View {
     @State private var selectedTestType = ""
     @State private var testValues: [String: String] = [:]
     @State private var testDate = Date()
-    @State private var showTrends = false
+
     @State private var testResults: [BloodTest] = []
     @State private var showManualTemperatureEntry = false
     @State private var authorizationAttempted = false
@@ -105,39 +105,7 @@ struct HealthMetricsView: View {
                 self.temperature = HealthData(value: temperature, date: Date())
             }
         }
-        .sheet(isPresented: $showTrends) {
-            NavigationView {
-                VStack(spacing: 20) {
-                    Text("Health Trends")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .padding(.top, 20)
-                    
-                    Text("This feature is coming soon!")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                    
-                    Spacer()
-                    
-                    Button("Close") {
-                        showTrends = false
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .padding(.bottom, 20)
-                }
-                .navigationTitle("Health Trends")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Done") {
-                            showTrends = false
-                        }
-                    }
-                }
-            }
-        }
+
         .sheet(item: $selectedMetricInfo) { metric in
             NavigationView {
                 MetricDetailView(metric: metric)
@@ -969,7 +937,6 @@ enum HealthStatus {
 class HealthMetricsViewModel: ObservableObject {
     @Published var isAuthorized = false
     @Published var showingAddTest = false
-    @Published var showingTrends = false
     @Published var showingSettings = false
 }
 
