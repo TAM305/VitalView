@@ -99,23 +99,49 @@ struct HealthMetricsView: View {
                 }
             }
         }
-
-        .sheet(item: $selectedMetricInfo) { metric in
-            NavigationView {
-                MetricInfoView(metric: metric)
-            }
-        }
         .sheet(isPresented: $showManualTemperatureEntry) {
             ManualTemperatureEntryView(isPresented: $showManualTemperatureEntry) { temperature in
-                // Save manual temperature entry
+                // Save the manually entered temperature
                 self.temperature = HealthData(value: temperature, date: Date())
-                self.temperatureIsDelta = false
             }
         }
-
+        .sheet(isPresented: $showTrends) {
+            NavigationView {
+                VStack(spacing: 20) {
+                    Text("Health Trends")
+                        .font(.title)
+                        .fontWeight(.bold)
+                        .padding(.top, 20)
+                    
+                    Text("This feature is coming soon!")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                    
+                    Spacer()
+                    
+                    Button("Close") {
+                        showTrends = false
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .padding(.bottom, 20)
+                }
+                .navigationTitle("Health Trends")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Done") {
+                            showTrends = false
+                        }
+                    }
+                }
+            }
+        }
         .onAppear {
-            // Delay authorization request to ensure UI is ready
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            // Force HealthKit authorization immediately on app launch
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                print("=== App Launch - Forcing HealthKit Authorization ===")
                 requestHealthKitAuthorization()
             }
         }
@@ -338,73 +364,21 @@ struct HealthMetricsView: View {
             print("  \(type.identifier): \(status.rawValue)")
         }
         
-        // Define the types we want to read from HealthKit
-        var typesToRead: Set<HKObjectType> = [
+        // Try a simpler approach - just request the most basic types
+        let basicTypes: Set<HKObjectType> = [
             HKObjectType.quantityType(forIdentifier: .heartRate)!,
             HKObjectType.quantityType(forIdentifier: .bloodPressureSystolic)!,
-            HKObjectType.quantityType(forIdentifier: .bloodPressureDiastolic)!,
-            HKObjectType.quantityType(forIdentifier: .oxygenSaturation)!,
-            HKObjectType.quantityType(forIdentifier: .bodyTemperature)!,
-            HKObjectType.quantityType(forIdentifier: .respiratoryRate)!,
-            HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!,
-            HKObjectType.electrocardiogramType()
+            HKObjectType.quantityType(forIdentifier: .oxygenSaturation)!
         ]
         
-        // Add basal body temperature if available
-        if let basalTemperatureType = HKObjectType.quantityType(forIdentifier: .basalBodyTemperature) {
-            typesToRead.insert(basalTemperatureType)
-        }
-        // Add Apple Sleeping Wrist Temperature (delta) if available
-        if let wristDelta = HKObjectType.quantityType(forIdentifier: .appleSleepingWristTemperature) {
-            typesToRead.insert(wristDelta)
-        }
-        
-        // Ensure body temperature is always requested
-        if let bodyTemperatureType = HKObjectType.quantityType(forIdentifier: .bodyTemperature) {
-            typesToRead.insert(bodyTemperatureType)
-        }
-        
-        print("Requesting authorization for temperature types:")
-        for type in typesToRead {
-            if type.identifier.contains("temperature") || type.identifier.contains("Temperature") {
-                print("  - \(type.identifier)")
-            }
-        }
-        
-        // Check current authorization status for temperature types
-        let temperatureTypes = [
-            HKObjectType.quantityType(forIdentifier: .bodyTemperature),
-            HKObjectType.quantityType(forIdentifier: .basalBodyTemperature),
-            HKObjectType.quantityType(forIdentifier: .appleSleepingWristTemperature)
-        ].compactMap { $0 }
-        
-        for type in temperatureTypes {
-            let status = healthStore.authorizationStatus(for: type)
-            print("Current authorization status for \(type.identifier): \(status.rawValue)")
-        }
-        
-        print("Requesting authorization for \(typesToRead.count) health data types")
+        print("Requesting authorization for basic types: \(basicTypes.count)")
         print("Authorization dialog should appear now...")
         
-        // Request authorization
+        // Request authorization with just basic types
         print("Requesting HealthKit authorization...")
         authorizationAttempted = true
         
-        // Force authorization with explicit types - try both read and write permissions
-        let explicitTypes: Set<HKObjectType> = [
-            HKObjectType.quantityType(forIdentifier: .heartRate)!,
-            HKObjectType.quantityType(forIdentifier: .bloodPressureSystolic)!,
-            HKObjectType.quantityType(forIdentifier: .bloodPressureDiastolic)!,
-            HKObjectType.quantityType(forIdentifier: .oxygenSaturation)!,
-            HKObjectType.quantityType(forIdentifier: .bodyTemperature)!,
-            HKObjectType.quantityType(forIdentifier: .respiratoryRate)!,
-            HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!
-        ]
-        
-        print("Requesting authorization for explicit types: \(explicitTypes.count)")
-        
-        // Use the working version - only request read permissions
-        healthStore.requestAuthorization(toShare: nil, read: explicitTypes) { success, error in
+        healthStore.requestAuthorization(toShare: nil, read: basicTypes) { success, error in
             DispatchQueue.main.async {
                 print("Authorization result: success=\(success), error=\(error?.localizedDescription ?? "none")")
                 if success {
