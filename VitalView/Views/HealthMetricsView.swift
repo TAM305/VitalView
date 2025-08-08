@@ -151,6 +151,15 @@ struct HealthMetricsView: View {
     
     // Computed property for metrics to avoid complex expressions in body
     private var healthMetrics: [Metric] {
+        // Debug all health data values
+        print("=== Health Metrics Debug ===")
+        print("Heart Rate: \(heartRate.value?.description ?? "nil")")
+        print("Blood Pressure: systolic=\(bloodPressure.systolic?.description ?? "nil"), diastolic=\(bloodPressure.diastolic?.description ?? "nil")")
+        print("Oxygen Saturation: \(oxygenSaturation.value?.description ?? "nil")")
+        print("Respiratory Rate: \(respiratoryRate.value?.description ?? "nil")")
+        print("Heart Rate Variability: \(heartRateVariability.value?.description ?? "nil")")
+        print("Temperature: \(temperature.value?.description ?? "nil")")
+        
         let heartRateMetric = Metric(
             title: "Heart Rate",
             value: heartRate.value.map { "\(Int($0))" } ?? "--",
@@ -276,7 +285,7 @@ struct HealthMetricsView: View {
             date: ecgData.first?.date
         )
         
-        return [
+        let metrics = [
             heartRateMetric,
             bloodPressureMetric,
             oxygenMetric,
@@ -285,6 +294,14 @@ struct HealthMetricsView: View {
             hrvMetric,
             ecgMetric
         ]
+        
+        // Debug final metric values
+        print("=== Final Metric Values ===")
+        for metric in metrics {
+            print("\(metric.title): \(metric.value) \(metric.unit)")
+        }
+        
+        return metrics
     }
     
     private func requestHealthKitAuthorization() {
