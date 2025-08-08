@@ -315,7 +315,7 @@ struct HealthMetricsView: View {
         
         // Create a correlation query to get both systolic and diastolic readings together
         let correlationQuery = HKCorrelationQuery(
-            type: HKObjectType.correlationType(forIdentifier: .bloodPressure)!,
+            correlationType: HKObjectType.correlationType(forIdentifier: .bloodPressure)!,
             predicate: predicate,
             sortDescriptors: [sortDescriptor]
         ) { _, correlations, error in
@@ -451,7 +451,7 @@ struct HealthMetricsView: View {
             let voltageQuery = HKElectrocardiogramQuery(ecg) { query, result in
                 switch result {
                 case let .measurement(measurement):
-                    if let quantity = measurement.quantity(for: .default) {
+                    if let quantity = measurement.quantity(for: .V1) {
                         let voltageValue = quantity.doubleValue(for: HKUnit.volt())
                 DispatchQueue.main.async {
                             self.ecgData = [ECGReading(value: voltageValue * 1000, date: ecg.startDate.addingTimeInterval(measurement.timeSinceSampleStart))]
