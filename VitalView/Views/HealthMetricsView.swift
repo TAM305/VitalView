@@ -442,6 +442,21 @@ struct HealthMetricsView: View {
             }
         }
         
+        // Check authorization status for temperature types
+        print("Checking temperature authorization...")
+        if let bodyTempType = bodyTempType {
+            let authStatus = healthStore.authorizationStatus(for: bodyTempType)
+            print("Body temperature authorization status: \(authStatus.rawValue)")
+        }
+        if let basalTempType = basalTempType {
+            let authStatus = healthStore.authorizationStatus(for: basalTempType)
+            print("Basal temperature authorization status: \(authStatus.rawValue)")
+        }
+        if let wristDeltaType = wristDeltaType {
+            let authStatus = healthStore.authorizationStatus(for: wristDeltaType)
+            print("Wrist temperature authorization status: \(authStatus.rawValue)")
+        }
+        
         // Try body temperature first
         if let tempType = bodyTempType {
             print("Querying body temperature samples...")
