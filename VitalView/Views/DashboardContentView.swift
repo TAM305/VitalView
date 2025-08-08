@@ -82,17 +82,13 @@ struct DashboardContentView: View {
                     LazyVGrid(columns: gridColumns, spacing: 12) {
                         ForEach(healthMetrics) { metric in
                             Button {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    onSelectMetric(metric)
-                                }
+                                onSelectMetric(metric)
                             } label: {
                                 VStack(alignment: .leading, spacing: 8) {
                                     HStack {
                                         Image(systemName: metric.icon)
                                             .foregroundColor(metric.color)
                                             .font(.title2)
-                                            .scaleEffect(1.0)
-                                            .animation(.easeInOut(duration: 0.2), value: metric.id)
                                         Spacer()
                                         Text(metric.value)
                                             .font(.title2)
@@ -119,15 +115,8 @@ struct DashboardContentView: View {
                                 .cornerRadius(12)
                                 .shadow(radius: 2)
                                 .frame(height: 110)
-                                .scaleEffect(1.0)
-                                .animation(.easeInOut(duration: 0.2), value: metric.id)
                             }
                             .buttonStyle(PlainButtonStyle())
-                            .onTapGesture {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    // Add a subtle scale effect on tap
-                                }
-                            }
                         }
                     }
                     .padding(.horizontal, 12)
