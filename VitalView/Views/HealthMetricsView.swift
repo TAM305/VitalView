@@ -342,7 +342,8 @@ struct HealthMetricsView: View {
             return 
         }
         
-        let predicate = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(-24*60*60), end: Date(), options: .strictEndDate)
+        // Fetch the most recent available sample (no 24h restriction)
+        let predicate: NSPredicate? = nil
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
         let query = HKSampleQuery(sampleType: heartRateType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
