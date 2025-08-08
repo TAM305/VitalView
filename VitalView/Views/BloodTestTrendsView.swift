@@ -419,7 +419,7 @@ struct BloodTestHealthInsightsView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             
             VStack(spacing: 12) {
-                ForEach(getInsights(), id: \.self) { insight in
+                ForEach(getInsights()) { insight in
                     HStack {
                         Image(systemName: insight.icon)
                             .foregroundColor(insight.color)
@@ -491,7 +491,8 @@ struct BloodTestHealthInsightsView: View {
     }
 }
 
-struct HealthInsight {
+struct HealthInsight: Identifiable {
+    let id = UUID()
     let icon: String
     let color: Color
     let text: String
