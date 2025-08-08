@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MetricDetailView: View {
     let metric: Metric
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         VStack(spacing: 24) {
@@ -25,6 +26,22 @@ struct MetricDetailView: View {
                     .foregroundColor(.secondary)
             }
             .padding(.top, 20)
+            
+            // Metric explanation
+            VStack(alignment: .leading, spacing: 12) {
+                Text("About \(metric.title)")
+                    .font(.headline)
+                    .padding(.horizontal)
+                
+                Text(getMetricExplanation())
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
+            }
+            .padding(.vertical, 12)
+            .background(Color(.systemGray6))
+            .cornerRadius(12)
             
             // Metric information
             VStack(spacing: 16) {
@@ -94,7 +111,7 @@ struct MetricDetailView: View {
             
             // Close button
             Button("Close") {
-                // This will be handled by the sheet dismissal
+                dismiss()
             }
             .buttonStyle(.borderedProminent)
             .padding(.bottom, 20)
@@ -105,9 +122,30 @@ struct MetricDetailView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Done") {
-                    // This will be handled by the sheet dismissal
+                    dismiss()
                 }
             }
+        }
+    }
+    
+    private func getMetricExplanation() -> String {
+        switch metric.title {
+        case "Heart Rate":
+            return "Heart rate measures how many times your heart beats per minute. It's a key indicator of cardiovascular health and can vary based on activity level, stress, and overall fitness."
+        case "Blood Pressure":
+            return "Blood pressure measures the force of blood against artery walls. Systolic (top number) is pressure when heart beats, diastolic (bottom number) is pressure between beats."
+        case "Oxygen":
+            return "Oxygen saturation measures how much oxygen your blood is carrying. It's crucial for cellular function and indicates how well your lungs and heart are working together."
+        case "Temperature":
+            return "Body temperature indicates your body's ability to regulate heat. Normal temperature helps fight infections and maintain optimal cellular function."
+        case "Respiratory Rate":
+            return "Respiratory rate is how many breaths you take per minute. It's essential for oxygen delivery and can indicate stress, illness, or respiratory conditions."
+        case "Heart Rate Variability":
+            return "HRV measures the variation in time between heartbeats. Higher HRV indicates better cardiovascular fitness and stress resilience."
+        case "Latest ECG":
+            return "Electrocardiogram (ECG) records your heart's electrical activity. It helps detect irregular heart rhythms and cardiovascular conditions."
+        default:
+            return "This metric provides important information about your health status and should be monitored regularly."
         }
     }
     
