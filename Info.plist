@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleIdentifier</key>
-	<string>com.tam305.vitalview</string>
+	<string>com.tam305.vitalvu</string>
 	<key>CFBundleExecutable</key>
 	<string>VitalVu</string>
 	<key>CFBundlePackageType</key>
