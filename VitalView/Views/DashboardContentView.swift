@@ -94,7 +94,10 @@ struct DashboardContentView: View {
                                             .foregroundColor(metric.color)
                                             .font(.title2)
                                             .scaleEffect(getIconScale(for: metric.title))
-                                            .animation(getIconAnimation(for: metric.title), value: animationStates[metric.id.uuidString] ?? false)
+                                            .animation(getIconAnimation(for: metric.title), value: animationStates[metric.title] ?? false)
+                                            .onAppear {
+                                                startIconAnimation(for: metric)
+                                            }
                                         Spacer()
                                         Text(metric.value)
                                             .font(.title2)
@@ -128,9 +131,7 @@ struct DashboardContentView: View {
                                     // Subtle tap feedback
                                 }
                             }
-                            .onAppear {
-                                startIconAnimation(for: metric)
-                            }
+
                         }
                     }
                     .padding(.horizontal, 12)
@@ -143,51 +144,63 @@ struct DashboardContentView: View {
     }
     
     private func getIconScale(for title: String) -> CGFloat {
-        let isAnimating = animationStates.values.contains(true)
+        let isAnimating = animationStates[title] ?? false
         switch title {
         case "Heart Rate":
-            return isAnimating ? 1.2 : 1.0
+            return isAnimating ? 1.3 : 1.0
         case "Oxygen":
-            return isAnimating ? 1.1 : 1.0
+            return isAnimating ? 1.2 : 1.0
         case "Temperature":
-            return isAnimating ? 1.15 : 1.0
+            return isAnimating ? 1.25 : 1.0
         case "Blood Pressure":
-            return isAnimating ? 1.1 : 1.0
+            return isAnimating ? 1.2 : 1.0
         case "Respiratory Rate":
-            return isAnimating ? 1.1 : 1.0
+            return isAnimating ? 1.2 : 1.0
         case "Heart Rate Variability":
-            return isAnimating ? 1.1 : 1.0
+            return isAnimating ? 1.2 : 1.0
         case "Latest ECG":
-            return isAnimating ? 1.15 : 1.0
+            return isAnimating ? 1.25 : 1.0
         default:
-            return 1.0
+            return isAnimating ? 1.15 : 1.0
         }
     }
     
     private func getIconAnimation(for title: String) -> Animation {
         switch title {
         case "Heart Rate":
-            return .easeInOut(duration: 0.6).repeatForever(autoreverses: true)
-        case "Oxygen":
-            return .easeInOut(duration: 1.2).repeatForever(autoreverses: true)
-        case "Temperature":
             return .easeInOut(duration: 0.8).repeatForever(autoreverses: true)
-        case "Blood Pressure":
-            return .easeInOut(duration: 1.0).repeatForever(autoreverses: true)
-        case "Respiratory Rate":
+        case "Oxygen":
             return .easeInOut(duration: 1.5).repeatForever(autoreverses: true)
+        case "Temperature":
+            return .easeInOut(duration: 1.0).repeatForever(autoreverses: true)
+        case "Blood Pressure":
+            return .easeInOut(duration: 1.2).repeatForever(autoreverses: true)
+        case "Respiratory Rate":
+            return .easeInOut(duration: 2.0).repeatForever(autoreverses: true)
         case "Heart Rate Variability":
-            return .easeInOut(duration: 0.7).repeatForever(autoreverses: true)
-        case "Latest ECG":
             return .easeInOut(duration: 0.9).repeatForever(autoreverses: true)
+        case "Latest ECG":
+            return .easeInOut(duration: 1.1).repeatForever(autoreverses: true)
         default:
-            return .easeInOut(duration: 0.4)
+            return .easeInOut(duration: 0.6).repeatForever(autoreverses: true)
         }
     }
     
     private func startIconAnimation(for metric: Metric) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + Double.random(in: 0...2)) {
-            animationStates[metric.id.uuidString] = true
+        // Start animation immediately
+        animationStates[metric.title] = true
+        
+        // Create a continuous animation cycle
+        Timer.scheduledTimer(withTimeInterval: Double.random(in: 2...4), repeats: false) { _ in
+            withAnimation(.easeInOut(duration: 0.5)) {
+                animationStates[metric.title] = false
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                withAnimation(.easeInOut(duration: 0.5)) {
+                    animationStates[metric.title] = true
+                }
+            }
         }
     }
 }
