@@ -16,8 +16,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "38B1598C2DD54CC7007B7E32"
-               BuildableName = "VitalView.app"
-               BlueprintName = "VitalView"
+               BuildableName = "VitalVu.app"
+               BlueprintName = "VitalVu"
                ReferencedContainer = "container:VitalView.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -45,8 +45,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "38B1598C2DD54CC7007B7E32"
-            BuildableName = "VitalView.app"
-            BlueprintName = "VitalView"
+            BuildableName = "VitalVu.app"
+            BlueprintName = "VitalVu"
             ReferencedContainer = "container:VitalView.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -62,8 +62,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "38B1598C2DD54CC7007B7E32"
-            BuildableName = "VitalView.app"
-            BlueprintName = "VitalView"
+            BuildableName = "VitalVu.app"
+            BlueprintName = "VitalVu"
             ReferencedContainer = "container:VitalView.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
