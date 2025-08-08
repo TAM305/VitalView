@@ -267,83 +267,83 @@ struct BloodTestInputView: View {
     private func getExplanation(for testName: String) -> String {
         switch testName {
         case "WBC":
-            return "White blood cell count measures your body's ability to fight infections"
+            return "White Blood Cell count measures your body's immune system strength. These cells fight infections and protect against disease. Normal levels indicate good immune function, while high levels may suggest infection or inflammation, and low levels can indicate immune system problems."
         case "RBC":
-            return "Red blood cell count indicates oxygen-carrying capacity"
+            return "Red Blood Cell count measures oxygen-carrying capacity. These cells transport oxygen from your lungs to tissues throughout your body. Normal levels ensure adequate oxygen delivery, while low levels (anemia) can cause fatigue and shortness of breath."
         case "HGB":
-            return "Hemoglobin measures the oxygen-carrying protein in red blood cells"
+            return "Hemoglobin is the oxygen-carrying protein in red blood cells. It binds oxygen in your lungs and releases it to tissues. This test is crucial for detecting anemia and monitoring oxygen delivery efficiency. Low levels can cause fatigue, weakness, and shortness of breath."
         case "HCT":
-            return "Hematocrit shows the percentage of blood volume occupied by red cells"
+            return "Hematocrit measures the percentage of blood volume occupied by red blood cells. It's a key indicator of blood's oxygen-carrying capacity and helps diagnose anemia or polycythemia (too many red cells). This test is essential for understanding blood composition."
         case "MCV":
-            return "Mean corpuscular volume indicates average red blood cell size"
+            return "Mean Corpuscular Volume measures the average size of your red blood cells. This helps classify types of anemia - microcytic (small cells), normocytic (normal size), or macrocytic (large cells). It's crucial for determining the cause of blood disorders."
         case "MCH":
-            return "Mean corpuscular hemoglobin measures average hemoglobin per red cell"
+            return "Mean Corpuscular Hemoglobin measures the average amount of hemoglobin per red blood cell. This test helps identify the type and cause of anemia. Low values suggest iron deficiency, while high values may indicate vitamin B12 or folate deficiency."
         case "MCHC":
-            return "Mean corpuscular hemoglobin concentration shows hemoglobin density"
+            return "Mean Corpuscular Hemoglobin Concentration measures hemoglobin density in red blood cells. This test helps distinguish between different types of anemia and provides insight into the quality of your red blood cells."
         case "RDW":
-            return "Red cell distribution width measures variation in red cell size"
+            return "Red Cell Distribution Width measures variation in red blood cell size. High values indicate cells of varying sizes, which can help diagnose early iron deficiency or other blood disorders before other tests show abnormalities."
         case "Platelets":
-            return "Platelet count measures blood clotting ability"
+            return "Platelet count measures your blood's clotting ability. These tiny cells help stop bleeding by forming clots. Low levels can cause excessive bleeding, while high levels may increase clotting risk. Essential for monitoring bleeding disorders and bone marrow function."
         case "MPV":
-            return "Mean platelet volume indicates average platelet size"
+            return "Mean Platelet Volume measures the average size of your platelets. This helps evaluate platelet production and can indicate bone marrow disorders. Large platelets may suggest active platelet production, while small platelets might indicate decreased production."
         case "Glucose":
-            return "Blood glucose measures sugar levels in your bloodstream"
+            return "Blood glucose measures sugar levels in your bloodstream. This is the primary test for diabetes and metabolic health. High levels may indicate diabetes or prediabetes, while very low levels can cause hypoglycemia. Regular monitoring is crucial for diabetes management."
         case "Urea Nitrogen":
-            return "BUN measures kidney function and protein metabolism"
+            return "Blood Urea Nitrogen (BUN) measures kidney function and protein metabolism. It's a waste product filtered by your kidneys. High levels may indicate kidney problems, dehydration, or high protein intake. Essential for monitoring kidney health."
         case "Creatinine":
-            return "Creatinine indicates kidney function and muscle mass"
+            return "Creatinine is a waste product from muscle metabolism, filtered by your kidneys. This test is crucial for evaluating kidney function. High levels indicate reduced kidney function, while normal levels suggest healthy kidney filtration."
         case "eGFR":
-            return "Estimated glomerular filtration rate measures kidney filtering ability"
+            return "Estimated Glomerular Filtration Rate measures how well your kidneys filter waste. This is the gold standard for kidney function assessment. Values above 60 indicate normal function, while lower values suggest kidney disease stages."
         case "Sodium":
-            return "Sodium is an electrolyte that helps regulate fluid balance"
+            return "Sodium is an essential electrolyte that regulates fluid balance, blood pressure, and nerve function. Abnormal levels can affect heart rhythm, brain function, and fluid balance. Critical for monitoring hydration and electrolyte disorders."
         case "Potassium":
-            return "Potassium is an electrolyte important for heart and muscle function"
+            return "Potassium is crucial for heart rhythm, muscle function, and nerve transmission. This electrolyte must be carefully balanced - too high or too low can cause serious heart problems. Essential for monitoring heart health and kidney function."
         case "Chloride":
-            return "Chloride is an electrolyte that helps maintain acid-base balance"
+            return "Chloride is an electrolyte that helps maintain acid-base balance and fluid levels. It works with sodium and potassium to regulate body fluids. Abnormal levels can indicate dehydration, kidney problems, or acid-base disorders."
         case "CO2":
-            return "Carbon dioxide measures acid-base balance in blood"
+            return "Carbon dioxide (bicarbonate) measures acid-base balance in your blood. This test helps evaluate respiratory and metabolic function. Low levels may indicate acidosis, while high levels suggest alkalosis. Critical for monitoring acid-base balance."
         case "Anion Gap":
-            return "Anion gap helps identify acid-base disorders"
+            return "Anion Gap helps identify acid-base disorders and metabolic problems. It's calculated from other electrolytes and helps diagnose conditions like diabetic ketoacidosis, kidney failure, or poisoning. Essential for emergency medicine and metabolic evaluation."
         case "Calcium":
-            return "Calcium is essential for bone health and muscle function"
+            return "Calcium is essential for bone health, muscle function, and nerve transmission. This test evaluates calcium metabolism and can detect bone disorders, parathyroid problems, or kidney disease. Critical for bone and metabolic health."
         case "Total Protein":
-            return "Total protein measures overall protein levels in blood"
+            return "Total protein measures overall protein levels in your blood. Proteins are essential for immune function, fluid balance, and tissue repair. Low levels may indicate malnutrition or liver disease, while high levels can suggest inflammation or dehydration."
         case "Albumin":
-            return "Albumin is the main protein in blood plasma"
+            return "Albumin is the main protein in blood plasma, essential for maintaining fluid balance and transporting substances. Low levels may indicate liver disease, kidney problems, or malnutrition. Critical for evaluating liver function and nutritional status."
         case "AST":
-            return "Aspartate aminotransferase indicates liver function"
+            return "Aspartate Aminotransferase is a liver enzyme that indicates liver damage or disease. Elevated levels suggest liver injury, heart problems, or muscle damage. This test is crucial for monitoring liver health and detecting liver disease early."
         case "ALT":
-            return "Alanine aminotransferase indicates liver function"
+            return "Alanine Aminotransferase is a liver-specific enzyme that indicates liver damage. This is the most sensitive test for liver injury and is essential for monitoring liver health, detecting hepatitis, or evaluating medication effects on the liver."
         case "Alkaline Phosphatase":
-            return "Alkaline phosphatase indicates liver and bone health"
+            return "Alkaline Phosphatase is an enzyme found in liver, bones, and other tissues. Elevated levels may indicate liver disease, bone disorders, or bile duct problems. This test helps evaluate liver and bone health simultaneously."
         case "Bilirubin Total":
-            return "Bilirubin measures liver function and red blood cell breakdown"
+            return "Bilirubin is a waste product from red blood cell breakdown, processed by the liver. High levels can cause jaundice and may indicate liver disease, bile duct problems, or blood disorders. Essential for evaluating liver function and detecting jaundice."
         case "Total Cholesterol":
-            return "Total cholesterol measures overall lipid levels"
+            return "Total cholesterol measures overall lipid levels in your blood. While cholesterol is essential for cell membranes and hormone production, high levels increase heart disease risk. This test is fundamental for cardiovascular health assessment."
         case "HDL":
-            return "High-density lipoprotein is the 'good' cholesterol"
+            return "High-Density Lipoprotein is the 'good' cholesterol that removes excess cholesterol from arteries. Higher levels are protective against heart disease. This test is crucial for evaluating cardiovascular risk and heart health."
         case "LDL":
-            return "Low-density lipoprotein is the 'bad' cholesterol"
+            return "Low-Density Lipoprotein is the 'bad' cholesterol that can build up in artery walls. High levels increase heart disease and stroke risk. This is the primary target for cholesterol-lowering treatments and cardiovascular risk assessment."
         case "Triglycerides":
-            return "Triglycerides are fats that provide energy"
+            return "Triglycerides are fats that provide energy and are stored in fat cells. High levels increase heart disease risk and may indicate metabolic syndrome or diabetes. This test is essential for cardiovascular risk assessment and metabolic health."
         case "TSH":
-            return "Thyroid stimulating hormone regulates thyroid function"
+            return "Thyroid Stimulating Hormone regulates thyroid function and is the most sensitive test for thyroid disorders. High levels suggest hypothyroidism, while low levels may indicate hyperthyroidism. Essential for thyroid health monitoring."
         case "T4":
-            return "Thyroxine is the main thyroid hormone"
+            return "Thyroxine (T4) is the main thyroid hormone that regulates metabolism, energy, and growth. This test helps diagnose thyroid disorders and monitor thyroid treatment effectiveness. Critical for metabolic health evaluation."
         case "T3":
-            return "Triiodothyronine is an active thyroid hormone"
+            return "Triiodothyronine (T3) is the active thyroid hormone that affects metabolism and energy levels. This test helps evaluate thyroid function and can detect hyperthyroidism. Important for comprehensive thyroid assessment."
         case "Free T4":
-            return "Free thyroxine measures available thyroid hormone"
+            return "Free T4 measures the active, unbound thyroid hormone available to tissues. This test is more accurate than total T4 for evaluating thyroid function and is essential for thyroid disorder diagnosis and treatment monitoring."
         case "Free T3":
-            return "Free triiodothyronine measures active thyroid hormone"
+            return "Free T3 measures the active, unbound T3 hormone that directly affects metabolism. This test helps evaluate thyroid function and can detect hyperthyroidism or thyroid hormone resistance. Critical for thyroid health assessment."
         case "HbA1c":
-            return "Hemoglobin A1c measures average blood sugar over 3 months"
+            return "Hemoglobin A1c measures average blood sugar over the past 2-3 months. This is the gold standard for diabetes diagnosis and monitoring. Values above 6.5% suggest diabetes, while 5.7-6.4% indicates prediabetes. Essential for diabetes management."
         case "Insulin":
-            return "Insulin regulates blood sugar levels"
+            return "Insulin regulates blood sugar levels by helping cells absorb glucose. This test helps evaluate insulin resistance, diabetes type, and metabolic health. High levels may indicate insulin resistance, while low levels suggest type 1 diabetes."
         case "C-Peptide":
-            return "C-peptide indicates insulin production"
+            return "C-Peptide indicates insulin production by the pancreas. This test helps distinguish between type 1 and type 2 diabetes, and evaluates pancreatic function. Essential for diabetes diagnosis and treatment planning."
         default:
-            return "This test measures important health markers in your blood"
+            return "This test measures important health markers in your blood that help evaluate your overall health, detect diseases early, and monitor treatment effectiveness. Regular testing is essential for preventive healthcare."
         }
     }
 }
