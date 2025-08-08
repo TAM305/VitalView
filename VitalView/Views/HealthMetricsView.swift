@@ -444,15 +444,19 @@ struct HealthMetricsView: View {
         
         // Try body temperature first
         if let tempType = bodyTempType {
+            print("Querying body temperature samples...")
             let query = HKSampleQuery(sampleType: tempType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
+                print("Body temperature query completed - samples count: \(samples?.count ?? 0)")
                 if samples?.isEmpty ?? true, let basalType = basalTempType {
                     // If no body temperature, try basal temperature
                     print("No body temperature samples; attempting basal body temperature")
                     let basalQuery = HKSampleQuery(sampleType: basalType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, basalSamples, basalError in
+                        print("Basal temperature query completed - samples count: \(basalSamples?.count ?? 0)")
                         // If basal also empty, try wrist delta before giving up
                         if (basalSamples?.isEmpty ?? true), let wristType = wristDeltaType {
                             print("No basal temperature; attempting Apple Sleeping Wrist Temperature (delta)")
                             let wristQuery = HKSampleQuery(sampleType: wristType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, wristSamples, wristError in
+                                print("Wrist temperature query completed - samples count: \(wristSamples?.count ?? 0)")
                                 DispatchQueue.main.async {
                                     if let sample = wristSamples?.first as? HKQuantitySample {
                                         let value = sample.quantity.doubleValue(for: self.temperatureHKUnit)
@@ -476,6 +480,7 @@ struct HealthMetricsView: View {
                     // If still no data, try wrist temperature delta (iOS 17+)
                     print("No basal temperature; attempting Apple Sleeping Wrist Temperature (delta)")
                     let wristQuery = HKSampleQuery(sampleType: wristType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, wristSamples, wristError in
+                        print("Wrist temperature query completed - samples count: \(wristSamples?.count ?? 0)")
                         DispatchQueue.main.async {
                             if let sample = wristSamples?.first as? HKQuantitySample {
                                 let value = sample.quantity.doubleValue(for: self.temperatureHKUnit)
@@ -499,14 +504,18 @@ struct HealthMetricsView: View {
         } else if let basalType = basalTempType {
             // If no body temperature type, try basal temperature directly
             print("Body temperature type unavailable; using basal body temperature type")
+            print("Querying basal body temperature samples...")
             let query = HKSampleQuery(sampleType: basalType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
+                print("Basal temperature query completed - samples count: \(samples?.count ?? 0)")
                 processTemperature(samples, error)
             }
             healthStore.execute(query)
         } else if let wristType = wristDeltaType {
             // Fallback: wrist temperature delta only
             print("Using Apple Sleeping Wrist Temperature (delta) as fallback")
+            print("Querying wrist temperature samples...")
             let query = HKSampleQuery(sampleType: wristType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, wristSamples, wristError in
+                print("Wrist temperature query completed - samples count: \(wristSamples?.count ?? 0)")
                 DispatchQueue.main.async {
                     if let sample = wristSamples?.first as? HKQuantitySample {
                         let value = sample.quantity.doubleValue(for: self.temperatureHKUnit)
