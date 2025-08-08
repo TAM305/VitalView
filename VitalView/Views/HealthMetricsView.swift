@@ -29,6 +29,7 @@ struct HealthMetricsView: View {
     @State private var bloodPressure = BloodPressureData()
     @State private var oxygenSaturation = HealthData()
     @State private var temperature = HealthData()
+    @State private var temperatureIsDelta = false
     @State private var respiratoryRate = HealthData()
     @State private var heartRateVariability = HealthData()
     @State private var ecgData: [ECGReading] = []
@@ -175,7 +176,7 @@ struct HealthMetricsView: View {
         let temperatureMetric = Metric(
             title: "Temperature",
             value: temperature.value.map { String(format: "%.1f", $0) } ?? "--",
-            unit: temperatureUnitSymbol,
+            unit: temperatureIsDelta ? "Δ \(temperatureUnitSymbol)" : temperatureUnitSymbol,
             icon: "thermometer",
             color: .orange,
             date: temperature.date
@@ -417,6 +418,7 @@ struct HealthMetricsView: View {
         // Try both body temperature and basal body temperature
         let bodyTempType = HKObjectType.quantityType(forIdentifier: .bodyTemperature)
         let basalTempType = HKObjectType.quantityType(forIdentifier: .basalBodyTemperature)
+        let wristDeltaType = HKObjectType.quantityType(forIdentifier: .appleSleepingWristTemperature)
         
         let predicate = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(-24*60*60), end: Date(), options: .strictEndDate)
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
@@ -446,6 +448,24 @@ struct HealthMetricsView: View {
                         processTemperature(basalSamples, basalError)
                     }
                     self.healthStore.execute(basalQuery)
+                } else if samples?.isEmpty ?? true, let wristType = wristDeltaType {
+                    // If still no data, try wrist temperature delta (iOS 17+)
+                    print("No basal temperature; attempting Apple Sleeping Wrist Temperature (delta)")
+                    let wristQuery = HKSampleQuery(sampleType: wristType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, wristSamples, wristError in
+                        DispatchQueue.main.async {
+                            if let sample = wristSamples?.first as? HKQuantitySample {
+                                let value = sample.quantity.doubleValue(for: self.temperatureHKUnit)
+                                print("Wrist temperature delta fetched: \(String(format: "%.2f", value)) \(self.temperatureUnitSymbol)")
+                                self.temperature = HealthData(value: value, date: sample.endDate)
+                                self.temperatureIsDelta = true
+                            } else if let wristError = wristError {
+                                print("Error fetching wrist temperature: \(wristError.localizedDescription)")
+                            } else {
+                                print("No wrist temperature data found")
+                            }
+                        }
+                    }
+                    self.healthStore.execute(wristQuery)
                 } else {
                     print("Using body temperature samples")
                     processTemperature(samples, error)
@@ -459,6 +479,24 @@ struct HealthMetricsView: View {
                 processTemperature(samples, error)
             }
             healthStore.execute(query)
+        } else if let wristType = wristDeltaType {
+            // Fallback: wrist temperature delta only
+            print("Using Apple Sleeping Wrist Temperature (delta) as fallback")
+            let query = HKSampleQuery(sampleType: wristType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, wristSamples, wristError in
+                DispatchQueue.main.async {
+                    if let sample = wristSamples?.first as? HKQuantitySample {
+                        let value = sample.quantity.doubleValue(for: self.temperatureHKUnit)
+                        print("Wrist temperature delta fetched: \(String(format: "%.2f", value)) \(self.temperatureUnitSymbol)")
+                        self.temperature = HealthData(value: value, date: sample.endDate)
+                        self.temperatureIsDelta = true
+                    } else if let wristError = wristError {
+                        print("Error fetching wrist temperature: \(wristError.localizedDescription)")
+                    } else {
+                        print("No wrist temperature data found")
+                    }
+                }
+            }
+            self.healthStore.execute(query)
         }
     }
 
