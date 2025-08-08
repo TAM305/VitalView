@@ -2,7 +2,7 @@ import SwiftUI
 import CoreData
 import HealthKit
 
-/// The main entry point for the VitalView health monitoring application.
+/// The main entry point for the VitalVu health monitoring application.
 /// This app provides comprehensive health data visualization and blood test management.
 ///
 /// ## Key Features:
@@ -38,7 +38,7 @@ import HealthKit
 /// - **Encryption**: Standard Apple encryption declaration
 /// - **Accessibility**: VoiceOver and Dynamic Type support
 @main
-struct VitalViewApp: App {
+struct VitalVuApp: App {
     @StateObject private var persistenceController = PersistenceController.shared
     @StateObject private var healthKitManager = HealthKitManager()
     

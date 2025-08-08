@@ -390,7 +390,7 @@
 				DEVELOPMENT_TEAM = DQ7UAHND6N;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = VitalView;
+				INFOPLIST_KEY_CFBundleDisplayName = VitalVu;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -416,7 +416,7 @@
 				DEVELOPMENT_TEAM = DQ7UAHND6N;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = VitalView;
+				INFOPLIST_KEY_CFBundleDisplayName = VitalVu;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

@@ -5,7 +5,7 @@ import Combine
 import LocalAuthentication
 import HealthKit
 
-/// Comprehensive data models for the VitalView blood work analyzer application.
+/// Comprehensive data models for the VitalVu blood work analyzer application.
 ///
 /// This module contains all the core data structures used throughout the app,
 /// including blood test results, health metrics, and security management.
@@ -29,9 +29,9 @@ import HealthKit
 /// Models are designed to work with HealthKit data types and can be
 /// synchronized with Apple Health for comprehensive health tracking.
 ///
-/// - Author: VitalView Development Team
+/// - Author: VitalVu Development Team
 /// - Version: 1.0
-/// - Copyright: © 2025 VitalView. All rights reserved.
+/// - Copyright: © 2025 VitalVu. All rights reserved.
 
 // MARK: - HealthKit Authorization Helper
 

@@ -16,7 +16,7 @@ import SwiftUI
 /// - Consistent with app branding
 /// - Supports dark and light mode
 ///
-/// - Author: VitalView Development Team
+/// - Author: VitalVu Development Team
 /// - Version: 1.0
 struct BloodDropView: View {
     /// The size of the blood drop in points.
@@ -68,7 +68,7 @@ struct BloodDropView: View {
 /// - Consistent with app branding
 /// - Supports dark and light mode
 ///
-/// - Author: VitalView Development Team
+/// - Author: VitalVu Development Team
 /// - Version: 1.0
 struct AnimatedBloodDropView: View {
     /// The size of the blood drop in points.

@@ -182,7 +182,7 @@ struct SettingsView: View {
                 
                 Section {
                     Button(action: { showingAboutApp = true }) {
-                        Label("About VitalView", systemImage: "info.circle")
+                        Label("About VitalVu", systemImage: "info.circle")
                     }
                     
                     HStack {
@@ -287,7 +287,7 @@ struct AboutAppView: View {
                         .font(.system(size: 60))
                         .foregroundColor(.red)
                     
-                    Text("VitalView")
+                    Text("VitalVu")
                         .font(.largeTitle)
                         .fontWeight(.bold)
                     
@@ -309,7 +309,7 @@ struct AboutAppView: View {
                         .font(.title2)
                         .fontWeight(.bold)
                     
-                    Text("VitalView is a comprehensive health monitoring app that helps you track and understand your vital signs and blood test results. The app integrates with Apple HealthKit to provide real-time health metrics and offers detailed analysis of your blood work.")
+                    Text("VitalVu is a comprehensive health monitoring app that helps you track and understand your vital signs and blood test results. The app integrates with Apple HealthKit to provide real-time health metrics and offers detailed analysis of your blood work.")
                         .font(.body)
                         .lineSpacing(4)
                 }

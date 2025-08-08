@@ -1,6 +1,6 @@
 //
 //  ContentView.swift
-//  VitalView
+//  VitalVu
 //
 //  Created by Tony on 5/14/25.
 //
@@ -26,7 +26,7 @@ struct ContentView: View {
                 // Header with blood drop and app title
                 ZStack {
                     // Centered app title
-                    Text("VitalView")
+                    Text("VitalVu")
                         .font(.largeTitle)
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
@@ -45,7 +45,7 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .navigationTitle("VitalView")
+            .navigationTitle("VitalVu")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
