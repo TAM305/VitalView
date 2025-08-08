@@ -175,10 +175,10 @@ struct HealthMetricsView: View {
         
         let temperatureMetric = Metric(
             title: "Temperature",
-            value: temperature.value.map { String(format: "%.1f", $0) } ?? "--",
-            unit: temperatureIsDelta ? "Δ \(temperatureUnitSymbol)" : temperatureUnitSymbol,
+            value: temperature.value.map { String(format: "%.1f", $0) } ?? "No Data",
+            unit: temperatureIsDelta ? "Δ \(temperatureUnitSymbol)" : (temperature.value == nil ? "Tap to grant permission" : temperatureUnitSymbol),
             icon: "thermometer",
-            color: .orange,
+            color: temperature.value == nil ? .gray : .orange,
             date: temperature.date
         )
         
@@ -292,6 +292,18 @@ struct HealthMetricsView: View {
             if type.identifier.contains("temperature") || type.identifier.contains("Temperature") {
                 print("  - \(type.identifier)")
             }
+        }
+        
+        // Check current authorization status for temperature types
+        let temperatureTypes = [
+            HKObjectType.quantityType(forIdentifier: .bodyTemperature),
+            HKObjectType.quantityType(forIdentifier: .basalBodyTemperature),
+            HKObjectType.quantityType(forIdentifier: .appleSleepingWristTemperature)
+        ].compactMap { $0 }
+        
+        for type in temperatureTypes {
+            let status = healthStore.authorizationStatus(for: type)
+            print("Current authorization status for \(type.identifier): \(status.rawValue)")
         }
         
         print("Requesting authorization for \(typesToRead.count) health data types")
