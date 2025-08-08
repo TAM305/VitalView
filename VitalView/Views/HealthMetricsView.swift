@@ -40,6 +40,8 @@ struct HealthMetricsView: View {
                 healthMetrics: healthMetrics,
                 onRefresh: {
                     print("\n=== Manual Refresh Triggered ===")
+                    print("Current authorization status: \(isAuthorized)")
+                    print("HealthKit available: \(HKHealthStore.isHealthDataAvailable())")
                     fetchLatestVitalSigns()
                 },
                 onAuthorize: {
@@ -262,44 +264,61 @@ struct HealthMetricsView: View {
     }
     
     private func fetchLatestVitalSigns() {
-        guard isAuthorized else { return }
+        print("=== fetchLatestVitalSigns() called ===")
+        print("isAuthorized: \(isAuthorized)")
+        
+        guard isAuthorized else { 
+            print("Not authorized, returning early")
+            return 
+        }
+        
+        print("Starting to fetch latest vital signs...")
         
         // Use a background queue for data fetching
         DispatchQueue.global(qos: .userInitiated).async {
-            // Fetch heart rate
+            print("Fetching heart rate...")
             self.fetchHeartRate()
             
-            // Fetch blood pressure
+            print("Fetching blood pressure...")
             self.fetchBloodPressure()
             
-            // Fetch oxygen saturation
+            print("Fetching oxygen saturation...")
             self.fetchOxygenSaturation()
             
-            // Fetch body temperature
+            print("Fetching body temperature...")
             self.fetchBodyTemperature()
             
-            // Fetch respiratory rate
+            print("Fetching respiratory rate...")
             self.fetchRespiratoryRate()
             
-            // Fetch heart rate variability
+            print("Fetching heart rate variability...")
             self.fetchHeartRateVariability()
             
-            // Fetch ECG data
+            print("Fetching ECG data...")
             self.fetchECGData()
+            
+            print("All fetch operations initiated")
         }
     }
     
     private func fetchHeartRate() {
-        guard let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate) else { return }
+        print("fetchHeartRate() called")
+        guard let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate) else { 
+            print("Heart rate type not available")
+            return 
+        }
         
         let predicate = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(-24*60*60), end: Date(), options: .strictEndDate)
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
         let query = HKSampleQuery(sampleType: heartRateType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
-                        DispatchQueue.main.async {
+            DispatchQueue.main.async {
                 if let sample = samples?.first as? HKQuantitySample {
                     let value = sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
+                    print("Heart rate fetched: \(value) BPM")
                     self.heartRate = HealthData(value: value, date: sample.endDate)
+                } else {
+                    print("No heart rate data found or error: \(error?.localizedDescription ?? "none")")
                 }
             }
         }

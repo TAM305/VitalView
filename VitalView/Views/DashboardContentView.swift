@@ -27,7 +27,12 @@ struct DashboardContentView: View {
                                 .font(.subheadline)
                         }
                         .foregroundColor(.blue)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(8)
                     }
+                    .buttonStyle(PlainButtonStyle())
                     .padding(.trailing, 12)
                 }
                 
