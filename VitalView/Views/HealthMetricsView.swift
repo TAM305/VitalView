@@ -428,35 +428,56 @@ struct HealthMetricsView: View {
     }
 
     private func fetchBloodPressure() {
+        print("=== fetchBloodPressure() called ===")
+        
         guard let bloodPressureType = HKObjectType.correlationType(forIdentifier: .bloodPressure),
               let systolicType = HKObjectType.quantityType(forIdentifier: .bloodPressureSystolic),
-              let diastolicType = HKObjectType.quantityType(forIdentifier: .bloodPressureDiastolic) else { return }
+              let diastolicType = HKObjectType.quantityType(forIdentifier: .bloodPressureDiastolic) else { 
+            print("Blood pressure types not available")
+            return 
+        }
+        
+        print("Blood pressure types available:")
+        print("  - Blood pressure correlation: \(bloodPressureType)")
+        print("  - Systolic type: \(systolicType)")
+        print("  - Diastolic type: \(diastolicType)")
         
         let predicate = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(-24*60*60), end: Date(), options: .strictEndDate)
         
+        print("Querying blood pressure samples...")
         let query = HKCorrelationQuery(
             type: bloodPressureType,
             predicate: predicate,
             samplePredicates: nil
         ) { [self] _, correlations, error in
+            print("Blood pressure query completed - correlations count: \(correlations?.count ?? 0)")
+            
             DispatchQueue.main.async {
                 if let correlation = correlations?.first {
                     let systolicSamples = correlation.objects(for: systolicType)
                     let diastolicSamples = correlation.objects(for: diastolicType)
+                    
+                    print("Systolic samples: \(systolicSamples.count), Diastolic samples: \(diastolicSamples.count)")
                     
                     if let systolicSample = systolicSamples.first as? HKQuantitySample,
                        let diastolicSample = diastolicSamples.first as? HKQuantitySample {
                         let systolic = systolicSample.quantity.doubleValue(for: HKUnit.millimeterOfMercury())
                         let diastolic = diastolicSample.quantity.doubleValue(for: HKUnit.millimeterOfMercury())
                         
+                        print("Blood pressure fetched: \(Int(systolic))/\(Int(diastolic)) mmHg")
+                        
                         self.bloodPressure = BloodPressureData(
                             systolic: systolic,
                             diastolic: diastolic,
                             date: correlation.endDate
                         )
+                    } else {
+                        print("Could not extract systolic/diastolic values from correlation")
                     }
                 } else if let error = error {
                     print("Error fetching blood pressure: \(error.localizedDescription)")
+                } else {
+                    print("No blood pressure data found")
                 }
             }
         }
@@ -464,16 +485,31 @@ struct HealthMetricsView: View {
     }
     
     private func fetchOxygenSaturation() {
-        guard let oxygenType = HKObjectType.quantityType(forIdentifier: .oxygenSaturation) else { return }
+        print("=== fetchOxygenSaturation() called ===")
+        
+        guard let oxygenType = HKObjectType.quantityType(forIdentifier: .oxygenSaturation) else { 
+            print("Oxygen saturation type not available")
+            return 
+        }
+        
+        print("Oxygen saturation type available: \(oxygenType)")
         
         let predicate = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(-24*60*60), end: Date(), options: .strictEndDate)
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
+        print("Querying oxygen saturation samples...")
         let query = HKSampleQuery(sampleType: oxygenType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
+            print("Oxygen saturation query completed - samples count: \(samples?.count ?? 0)")
+            
             DispatchQueue.main.async {
                 if let sample = samples?.first as? HKQuantitySample {
                     let value = sample.quantity.doubleValue(for: HKUnit.percent())
+                    print("Oxygen saturation fetched: \(Int(value * 100))%")
                     self.oxygenSaturation = HealthData(value: value * 100, date: sample.endDate)
+                } else if let error = error {
+                    print("Error fetching oxygen saturation: \(error.localizedDescription)")
+                } else {
+                    print("No oxygen saturation data found")
                 }
             }
         }
@@ -626,36 +662,66 @@ struct HealthMetricsView: View {
     }
     
     private func fetchRespiratoryRate() {
-        guard let respiratoryType = HKObjectType.quantityType(forIdentifier: .respiratoryRate) else { return }
+        print("=== fetchRespiratoryRate() called ===")
+        
+        guard let respiratoryType = HKObjectType.quantityType(forIdentifier: .respiratoryRate) else { 
+            print("Respiratory rate type not available")
+            return 
+        }
+        
+        print("Respiratory rate type available: \(respiratoryType)")
         
         let predicate = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(-24*60*60), end: Date(), options: .strictEndDate)
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
+        print("Querying respiratory rate samples...")
         let query = HKSampleQuery(sampleType: respiratoryType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
-                DispatchQueue.main.async {
+            print("Respiratory rate query completed - samples count: \(samples?.count ?? 0)")
+            
+            DispatchQueue.main.async {
                 if let sample = samples?.first as? HKQuantitySample {
                     let value = sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
+                    print("Respiratory rate fetched: \(String(format: "%.1f", value)) breaths/min")
                     self.respiratoryRate = HealthData(value: value, date: sample.endDate)
-                }
+                } else if let error = error {
+                    print("Error fetching respiratory rate: \(error.localizedDescription)")
+                } else {
+                    print("No respiratory rate data found")
                 }
             }
+        }
         healthStore.execute(query)
     }
     
     private func fetchHeartRateVariability() {
-        guard let hrvType = HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN) else { return }
+        print("=== fetchHeartRateVariability() called ===")
+        
+        guard let hrvType = HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN) else { 
+            print("Heart rate variability type not available")
+            return 
+        }
+        
+        print("Heart rate variability type available: \(hrvType)")
         
         let predicate = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(-24*60*60), end: Date(), options: .strictEndDate)
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
+        print("Querying heart rate variability samples...")
         let query = HKSampleQuery(sampleType: hrvType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
-                    DispatchQueue.main.async {
+            print("Heart rate variability query completed - samples count: \(samples?.count ?? 0)")
+            
+            DispatchQueue.main.async {
                 if let sample = samples?.first as? HKQuantitySample {
                     let value = sample.quantity.doubleValue(for: HKUnit.secondUnit(with: .milli))
+                    print("Heart rate variability fetched: \(String(format: "%.1f", value)) ms")
                     self.heartRateVariability = HealthData(value: value, date: sample.endDate)
-                }
+                } else if let error = error {
+                    print("Error fetching heart rate variability: \(error.localizedDescription)")
+                } else {
+                    print("No heart rate variability data found")
                 }
             }
+        }
             healthStore.execute(query)
     }
     
