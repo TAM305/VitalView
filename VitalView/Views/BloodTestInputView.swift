@@ -7,6 +7,7 @@ struct BloodTestInputView: View {
     @State private var testValues: [String: String] = [:]
     @State private var showingAlert = false
     @State private var alertMessage = ""
+    @State private var showingReference = false
     
     let onSave: (BloodTest) -> Void
     
