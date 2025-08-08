@@ -200,9 +200,14 @@ struct HealthMetricsView: View {
         
         let ecgValue: String
         print("ECG data count: \(ecgData.count)")
-        if !ecgData.isEmpty, let firstECG = ecgData.first {
-            ecgValue = String(format: "%.1f", firstECG.value)
-            print("ECG value: \(ecgValue) mV")
+        if let firstECG = ecgData.first {
+            // Use µV if very small, else mV; also show one decimal for mV, no decimals for µV
+            if firstECG.value < 1.0 {
+                ecgValue = String(format: "%.0f", firstECG.value * 1000.0) // µV
+            } else {
+                ecgValue = String(format: "%.1f", firstECG.value) // mV
+            }
+            print("ECG value displayed: \(ecgValue) \(firstECG.value < 1.0 ? "µV" : "mV")")
         } else {
             // Check if we're on a simulator or device without ECG capability
             if !HKHealthStore.isHealthDataAvailable() {
@@ -216,7 +221,7 @@ struct HealthMetricsView: View {
         let ecgMetric = Metric(
             title: "Latest ECG",
             value: ecgValue,
-            unit: "mV",
+            unit: ecgData.first.map { $0.value < 1.0 ? "µV" : "mV" } ?? "mV",
             icon: "waveform.path.ecg",
             color: .red,
             date: ecgData.first?.date
@@ -508,31 +513,31 @@ struct HealthMetricsView: View {
             print("ECG start date: \(ecg.startDate)")
             print("ECG end date: \(ecg.endDate)")
             
-            // Get the voltage measurements
+            // Aggregate voltage measurements to compute peak absolute amplitude (in mV)
+            var peakMillivolts: Double = 0
+            var peakTimestamp: Date = ecg.startDate
+
             let voltageQuery = HKElectrocardiogramQuery(ecg) { (query, result) in
                 switch result {
                 case .measurement(let measurement):
-                    print("ECG measurement received")
                     if let quantity = measurement.quantity(for: .appleWatchSimilarToLeadI) {
-                        let voltageValue = quantity.doubleValue(for: HKUnit.volt())
-                        print("ECG voltage value: \(voltageValue) V")
-                        DispatchQueue.main.async {
-                            self.ecgData = [ECGReading(
-                                value: voltageValue * 1000, // Convert to mV
-                                date: ecg.startDate.addingTimeInterval(measurement.timeSinceSampleStart)
-                            )]
-                            print("ECG data updated: \(voltageValue * 1000) mV")
+                        let volts = quantity.doubleValue(for: HKUnit.volt())
+                        let millivolts = volts * 1000.0
+                        let absMillivolts = abs(millivolts)
+                        if absMillivolts > peakMillivolts {
+                            peakMillivolts = absMillivolts
+                            peakTimestamp = ecg.startDate.addingTimeInterval(measurement.timeSinceSampleStart)
                         }
-                    } else {
-                        print("No voltage quantity found for appleWatchSimilarToLeadI")
                     }
                 case .done:
-                    print("ECG query completed")
+                    print("ECG query completed; peak amplitude: \(peakMillivolts) mV")
+                    DispatchQueue.main.async {
+                        self.ecgData = [ECGReading(value: peakMillivolts, date: peakTimestamp)]
+                    }
                     self.healthStore.stop(query)
                 case .error(let error):
                     print("Error fetching ECG data: \(error.localizedDescription)")
                 @unknown default:
-                    print("Unknown ECG result case")
                     break
                 }
             }
