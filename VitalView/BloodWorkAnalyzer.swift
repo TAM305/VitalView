@@ -41,12 +41,29 @@ import HealthKit
 struct VitalVuApp: App {
     @StateObject private var persistenceController = PersistenceController.shared
     @StateObject private var healthKitManager = HealthKitManager()
+    @State private var showingSplash = true
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environment(\.managedObjectContext, persistenceController.container.viewContext)
-                .environmentObject(healthKitManager)
+            ZStack {
+                ContentView()
+                    .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                    .environmentObject(healthKitManager)
+                
+                if showingSplash {
+                    AnimatedSplashView()
+                        .transition(.opacity)
+                        .zIndex(1)
+                }
+            }
+            .onAppear {
+                // Show splash for 2.5 seconds then fade out
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                    withAnimation(.easeOut(duration: 0.5)) {
+                        showingSplash = false
+                    }
+                }
+            }
         }
     }
 }
