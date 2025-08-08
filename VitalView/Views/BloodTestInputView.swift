@@ -74,25 +74,35 @@ struct BloodTestInputView: View {
             }
             .navigationTitle("Add Blood Test")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
+                            .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("Cancel") {
+                            dismiss()
+                        }
+                    }
+                    
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        HStack {
+                            Button("Reference") {
+                                showingReference = true
+                            }
+                            .font(.caption)
+                            
+                            Button("Save") {
+                                saveTest()
+                            }
+                            .fontWeight(.semibold)
+                        }
                     }
                 }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        saveTest()
-                    }
-                    .fontWeight(.semibold)
-                }
-            }
         }
         .alert("Error", isPresented: $showingAlert) {
             Button("OK") { }
         } message: {
             Text(alertMessage)
+        }
+        .sheet(isPresented: $showingReference) {
+            BloodTestReferenceView()
         }
     }
     
