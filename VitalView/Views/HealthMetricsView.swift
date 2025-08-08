@@ -138,6 +138,11 @@ struct HealthMetricsView: View {
                 }
             }
         }
+        .sheet(item: $selectedMetricInfo) { metric in
+            NavigationView {
+                MetricDetailView(metric: metric)
+            }
+        }
         .onAppear {
             // Remove automatic authorization - only trigger on user action
             print("=== App Launch - Ready for HealthKit Authorization ===")
