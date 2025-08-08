@@ -139,11 +139,8 @@ struct HealthMetricsView: View {
             }
         }
         .onAppear {
-            // Force HealthKit authorization immediately on app launch
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                print("=== App Launch - Forcing HealthKit Authorization ===")
-                requestHealthKitAuthorization()
-            }
+            // Remove automatic authorization - only trigger on user action
+            print("=== App Launch - Ready for HealthKit Authorization ===")
         }
     }
     
