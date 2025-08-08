@@ -53,7 +53,7 @@ struct BloodTestTrendsView: View {
                     // Time range selector
                     HStack(spacing: 8) {
                         ForEach(TimeRange.allCases, id: \.self) { range in
-                            TimeRangeButton(
+                            BloodTimeRangeButton(
                                 range: range,
                                 isSelected: timeRange == range
                             ) {
@@ -541,7 +541,7 @@ struct TestSelectorView: View {
     }
 }
 
-struct TimeRangeButton: View {
+struct BloodTimeRangeButton: View {
     let range: BloodTestTrendsView.TimeRange
     let isSelected: Bool
     let action: () -> Void
