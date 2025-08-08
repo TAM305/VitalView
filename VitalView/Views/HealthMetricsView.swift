@@ -463,11 +463,11 @@ struct HealthMetricsView: View {
 
     // MARK: - Temperature Unit Helpers
     private var temperatureHKUnit: HKUnit {
-        Locale.current.usesMetricSystem ? HKUnit.degreeCelsius() : HKUnit.degreeFahrenheit()
+        (Locale.current.measurementSystem == .metric) ? HKUnit.degreeCelsius() : HKUnit.degreeFahrenheit()
     }
     
     private var temperatureUnitSymbol: String {
-        Locale.current.usesMetricSystem ? "°C" : "°F"
+        (Locale.current.measurementSystem == .metric) ? "°C" : "°F"
     }
     
     private func fetchRespiratoryRate() {
