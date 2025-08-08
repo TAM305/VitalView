@@ -23,6 +23,9 @@
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>We use HealthKit to save your manual entries back into the Health app.</string>
 
+	<key>NSFaceIDUsageDescription</key>
+	<string>This app uses Face ID to securely access your health data.</string>
+
 	<key>NSPrivacyPolicyURL</key>
 	<string>https://vitvu.com/privacy</string>
 	<key>UIRequiredDeviceCapabilities</key>
