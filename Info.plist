@@ -56,7 +56,7 @@
 					<key>UISceneConfigurationName</key>
 					<string>Default Configuration</string>
 					<key>UISceneDelegateClassName</key>
-					<string>$(PRODUCT_MODULE_NAME).App</string>
+					<string>$(PRODUCT_MODULE_NAME).VitalVuApp</string>
 				</dict>
 			</array>
 		</dict>

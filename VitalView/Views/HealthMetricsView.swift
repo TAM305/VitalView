@@ -114,7 +114,10 @@ struct HealthMetricsView: View {
         }
 
         .onAppear {
-            requestHealthKitAuthorization()
+            // Delay authorization request to ensure UI is ready
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                requestHealthKitAuthorization()
+            }
         }
     }
     
@@ -318,6 +321,23 @@ struct HealthMetricsView: View {
             return
         }
         
+        // Check current authorization status for all types
+        let allTypes: [HKObjectType] = [
+            HKObjectType.quantityType(forIdentifier: .heartRate)!,
+            HKObjectType.quantityType(forIdentifier: .bloodPressureSystolic)!,
+            HKObjectType.quantityType(forIdentifier: .bloodPressureDiastolic)!,
+            HKObjectType.quantityType(forIdentifier: .oxygenSaturation)!,
+            HKObjectType.quantityType(forIdentifier: .bodyTemperature)!,
+            HKObjectType.quantityType(forIdentifier: .respiratoryRate)!,
+            HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!
+        ]
+        
+        print("Current authorization status:")
+        for type in allTypes {
+            let status = healthStore.authorizationStatus(for: type)
+            print("  \(type.identifier): \(status.rawValue)")
+        }
+        
         // Define the types we want to read from HealthKit
         var typesToRead: Set<HKObjectType> = [
             HKObjectType.quantityType(forIdentifier: .heartRate)!,
@@ -369,7 +389,20 @@ struct HealthMetricsView: View {
         // Request authorization
         print("Requesting HealthKit authorization...")
         authorizationAttempted = true
-        healthStore.requestAuthorization(toShare: nil, read: typesToRead) { success, error in
+        
+        // Force authorization with explicit types
+        let explicitTypes: Set<HKObjectType> = [
+            HKObjectType.quantityType(forIdentifier: .heartRate)!,
+            HKObjectType.quantityType(forIdentifier: .bloodPressureSystolic)!,
+            HKObjectType.quantityType(forIdentifier: .bloodPressureDiastolic)!,
+            HKObjectType.quantityType(forIdentifier: .oxygenSaturation)!,
+            HKObjectType.quantityType(forIdentifier: .bodyTemperature)!,
+            HKObjectType.quantityType(forIdentifier: .respiratoryRate)!,
+            HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!
+        ]
+        
+        print("Requesting authorization for explicit types: \(explicitTypes.count)")
+        healthStore.requestAuthorization(toShare: nil, read: explicitTypes) { success, error in
             DispatchQueue.main.async {
                 print("Authorization result: success=\(success), error=\(error?.localizedDescription ?? "none")")
                 if success {

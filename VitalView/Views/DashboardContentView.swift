@@ -59,6 +59,13 @@ struct DashboardContentView: View {
                                     }
                                     .buttonStyle(.borderedProminent)
                                     
+                                    Button("Force Authorization") {
+                                        // Force HealthKit authorization
+                                        onAuthorize()
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                    .foregroundColor(.orange)
+                                    
                                     Button("Continue Without HealthKit") {
                                         // Force continue without authorization
                                         // This will be handled by the parent view
