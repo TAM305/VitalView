@@ -282,6 +282,11 @@ struct HealthMetricsView: View {
             typesToRead.insert(wristDelta)
         }
         
+        // Ensure body temperature is always requested
+        if let bodyTemperatureType = HKObjectType.quantityType(forIdentifier: .bodyTemperature) {
+            typesToRead.insert(bodyTemperatureType)
+        }
+        
         print("Requesting authorization for temperature types:")
         for type in typesToRead {
             if type.identifier.contains("temperature") || type.identifier.contains("Temperature") {
