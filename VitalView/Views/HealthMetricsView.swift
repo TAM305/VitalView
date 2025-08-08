@@ -32,6 +32,7 @@ struct HealthMetricsView: View {
     @State private var respiratoryRate = HealthData()
     @State private var heartRateVariability = HealthData()
     @State private var ecgData: [ECGReading] = []
+    @State private var selectedMetricInfo: Metric?
     
     var body: some View {
         ZStack {
@@ -46,6 +47,9 @@ struct HealthMetricsView: View {
                 },
                 onAuthorize: {
                     requestHealthKitAuthorization()
+                },
+                onSelectMetric: { metric in
+                    selectedMetricInfo = metric
                 }
             )
             bottomButtonsView
@@ -85,6 +89,12 @@ struct HealthMetricsView: View {
                         }
                     }
                 }
+            }
+        }
+
+        .sheet(item: $selectedMetricInfo) { metric in
+            NavigationView {
+                MetricInfoView(metric: metric)
             }
         }
 
