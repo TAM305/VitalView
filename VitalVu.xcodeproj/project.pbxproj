@@ -30,8 +30,8 @@
 /* Begin PBXFileReference section */
 		384A0FAE2E1C7CD000CA1637 /* Documentation.docc */ = {isa = PBXFileReference; lastKnownFileType = folder.documentationcatalog; path = Documentation.docc; sourceTree = "<group>"; };
 		38B1598D2DD54CC7007B7E32 /* VitalVu.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VitalVu.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		38B1599A2DD54CC9007B7E32 /* VitalViewTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VitalViewTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		38B159A42DD54CC9007B7E32 /* VitalViewUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VitalViewUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		38B1599A2DD54CC9007B7E32 /* VitalVuTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VitalVuTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		38B159A42DD54CC9007B7E32 /* VitalVuUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VitalVuUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -80,8 +80,8 @@
 			isa = PBXGroup;
 			children = (
 				38B1598D2DD54CC7007B7E32 /* VitalVu.app */,
-				38B1599A2DD54CC9007B7E32 /* VitalViewTests.xctest */,
-				38B159A42DD54CC9007B7E32 /* VitalViewUITests.xctest */,
+				38B1599A2DD54CC9007B7E32 /* VitalVuTests.xctest */,
+				38B159A42DD54CC9007B7E32 /* VitalVuUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -111,9 +111,9 @@
 			productReference = 38B1598D2DD54CC7007B7E32 /* VitalVu.app */;
 			productType = "com.apple.product-type.application";
 		};
-		38B159992DD54CC9007B7E32 /* VitalViewTests */ = {
+		38B159992DD54CC9007B7E32 /* VitalVuTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 38B159B12DD54CC9007B7E32 /* Build configuration list for PBXNativeTarget "VitalViewTests" */;
+			buildConfigurationList = 38B159B12DD54CC9007B7E32 /* Build configuration list for PBXNativeTarget "VitalVuTests" */;
 			buildPhases = (
 				38B159962DD54CC9007B7E32 /* Sources */,
 				38B159972DD54CC9007B7E32 /* Frameworks */,
@@ -124,16 +124,16 @@
 			dependencies = (
 				38B1599C2DD54CC9007B7E32 /* PBXTargetDependency */,
 			);
-			name = VitalViewTests;
+			name = VitalVuTests;
 			packageProductDependencies = (
 			);
 			productName = VitalViewTests;
-			productReference = 38B1599A2DD54CC9007B7E32 /* VitalViewTests.xctest */;
+			productReference = 38B1599A2DD54CC9007B7E32 /* VitalVuTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		38B159A32DD54CC9007B7E32 /* VitalViewUITests */ = {
+		38B159A32DD54CC9007B7E32 /* VitalVuUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 38B159B42DD54CC9007B7E32 /* Build configuration list for PBXNativeTarget "VitalViewUITests" */;
+			buildConfigurationList = 38B159B42DD54CC9007B7E32 /* Build configuration list for PBXNativeTarget "VitalVuUITests" */;
 			buildPhases = (
 				38B159A02DD54CC9007B7E32 /* Sources */,
 				38B159A12DD54CC9007B7E32 /* Frameworks */,
@@ -144,11 +144,11 @@
 			dependencies = (
 				38B159A62DD54CC9007B7E32 /* PBXTargetDependency */,
 			);
-			name = VitalViewUITests;
+			name = VitalVuUITests;
 			packageProductDependencies = (
 			);
 			productName = VitalViewUITests;
-			productReference = 38B159A42DD54CC9007B7E32 /* VitalViewUITests.xctest */;
+			productReference = 38B159A42DD54CC9007B7E32 /* VitalVuUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -174,7 +174,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 38B159882DD54CC7007B7E32 /* Build configuration list for PBXProject "VitalView" */;
+			buildConfigurationList = 38B159882DD54CC7007B7E32 /* Build configuration list for PBXProject "VitalVu" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -189,8 +189,8 @@
 			projectRoot = "";
 			targets = (
 				38B1598C2DD54CC7007B7E32 /* VitalVu */,
-				38B159992DD54CC9007B7E32 /* VitalViewTests */,
-				38B159A32DD54CC9007B7E32 /* VitalViewUITests */,
+				38B159992DD54CC9007B7E32 /* VitalVuTests */,
+				38B159A32DD54CC9007B7E32 /* VitalVuUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -247,12 +247,12 @@
 /* Begin PBXTargetDependency section */
 		38B1599C2DD54CC9007B7E32 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 38B1598C2DD54CC7007B7E32 /* VitalView */;
+			target = 38B1598C2DD54CC7007B7E32 /* VitalVu */;
 			targetProxy = 38B1599B2DD54CC9007B7E32 /* PBXContainerItemProxy */;
 		};
 		38B159A62DD54CC9007B7E32 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 38B1598C2DD54CC7007B7E32 /* VitalView */;
+			target = 38B1598C2DD54CC7007B7E32 /* VitalVu */;
 			targetProxy = 38B159A52DD54CC9007B7E32 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -446,7 +446,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/VitalView.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/VitalView";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/VitalVu.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/VitalVu";
 			};
 			name = Debug;
 		};
@@ -465,7 +465,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/VitalView.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/VitalView";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/VitalVu.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/VitalVu";
 			};
 			name = Release;
 		};
@@ -506,7 +506,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		38B159882DD54CC7007B7E32 /* Build configuration list for PBXProject "VitalView" */ = {
+		38B159882DD54CC7007B7E32 /* Build configuration list for PBXProject "VitalVu" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				38B159AC2DD54CC9007B7E32 /* Debug */,
@@ -524,7 +524,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		38B159B12DD54CC9007B7E32 /* Build configuration list for PBXNativeTarget "VitalViewTests" */ = {
+		38B159B12DD54CC9007B7E32 /* Build configuration list for PBXNativeTarget "VitalVuTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				38B159B22DD54CC9007B7E32 /* Debug */,
@@ -533,7 +533,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		38B159B42DD54CC9007B7E32 /* Build configuration list for PBXNativeTarget "VitalViewUITests" */ = {
+		38B159B42DD54CC9007B7E32 /* Build configuration list for PBXNativeTarget "VitalVuUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				38B159B52DD54CC9007B7E32 /* Debug */,
