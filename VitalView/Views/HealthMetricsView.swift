@@ -282,6 +282,13 @@ struct HealthMetricsView: View {
             typesToRead.insert(wristDelta)
         }
         
+        print("Requesting authorization for temperature types:")
+        for type in typesToRead {
+            if type.identifier.contains("temperature") || type.identifier.contains("Temperature") {
+                print("  - \(type.identifier)")
+            }
+        }
+        
         print("Requesting authorization for \(typesToRead.count) health data types")
         
         // Request authorization
