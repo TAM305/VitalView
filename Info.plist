@@ -19,9 +19,9 @@
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>This app uses HealthKit to read your health data and display your vital signs and blood test results. Your data is never shared or transmitted.</string>
+	<string>We use HealthKit to read your vital signs and show them in the dashboard.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>This app uses HealthKit to update your health data if you choose to add or modify records. Your data is never shared or transmitted.</string>
+	<string>We use HealthKit to save your manual entries back into the Health app.</string>
 
 	<key>NSPrivacyPolicyURL</key>
 	<string>https://vitvu.com/privacy</string>
@@ -55,8 +55,6 @@
 				<dict>
 					<key>UISceneConfigurationName</key>
 					<string>Default Configuration</string>
-					<key>UISceneDelegateClassName</key>
-					<string>$(PRODUCT_MODULE_NAME).VitalVuApp</string>
 				</dict>
 			</array>
 		</dict>
