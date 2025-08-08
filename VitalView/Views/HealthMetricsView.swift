@@ -32,6 +32,7 @@ struct HealthMetricsView: View {
     @State private var respiratoryRate = HealthData()
     @State private var heartRateVariability = HealthData()
     @State private var ecgData: [ECGReading] = []
+    @State private var ecgAverageHeartRateBPM: Double?
     @State private var selectedMetricInfo: Metric?
     
     var body: some View {
@@ -218,10 +219,19 @@ struct HealthMetricsView: View {
                 print("No ECG data available (requires Apple Watch Series 4+)")
             }
         }
+        // Determine base unit for amplitude
+        let baseECGUnit = ecgData.first.map { $0.value < 1.0 ? "µV" : "mV" } ?? "mV"
+        // Append average BPM if available
+        let ecgUnitWithBPM: String
+        if let bpm = ecgAverageHeartRateBPM {
+            ecgUnitWithBPM = "\(baseECGUnit) • \(Int(bpm)) BPM"
+        } else {
+            ecgUnitWithBPM = baseECGUnit
+        }
         let ecgMetric = Metric(
             title: "Latest ECG",
             value: ecgValue,
-            unit: ecgData.first.map { $0.value < 1.0 ? "µV" : "mV" } ?? "mV",
+            unit: ecgUnitWithBPM,
             icon: "waveform.path.ecg",
             color: .red,
             date: ecgData.first?.date
@@ -530,9 +540,13 @@ struct HealthMetricsView: View {
                         }
                     }
                 case .done:
-                    print("ECG query completed; peak amplitude: \(peakMillivolts) mV")
+                    // Average heart rate is available as a property on HKElectrocardiogram (iOS 14+)
+                    let bpmUnit = HKUnit.count().unitDivided(by: .minute())
+                    let avg = ecg.averageHeartRate?.doubleValue(for: bpmUnit)
+                    print("ECG query completed; peak amplitude: \(peakMillivolts) mV, avg BPM: \(avg?.description ?? "n/a")")
                     DispatchQueue.main.async {
                         self.ecgData = [ECGReading(value: peakMillivolts, date: peakTimestamp)]
+                        self.ecgAverageHeartRateBPM = avg
                     }
                     self.healthStore.stop(query)
                 case .error(let error):
