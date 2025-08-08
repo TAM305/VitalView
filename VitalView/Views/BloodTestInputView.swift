@@ -109,11 +109,11 @@ struct BloodTestInputView: View {
         for (testName, value) in testValues {
             if !value.isEmpty {
                 let result = TestResult(
-                    testName: testName,
+                    name: testName,
                     value: Double(value) ?? 0.0,
                     unit: getUnit(for: testName),
                     referenceRange: getReferenceRange(for: testName),
-                    isAbnormal: isAbnormal(testName: testName, value: Double(value) ?? 0.0)
+                    explanation: getExplanation(for: testName)
                 )
                 results.append(result)
             }
@@ -121,8 +121,8 @@ struct BloodTestInputView: View {
         
         // Create blood test
         let bloodTest = BloodTest(
-            testType: selectedTestType,
             date: testDate,
+            testType: selectedTestType,
             results: results
         )
         
@@ -264,17 +264,86 @@ struct BloodTestInputView: View {
         }
     }
     
-    private func isAbnormal(testName: String, value: Double) -> Bool {
-        // This is a simplified check - in a real app, you'd parse the reference ranges
+    private func getExplanation(for testName: String) -> String {
         switch testName {
+        case "WBC":
+            return "White blood cell count measures your body's ability to fight infections"
+        case "RBC":
+            return "Red blood cell count indicates oxygen-carrying capacity"
+        case "HGB":
+            return "Hemoglobin measures the oxygen-carrying protein in red blood cells"
+        case "HCT":
+            return "Hematocrit shows the percentage of blood volume occupied by red cells"
+        case "MCV":
+            return "Mean corpuscular volume indicates average red blood cell size"
+        case "MCH":
+            return "Mean corpuscular hemoglobin measures average hemoglobin per red cell"
+        case "MCHC":
+            return "Mean corpuscular hemoglobin concentration shows hemoglobin density"
+        case "RDW":
+            return "Red cell distribution width measures variation in red cell size"
+        case "Platelets":
+            return "Platelet count measures blood clotting ability"
+        case "MPV":
+            return "Mean platelet volume indicates average platelet size"
         case "Glucose":
-            return value > 100
-        case "LDL":
-            return value > 100
+            return "Blood glucose measures sugar levels in your bloodstream"
+        case "Urea Nitrogen":
+            return "BUN measures kidney function and protein metabolism"
         case "Creatinine":
-            return value > 1.3
+            return "Creatinine indicates kidney function and muscle mass"
+        case "eGFR":
+            return "Estimated glomerular filtration rate measures kidney filtering ability"
+        case "Sodium":
+            return "Sodium is an electrolyte that helps regulate fluid balance"
+        case "Potassium":
+            return "Potassium is an electrolyte important for heart and muscle function"
+        case "Chloride":
+            return "Chloride is an electrolyte that helps maintain acid-base balance"
+        case "CO2":
+            return "Carbon dioxide measures acid-base balance in blood"
+        case "Anion Gap":
+            return "Anion gap helps identify acid-base disorders"
+        case "Calcium":
+            return "Calcium is essential for bone health and muscle function"
+        case "Total Protein":
+            return "Total protein measures overall protein levels in blood"
+        case "Albumin":
+            return "Albumin is the main protein in blood plasma"
+        case "AST":
+            return "Aspartate aminotransferase indicates liver function"
+        case "ALT":
+            return "Alanine aminotransferase indicates liver function"
+        case "Alkaline Phosphatase":
+            return "Alkaline phosphatase indicates liver and bone health"
+        case "Bilirubin Total":
+            return "Bilirubin measures liver function and red blood cell breakdown"
+        case "Total Cholesterol":
+            return "Total cholesterol measures overall lipid levels"
+        case "HDL":
+            return "High-density lipoprotein is the 'good' cholesterol"
+        case "LDL":
+            return "Low-density lipoprotein is the 'bad' cholesterol"
+        case "Triglycerides":
+            return "Triglycerides are fats that provide energy"
+        case "TSH":
+            return "Thyroid stimulating hormone regulates thyroid function"
+        case "T4":
+            return "Thyroxine is the main thyroid hormone"
+        case "T3":
+            return "Triiodothyronine is an active thyroid hormone"
+        case "Free T4":
+            return "Free thyroxine measures available thyroid hormone"
+        case "Free T3":
+            return "Free triiodothyronine measures active thyroid hormone"
+        case "HbA1c":
+            return "Hemoglobin A1c measures average blood sugar over 3 months"
+        case "Insulin":
+            return "Insulin regulates blood sugar levels"
+        case "C-Peptide":
+            return "C-peptide indicates insulin production"
         default:
-            return false
+            return "This test measures important health markers in your blood"
         }
     }
 }
