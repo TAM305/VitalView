@@ -16,12 +16,12 @@
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" image="heart.fill" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="img-1">
                                 <color key="tintColor" systemColor="systemRedColor"/>
                             </imageView>
-                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" image="VitalViewText" translatesAutoresizingMaskIntoConstraints="NO" id="img-2">
-                                <constraints>
-                                    <constraint firstAttribute="width" constant="300" id="c7"/>
-                                    <constraint firstAttribute="height" constant="75" id="c8"/>
-                                </constraints>
-                            </imageView>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="VitalVu" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="label-1">
+                                <rect key="frame" x="96.666666666666686" y="463" width="200" height="36"/>
+                                <fontDescription key="fontDescription" type="boldSystem" pointSize="30"/>
+                                <color key="textColor" systemColor="labelColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="safe-1"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
@@ -30,8 +30,8 @@
                             <constraint firstItem="img-1" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="c2"/>
                             <constraint firstItem="img-1" firstAttribute="width" constant="100" id="c3"/>
                             <constraint firstItem="img-1" firstAttribute="height" constant="100" id="c4"/>
-                            <constraint firstItem="img-2" firstAttribute="top" secondItem="img-1" secondAttribute="bottom" constant="24" id="c5"/>
-                            <constraint firstItem="img-2" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="c6"/>
+                            <constraint firstItem="label-1" firstAttribute="top" secondItem="img-1" secondAttribute="bottom" constant="24" id="c5"/>
+                            <constraint firstItem="label-1" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="c6"/>
                         </constraints>
                     </view>
                 </viewController>
@@ -41,7 +41,6 @@
         </scene>
     </scenes>
     <resources>
-        <image name="VitalViewText" width="300" height="75"/>
         <image name="heart.fill" catalog="system"/>
     </resources>
 </document> 
