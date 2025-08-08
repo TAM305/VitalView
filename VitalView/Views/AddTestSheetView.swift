@@ -13,9 +13,10 @@ struct AddTestSheetView: View {
     }
     
     var body: some View {
-        AddTestView(context: context)
-            .onDisappear {
-                isPresented = false
-            }
+        BloodTestInputView { bloodTest in
+            // Save the blood test to Core Data
+            viewModel.addTest(bloodTest)
+            isPresented = false
+        }
     }
 }
