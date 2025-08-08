@@ -459,7 +459,8 @@ struct HealthMetricsView: View {
         print("  - Systolic type: \(systolicType)")
         print("  - Diastolic type: \(diastolicType)")
         
-        let predicate = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(-24*60*60), end: Date(), options: .strictEndDate)
+        // Use nil predicate to get most recent data regardless of time
+        let predicate: NSPredicate? = nil
         
         print("Querying blood pressure samples...")
         let query = HKCorrelationQuery(
@@ -511,7 +512,8 @@ struct HealthMetricsView: View {
         
         print("Oxygen saturation type available: \(oxygenType)")
         
-        let predicate = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(-24*60*60), end: Date(), options: .strictEndDate)
+        // Use nil predicate to get most recent data regardless of time
+        let predicate: NSPredicate? = nil
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
         print("Querying oxygen saturation samples...")
@@ -545,7 +547,8 @@ struct HealthMetricsView: View {
         print("  - Basal temperature: \(basalTempType != nil)")
         print("  - Wrist temperature: \(wristDeltaType != nil)")
         
-        let predicate = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(-24*60*60), end: Date(), options: .strictEndDate)
+        // Use nil predicate to get most recent data regardless of time
+        let predicate: NSPredicate? = nil
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
         // Function to handle temperature data
@@ -688,7 +691,8 @@ struct HealthMetricsView: View {
         
         print("Respiratory rate type available: \(respiratoryType)")
         
-        let predicate = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(-24*60*60), end: Date(), options: .strictEndDate)
+        // Use nil predicate to get most recent data regardless of time
+        let predicate: NSPredicate? = nil
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
         print("Querying respiratory rate samples...")
@@ -720,7 +724,8 @@ struct HealthMetricsView: View {
         
         print("Heart rate variability type available: \(hrvType)")
         
-        let predicate = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(-24*60*60), end: Date(), options: .strictEndDate)
+        // Use nil predicate to get most recent data regardless of time
+        let predicate: NSPredicate? = nil
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
         print("Querying heart rate variability samples...")
@@ -754,7 +759,8 @@ struct HealthMetricsView: View {
         let ecgType = HKObjectType.electrocardiogramType()
         print("ECG type available: \(ecgType)")
         
-        let predicate = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(-24*60*60), end: Date(), options: .strictEndDate)
+        // Use nil predicate to get most recent data regardless of time
+        let predicate: NSPredicate? = nil
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
         let query = HKSampleQuery(sampleType: ecgType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
