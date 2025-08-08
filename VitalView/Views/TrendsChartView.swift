@@ -32,25 +32,77 @@ struct TrendsChartView: View {
             VStack(spacing: 0) {
                 // Header with metric selector and time range
                 VStack(spacing: 16) {
-                    // Metric selector
-                    Picker("Metric", selection: $selectedMetric) {
-                        Text("Heart Rate").tag("Heart Rate")
-                        Text("Blood Pressure").tag("Blood Pressure")
-                        Text("Oxygen Saturation").tag("Oxygen Saturation")
-                        Text("Temperature").tag("Temperature")
-                        Text("Respiratory Rate").tag("Respiratory Rate")
-                        Text("Heart Rate Variability").tag("Heart Rate Variability")
+                    // Metric selector with icons
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            MetricButton(
+                                title: "Heart Rate",
+                                icon: "heart.fill",
+                                color: .red,
+                                isSelected: selectedMetric == "Heart Rate"
+                            ) {
+                                selectedMetric = "Heart Rate"
+                            }
+                            
+                            MetricButton(
+                                title: "Blood Pressure",
+                                icon: "waveform.path.ecg",
+                                color: .blue,
+                                isSelected: selectedMetric == "Blood Pressure"
+                            ) {
+                                selectedMetric = "Blood Pressure"
+                            }
+                            
+                            MetricButton(
+                                title: "Oxygen",
+                                icon: "lungs.fill",
+                                color: .green,
+                                isSelected: selectedMetric == "Oxygen Saturation"
+                            ) {
+                                selectedMetric = "Oxygen Saturation"
+                            }
+                            
+                            MetricButton(
+                                title: "Temperature",
+                                icon: "thermometer",
+                                color: .orange,
+                                isSelected: selectedMetric == "Temperature"
+                            ) {
+                                selectedMetric = "Temperature"
+                            }
+                            
+                            MetricButton(
+                                title: "Respiratory",
+                                icon: "wind",
+                                color: .purple,
+                                isSelected: selectedMetric == "Respiratory Rate"
+                            ) {
+                                selectedMetric = "Respiratory Rate"
+                            }
+                            
+                            MetricButton(
+                                title: "HRV",
+                                icon: "heart.text.square",
+                                color: .indigo,
+                                isSelected: selectedMetric == "Heart Rate Variability"
+                            ) {
+                                selectedMetric = "Heart Rate Variability"
+                            }
+                        }
+                        .padding(.horizontal)
                     }
-                    .pickerStyle(.segmented)
-                    .padding(.horizontal)
                     
                     // Time range selector
-                    Picker("Time Range", selection: $timeRange) {
+                    HStack(spacing: 8) {
                         ForEach(TimeRange.allCases, id: \.self) { range in
-                            Text(range.rawValue).tag(range)
+                            TimeRangeButton(
+                                range: range,
+                                isSelected: timeRange == range
+                            ) {
+                                timeRange = range
+                            }
                         }
                     }
-                    .pickerStyle(.segmented)
                     .padding(.horizontal)
                 }
                 .padding(.top)
@@ -429,6 +481,62 @@ struct HealthDataPoint: Identifiable {
         self.systolic = systolic
         self.diastolic = diastolic
         self.unit = unit
+    }
+}
+
+struct MetricButton: View {
+    let title: String
+    let icon: String
+    let color: Color
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 24, weight: .medium))
+                    .foregroundColor(isSelected ? .white : color)
+                
+                Text(title)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(isSelected ? .white : .primary)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(width: 80, height: 70)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? color : Color(.systemGray6))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isSelected ? color : Color.clear, lineWidth: 2)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+struct TimeRangeButton: View {
+    let range: TrendsChartView.TimeRange
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(range.rawValue)
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundColor(isSelected ? .white : .primary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(isSelected ? .blue : Color(.systemGray6))
+                )
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
