@@ -114,7 +114,18 @@ struct SettingsView: View {
     private func encodeData() -> Data? {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
-        return try? encoder.encode(viewModel.bloodTests)
+        encoder.outputFormatting = .prettyPrinted
+        
+        do {
+            let data = try encoder.encode(viewModel.bloodTests)
+            print("Successfully encoded \(viewModel.bloodTests.count) blood tests")
+            return data
+        } catch {
+            print("Failed to encode blood tests: \(error)")
+            alertMessage = "Failed to export data: \(error.localizedDescription)"
+            showingAlert = true
+            return nil
+        }
     }
     
     private func importData(_ data: Data) {
@@ -149,8 +160,10 @@ struct SettingsView: View {
                         
                         Button(action: {
                             performAuthenticatedAction {
-                                exportData = encodeData()
-                                showingExportSheet = true
+                                if let data = encodeData() {
+                                    exportData = data
+                                    showingExportSheet = true
+                                }
                             }
                         }) {
                             Label("Export Data", systemImage: "square.and.arrow.up")
@@ -208,6 +221,11 @@ struct SettingsView: View {
                 }
             } message: {
                 Text("Are you sure you want to delete all your blood test data? This action cannot be undone.")
+            }
+            .alert("Export Error", isPresented: $showingAlert) {
+                Button("OK") { }
+            } message: {
+                Text(alertMessage)
             }
             .sheet(isPresented: $showingExportSheet) {
                 if let data = exportData {
