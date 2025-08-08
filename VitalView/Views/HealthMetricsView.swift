@@ -437,7 +437,7 @@ struct HealthMetricsView: View {
                 } else if let error = error {
                     print("Error fetching temperature: \(error.localizedDescription)")
                 } else {
-                    print("No temperature data found in the last 24h")
+                    print("No temperature data found")
                 }
             }
         }
@@ -449,7 +449,27 @@ struct HealthMetricsView: View {
                     // If no body temperature, try basal temperature
                     print("No body temperature samples; attempting basal body temperature")
                     let basalQuery = HKSampleQuery(sampleType: basalType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, basalSamples, basalError in
-                        processTemperature(basalSamples, basalError)
+                        // If basal also empty, try wrist delta before giving up
+                        if (basalSamples?.isEmpty ?? true), let wristType = wristDeltaType {
+                            print("No basal temperature; attempting Apple Sleeping Wrist Temperature (delta)")
+                            let wristQuery = HKSampleQuery(sampleType: wristType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, wristSamples, wristError in
+                                DispatchQueue.main.async {
+                                    if let sample = wristSamples?.first as? HKQuantitySample {
+                                        let value = sample.quantity.doubleValue(for: self.temperatureHKUnit)
+                                        print("Wrist temperature delta fetched: \(String(format: "%.2f", value)) \(self.temperatureUnitSymbol)")
+                                        self.temperature = HealthData(value: value, date: sample.endDate)
+                                        self.temperatureIsDelta = true
+                                    } else if let wristError = wristError {
+                                        print("Error fetching wrist temperature: \(wristError.localizedDescription)")
+                                    } else {
+                                        print("No wrist temperature data found")
+                                    }
+                                }
+                            }
+                            self.healthStore.execute(wristQuery)
+                        } else {
+                            processTemperature(basalSamples, basalError)
+                        }
                     }
                     self.healthStore.execute(basalQuery)
                 } else if samples?.isEmpty ?? true, let wristType = wristDeltaType {
