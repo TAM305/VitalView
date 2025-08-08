@@ -173,12 +173,39 @@ struct HealthMetricsView: View {
             date: oxygenSaturation.date
         )
         
+        // Debug temperature data
+        print("Temperature debug - value: \(temperature.value?.description ?? "nil"), date: \(temperature.date?.description ?? "nil"), isDelta: \(temperatureIsDelta)")
+        
+        let temperatureValue: String
+        let temperatureUnit: String
+        let temperatureColor: Color
+        
+        if let tempValue = temperature.value {
+            temperatureValue = String(format: "%.1f", tempValue)
+            temperatureUnit = temperatureIsDelta ? "Δ \(temperatureUnitSymbol)" : temperatureUnitSymbol
+            temperatureColor = .orange
+            print("Temperature data found: \(temperatureValue) \(temperatureUnit)")
+        } else {
+            // Check if we're on simulator or if HealthKit is available
+            if !HKHealthStore.isHealthDataAvailable() {
+                temperatureValue = "N/A"
+                temperatureUnit = "Simulator"
+                temperatureColor = .gray
+                print("Temperature not available on simulator")
+            } else {
+                temperatureValue = "--"
+                temperatureUnit = "No data"
+                temperatureColor = .gray
+                print("No temperature data available on device")
+            }
+        }
+        
         let temperatureMetric = Metric(
             title: "Temperature",
-            value: temperature.value.map { String(format: "%.1f", $0) } ?? "No Data",
-            unit: temperatureIsDelta ? "Δ \(temperatureUnitSymbol)" : (temperature.value == nil ? "Tap to grant permission" : temperatureUnitSymbol),
+            value: temperatureValue,
+            unit: temperatureUnit,
             icon: "thermometer",
-            color: temperature.value == nil ? .gray : .orange,
+            color: temperatureColor,
             date: temperature.date
         )
         
@@ -443,10 +470,16 @@ struct HealthMetricsView: View {
     }
     
     private func fetchBodyTemperature() {
+        print("=== fetchBodyTemperature() called ===")
         // Try both body temperature and basal body temperature
         let bodyTempType = HKObjectType.quantityType(forIdentifier: .bodyTemperature)
         let basalTempType = HKObjectType.quantityType(forIdentifier: .basalBodyTemperature)
         let wristDeltaType = HKObjectType.quantityType(forIdentifier: .appleSleepingWristTemperature)
+        
+        print("Temperature types available:")
+        print("  - Body temperature: \(bodyTempType != nil)")
+        print("  - Basal temperature: \(basalTempType != nil)")
+        print("  - Wrist temperature: \(wristDeltaType != nil)")
         
         let predicate = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(-24*60*60), end: Date(), options: .strictEndDate)
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
