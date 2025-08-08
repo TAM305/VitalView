@@ -21,6 +21,7 @@ struct HealthMetricsView: View {
     @State private var testDate = Date()
     @State private var showTrends = false
     @State private var testResults: [BloodTest] = []
+    @State private var showManualTemperatureEntry = false
     
     private let healthStore = HKHealthStore()
     
@@ -52,6 +53,9 @@ struct HealthMetricsView: View {
                 },
                 onSelectMetric: { metric in
                     selectedMetricInfo = metric
+                },
+                onManualTemperatureEntry: {
+                    showManualTemperatureEntry = true
                 }
             )
             bottomButtonsView
@@ -97,6 +101,13 @@ struct HealthMetricsView: View {
         .sheet(item: $selectedMetricInfo) { metric in
             NavigationView {
                 MetricInfoView(metric: metric)
+            }
+        }
+        .sheet(isPresented: $showManualTemperatureEntry) {
+            ManualTemperatureEntryView(isPresented: $showManualTemperatureEntry) { temperature in
+                // Save manual temperature entry
+                self.temperature = HealthData(value: temperature, date: Date())
+                self.temperatureIsDelta = false
             }
         }
 
@@ -193,10 +204,10 @@ struct HealthMetricsView: View {
                 temperatureColor = .gray
                 print("Temperature not available on simulator")
             } else {
-                temperatureValue = "--"
-                temperatureUnit = "No data"
-                temperatureColor = .gray
-                print("No temperature data available on device")
+                temperatureValue = "Tap to add"
+                temperatureUnit = "Manual entry"
+                temperatureColor = .blue
+                print("No temperature data available on device - showing manual entry option")
             }
         }
         

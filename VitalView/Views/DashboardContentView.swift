@@ -7,6 +7,7 @@ struct DashboardContentView: View {
     let onRefresh: () -> Void
     let onAuthorize: () -> Void
     let onSelectMetric: (Metric) -> Void
+    let onManualTemperatureEntry: (() -> Void)?
     
     @State private var animationStates: [String: Bool] = [:]
     
@@ -85,7 +86,11 @@ struct DashboardContentView: View {
                         ForEach(healthMetrics) { metric in
                             Button {
                                 withAnimation(.easeInOut(duration: 0.3)) {
-                                    onSelectMetric(metric)
+                                    if metric.title == "Temperature" && metric.value == "Tap to add" {
+                                        onManualTemperatureEntry?()
+                                    } else {
+                                        onSelectMetric(metric)
+                                    }
                                 }
                             } label: {
                                 VStack(alignment: .leading, spacing: 8) {
