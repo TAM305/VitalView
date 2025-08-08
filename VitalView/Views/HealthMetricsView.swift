@@ -390,7 +390,7 @@ struct HealthMetricsView: View {
         print("Requesting HealthKit authorization...")
         authorizationAttempted = true
         
-        // Force authorization with explicit types
+        // Force authorization with explicit types - try both read and write permissions
         let explicitTypes: Set<HKObjectType> = [
             HKObjectType.quantityType(forIdentifier: .heartRate)!,
             HKObjectType.quantityType(forIdentifier: .bloodPressureSystolic)!,
@@ -402,7 +402,9 @@ struct HealthMetricsView: View {
         ]
         
         print("Requesting authorization for explicit types: \(explicitTypes.count)")
-        healthStore.requestAuthorization(toShare: nil, read: explicitTypes) { success, error in
+        
+        // Try requesting both read and write permissions to force the dialog
+        healthStore.requestAuthorization(toShare: explicitTypes, read: explicitTypes) { success, error in
             DispatchQueue.main.async {
                 print("Authorization result: success=\(success), error=\(error?.localizedDescription ?? "none")")
                 if success {
