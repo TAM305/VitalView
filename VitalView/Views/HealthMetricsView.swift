@@ -277,6 +277,10 @@ struct HealthMetricsView: View {
         if let basalTemperatureType = HKObjectType.quantityType(forIdentifier: .basalBodyTemperature) {
             typesToRead.insert(basalTemperatureType)
         }
+        // Add Apple Sleeping Wrist Temperature (delta) if available
+        if let wristDelta = HKObjectType.quantityType(forIdentifier: .appleSleepingWristTemperature) {
+            typesToRead.insert(wristDelta)
+        }
         
         print("Requesting authorization for \(typesToRead.count) health data types")
         
