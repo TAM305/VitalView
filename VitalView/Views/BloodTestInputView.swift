@@ -7,7 +7,6 @@ struct BloodTestInputView: View {
     @State private var testValues: [String: String] = [:]
     @State private var showingAlert = false
     @State private var alertMessage = ""
-    @State private var showingReference = false
     
     let onSave: (BloodTest) -> Void
     
@@ -83,17 +82,10 @@ struct BloodTestInputView: View {
                     }
                     
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        HStack {
-                            Button("Reference") {
-                                showingReference = true
-                            }
-                            .font(.caption)
-                            
-                            Button("Save") {
-                                saveTest()
-                            }
-                            .fontWeight(.semibold)
+                        Button("Save") {
+                            saveTest()
                         }
+                        .fontWeight(.semibold)
                     }
                 }
         }
@@ -101,9 +93,6 @@ struct BloodTestInputView: View {
             Button("OK") { }
         } message: {
             Text(alertMessage)
-        }
-        .sheet(isPresented: $showingReference) {
-            BloodTestReferenceView()
         }
     }
     
@@ -189,6 +178,89 @@ struct BloodTestInputView: View {
             return "µIU/mL"
         default:
             return ""
+        }
+    }
+    
+    private func getSimpleExplanation(for testName: String) -> String {
+        switch testName {
+        case "WBC":
+            return "🩸 White Blood Cells are like your body's army! They fight off germs and keep you healthy. Think of them as tiny soldiers protecting you from getting sick."
+        case "RBC":
+            return "🫁 Red Blood Cells carry oxygen from your lungs to all parts of your body. They're like tiny delivery trucks bringing fresh air to your muscles and brain!"
+        case "HGB":
+            return "💪 Hemoglobin is the special protein that carries oxygen in your blood. It's like a backpack that holds oxygen for your body to use!"
+        case "HCT":
+            return "📊 Hematocrit shows how much of your blood is made up of red blood cells. It's like measuring how full your blood tank is!"
+        case "MCV":
+            return "🔍 Mean Corpuscular Volume measures the size of your red blood cells. It's like checking if your delivery trucks are big or small!"
+        case "MCH":
+            return "📦 Mean Corpuscular Hemoglobin measures how much oxygen-carrying protein is in each red blood cell. It's like checking how much cargo each delivery truck carries!"
+        case "MCHC":
+            return "🎯 Mean Corpuscular Hemoglobin Concentration measures how packed your red blood cells are with oxygen-carrying protein. It's like checking how efficiently your delivery trucks are loaded!"
+        case "RDW":
+            return "📏 Red Cell Distribution Width measures how different your red blood cells are in size. It's like checking if all your delivery trucks are the same size or different!"
+        case "Platelets":
+            return "🩹 Platelets are like tiny band-aids in your blood! They help stop bleeding when you get a cut or scrape."
+        case "MPV":
+            return "📏 Mean Platelet Volume measures the size of your platelets. It's like checking if your band-aids are big or small!"
+        case "Glucose":
+            return "🍯 Glucose is the sugar in your blood that gives your body energy. It's like the fuel that powers your body's engine!"
+        case "Urea Nitrogen":
+            return "🚽 Urea Nitrogen is waste that your kidneys filter out. It's like the trash that your body needs to throw away!"
+        case "Creatinine":
+            return "💪 Creatinine is waste from your muscles that your kidneys clean up. It's like checking if your body's cleaning crew (kidneys) is working well!"
+        case "eGFR":
+            return "🧹 Estimated Glomerular Filtration Rate measures how well your kidneys clean your blood. It's like checking if your body's cleaning crew is doing a good job!"
+        case "Sodium":
+            return "🧂 Sodium is like salt that helps your body hold onto water and keeps your nerves working. It's like the seasoning that makes your body work properly!"
+        case "Potassium":
+            return "🍌 Potassium is a mineral that helps your heart beat and muscles work. It's like the electricity that powers your heart and muscles!"
+        case "Chloride":
+            return "⚖️ Chloride helps balance the fluids in your body. It's like the helper that keeps everything in your body balanced!"
+        case "CO2":
+            return "🌬️ Carbon dioxide measures how well your body handles acid and base balance. It's like checking if your body's chemistry is just right!"
+        case "Anion Gap":
+            return "🔬 Anion Gap helps doctors figure out if something is wrong with your body's chemistry. It's like a detective tool for your blood!"
+        case "Calcium":
+            return "🦴 Calcium helps build strong bones and helps your muscles work. It's like the building blocks for your bones and the helper for your muscles!"
+        case "Total Protein":
+            return "🏗️ Total Protein measures all the proteins in your blood. Proteins are like the building blocks that help your body grow and repair itself!"
+        case "Albumin":
+            return "🚛 Albumin is the main protein in your blood that carries things around. It's like the main delivery truck in your bloodstream!"
+        case "AST":
+            return "🫁 AST is an enzyme that shows if your liver or heart is working well. It's like a warning light for your liver and heart!"
+        case "ALT":
+            return "🫁 ALT is an enzyme that shows if your liver is healthy. It's like a special warning light just for your liver!"
+        case "Alkaline Phosphatase":
+            return "🦴 Alkaline Phosphatase is an enzyme that shows if your liver or bones are healthy. It's like a warning light for your liver and bones!"
+        case "Bilirubin Total":
+            return "🟡 Bilirubin is waste from old red blood cells that your liver processes. It's like the recycling system for your old blood cells!"
+        case "Total Cholesterol":
+            return "🩸 Total Cholesterol measures all the fats in your blood. It's like checking how much fat is floating around in your bloodstream!"
+        case "HDL":
+            return "✅ HDL is the 'good' cholesterol that helps clean your arteries. It's like the good guy that helps keep your blood vessels clean!"
+        case "LDL":
+            return "⚠️ LDL is the 'bad' cholesterol that can clog your arteries. It's like the bad guy that can block your blood vessels!"
+        case "Triglycerides":
+            return "🍰 Triglycerides are fats that give your body energy. It's like the fuel tank that stores energy for your body to use later!"
+        case "TSH":
+            return "🦋 TSH tells your thyroid gland to make hormones. It's like the boss that tells your thyroid what to do!"
+        case "T4":
+            return "⚡ T4 is the main hormone that controls how fast your body works. It's like the speed control for your body's engine!"
+        case "T3":
+            return "🚀 T3 is the active hormone that controls your energy and metabolism. It's like the gas pedal for your body's energy!"
+        case "Free T4":
+            return "🆓 Free T4 measures the active thyroid hormone that your body can use. It's like checking how much usable energy your body has!"
+        case "Free T3":
+            return "🆓 Free T3 measures the active energy hormone that your body can use right now. It's like checking how much instant energy your body has!"
+        case "HbA1c":
+            return "📊 HbA1c measures your average blood sugar over 3 months. It's like a report card for how well your body handles sugar!"
+        case "Insulin":
+            return "🔑 Insulin helps your body use sugar for energy. It's like the key that unlocks your cells to let sugar in!"
+        case "C-Peptide":
+            return "🏭 C-Peptide shows how much insulin your body is making. It's like checking if your body's insulin factory is working!"
+        default:
+            return "This test helps doctors understand how your body is working and if everything is healthy!"
         }
     }
     
@@ -362,25 +434,50 @@ struct BloodTestInputView: View {
 struct TestValueRow: View {
     let testName: String
     @Binding var value: String
+    @State private var showingExplanation = false
     
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(testName)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(testName)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        
+                        Button(action: { showingExplanation.toggle() }) {
+                            Image(systemName: "info.circle")
+                                .foregroundColor(.blue)
+                                .font(.caption)
+                        }
+                    }
+                    
+                    Text(getUnit(for: testName))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
                 
-                Text(getUnit(for: testName))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Spacer()
+                
+                TextField("Value", text: $value)
+                    .keyboardType(.decimalPad)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 100)
             }
             
-            Spacer()
-            
-            TextField("Value", text: $value)
-                .keyboardType(.decimalPad)
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 100)
+            if showingExplanation {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(getSimpleExplanation(for: testName))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 4)
+                }
+                .padding(.top, 4)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(Color(.systemBlue).opacity(0.1))
+                .cornerRadius(6)
+            }
         }
         .padding()
         .background(Color(.systemGray6))
