@@ -189,10 +189,19 @@ struct HealthMetricsView: View {
         )
         
         let ecgValue: String
+        print("ECG data count: \(ecgData.count)")
         if !ecgData.isEmpty, let firstECG = ecgData.first {
             ecgValue = String(format: "%.1f", firstECG.value)
+            print("ECG value: \(ecgValue) mV")
         } else {
-            ecgValue = "--"
+            // Check if we're on a simulator or device without ECG capability
+            if !HKHealthStore.isHealthDataAvailable() {
+                ecgValue = "N/A"
+                print("ECG not available on simulator")
+            } else {
+                ecgValue = "--"
+                print("No ECG data available (requires Apple Watch Series 4+)")
+            }
         }
         let ecgMetric = Metric(
             title: "Latest ECG",
@@ -456,36 +465,69 @@ struct HealthMetricsView: View {
     }
     
     private func fetchECGData() {
+        print("fetchECGData() called")
+        
+        // Check if ECG is available on this device
+        if !HKHealthStore.isHealthDataAvailable() {
+            print("HealthKit not available - cannot fetch ECG")
+            return
+        }
+        
         let ecgType = HKObjectType.electrocardiogramType()
+        print("ECG type available: \(ecgType)")
         
         let predicate = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(-24*60*60), end: Date(), options: .strictEndDate)
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
         let query = HKSampleQuery(sampleType: ecgType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
-            guard let ecg = samples?.first as? HKElectrocardiogram else { return }
+            print("ECG query completed - samples count: \(samples?.count ?? 0)")
+            if let error = error {
+                print("ECG query error: \(error.localizedDescription)")
+                return
+            }
             
-                        // Get the voltage measurements
+            guard let ecg = samples?.first as? HKElectrocardiogram else { 
+                print("No ECG data found")
+                DispatchQueue.main.async {
+                    self.ecgData = []
+                }
+                return 
+            }
+            
+            print("ECG found: \(ecg)")
+            print("ECG start date: \(ecg.startDate)")
+            print("ECG end date: \(ecg.endDate)")
+            
+            // Get the voltage measurements
             let voltageQuery = HKElectrocardiogramQuery(ecg) { (query, result) in
                 switch result {
                 case .measurement(let measurement):
+                    print("ECG measurement received")
                     if let quantity = measurement.quantity(for: .appleWatchSimilarToLeadI) {
                         let voltageValue = quantity.doubleValue(for: HKUnit.volt())
+                        print("ECG voltage value: \(voltageValue) V")
                         DispatchQueue.main.async {
                             self.ecgData = [ECGReading(
-                                value: voltageValue * 1000, // mV
+                                value: voltageValue * 1000, // Convert to mV
                                 date: ecg.startDate.addingTimeInterval(measurement.timeSinceSampleStart)
                             )]
+                            print("ECG data updated: \(voltageValue * 1000) mV")
                         }
+                    } else {
+                        print("No voltage quantity found for appleWatchSimilarToLeadI")
                     }
                 case .done:
+                    print("ECG query completed")
                     self.healthStore.stop(query)
                 case .error(let error):
                     print("Error fetching ECG data: \(error.localizedDescription)")
                 @unknown default:
+                    print("Unknown ECG result case")
                     break
                 }
             }
             
+            print("Executing ECG voltage query")
             self.healthStore.execute(voltageQuery)
         }
         healthStore.execute(query)
