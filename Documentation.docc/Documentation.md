@@ -1,4 +1,4 @@
-# ``BloodWorkAnalyzer``
+# ``VitalVu``
 
 A comprehensive health monitoring application that integrates with HealthKit to track and analyze blood work results and vital signs.
 
