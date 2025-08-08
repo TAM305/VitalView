@@ -67,37 +67,7 @@ struct HealthMetricsView: View {
             AddTestSheetView(isPresented: $showingAddTest)
         }
         .sheet(isPresented: $showingTrends) {
-            NavigationView {
-                VStack(spacing: 20) {
-                    Text("Health Trends")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .padding(.top, 20)
-                    
-                    Text("This feature is coming soon!")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                    
-                    Spacer()
-                    
-                    Button("Close") {
-                        showingTrends = false
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .padding(.bottom, 20)
-                }
-                .navigationTitle("Health Trends")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Done") {
-                            showingTrends = false
-                        }
-                    }
-                }
-            }
+            TrendsChartView()
         }
         .sheet(isPresented: $showManualTemperatureEntry) {
             ManualTemperatureEntryView(isPresented: $showManualTemperatureEntry) { temperature in
