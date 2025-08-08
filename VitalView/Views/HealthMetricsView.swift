@@ -361,12 +361,16 @@ struct HealthMetricsView: View {
             print("  \(type.identifier): \(status.rawValue)")
         }
         
-        // Try a simpler approach - just request the most basic types
+        // Request authorization for all health data types the app needs
         let basicTypes: Set<HKObjectType> = [
             HKObjectType.quantityType(forIdentifier: .heartRate)!,
             HKObjectType.quantityType(forIdentifier: .bloodPressureSystolic)!,
             HKObjectType.quantityType(forIdentifier: .bloodPressureDiastolic)!,
-            HKObjectType.quantityType(forIdentifier: .oxygenSaturation)!
+            HKObjectType.quantityType(forIdentifier: .oxygenSaturation)!,
+            HKObjectType.quantityType(forIdentifier: .bodyTemperature)!,
+            HKObjectType.quantityType(forIdentifier: .respiratoryRate)!,
+            HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!,
+            HKObjectType.electrocardiogramType()
         ]
         
         print("Requesting authorization for basic types: \(basicTypes.count)")
