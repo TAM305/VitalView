@@ -429,6 +429,89 @@ struct BloodTestInputView: View {
             return "This test measures important health markers in your blood that help evaluate your overall health, detect diseases early, and monitor treatment effectiveness. Regular testing is essential for preventive healthcare."
         }
     }
+    
+    private func getReferenceRange(for testName: String) -> String {
+        switch testName {
+        case "WBC":
+            return "4.5-11.0 K/µL"
+        case "RBC":
+            return "4.5-5.9 M/µL"
+        case "HGB":
+            return "13.5-17.5 g/dL"
+        case "HCT":
+            return "41.0-50.0%"
+        case "MCV":
+            return "80-100 fL"
+        case "MCH":
+            return "27-33 pg"
+        case "MCHC":
+            return "32-36 g/dL"
+        case "RDW":
+            return "11.5-14.5%"
+        case "Platelets":
+            return "150-450 K/µL"
+        case "MPV":
+            return "7.5-11.5 fL"
+        case "Glucose":
+            return "70-100 mg/dL"
+        case "Urea Nitrogen":
+            return "7-20 mg/dL"
+        case "Creatinine":
+            return "0.7-1.3 mg/dL"
+        case "eGFR":
+            return ">60 mL/min/1.73m²"
+        case "Sodium":
+            return "135-145 mEq/L"
+        case "Potassium":
+            return "3.5-5.0 mEq/L"
+        case "Chloride":
+            return "96-106 mEq/L"
+        case "CO2":
+            return "22-28 mEq/L"
+        case "Anion Gap":
+            return "8-16 mEq/L"
+        case "Calcium":
+            return "8.5-10.5 mg/dL"
+        case "Total Protein":
+            return "6.0-8.3 g/dL"
+        case "Albumin":
+            return "3.5-5.0 g/dL"
+        case "AST":
+            return "8-40 U/L"
+        case "ALT":
+            return "7-56 U/L"
+        case "Alkaline Phosphatase":
+            return "44-147 U/L"
+        case "Bilirubin Total":
+            return "0.3-1.2 mg/dL"
+        case "Total Cholesterol":
+            return "<200 mg/dL"
+        case "HDL":
+            return ">40 mg/dL"
+        case "LDL":
+            return "<100 mg/dL"
+        case "Triglycerides":
+            return "<150 mg/dL"
+        case "TSH":
+            return "0.4-4.0 µIU/mL"
+        case "T4":
+            return "5.0-12.0 µg/dL"
+        case "T3":
+            return "80-200 ng/dL"
+        case "Free T4":
+            return "0.8-1.8 ng/dL"
+        case "Free T3":
+            return "2.3-4.2 pg/mL"
+        case "HbA1c":
+            return "<5.7%"
+        case "Insulin":
+            return "3-25 µIU/mL"
+        case "C-Peptide":
+            return "0.8-3.1 ng/mL"
+        default:
+            return "Check with your doctor"
+        }
+    }
 }
 
 struct TestValueRow: View {
@@ -452,9 +535,26 @@ struct TestValueRow: View {
                         }
                     }
                     
-                    Text(getUnit(for: testName))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(getUnit(for: testName))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        HStack(spacing: 4) {
+                            Text("Normal: \(getReferenceRange(for: testName))")
+                                .font(.caption2)
+                                .foregroundColor(.green)
+                                .fontWeight(.medium)
+                            
+                            if !value.isEmpty {
+                                let status = getValueStatus(value: value, testName: testName)
+                                Text(status)
+                                    .font(.caption2)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(getStatusColor(status))
+                            }
+                        }
+                    }
                 }
                 
                 Spacer()
@@ -589,6 +689,187 @@ struct TestValueRow: View {
             return "🏭 C-Peptide shows how much insulin your body is making. It's like checking if your body's insulin factory is working!"
         default:
             return "This test helps doctors understand how your body is working and if everything is healthy!"
+        }
+    }
+    
+    private func getValueStatus(value: String, testName: String) -> String {
+        guard let doubleValue = Double(value) else { return "" }
+        
+        switch testName {
+        case "WBC":
+            return doubleValue < 4.5 ? "LOW" : doubleValue > 11.0 ? "HIGH" : "NORMAL"
+        case "RBC":
+            return doubleValue < 4.5 ? "LOW" : doubleValue > 5.9 ? "HIGH" : "NORMAL"
+        case "HGB":
+            return doubleValue < 13.5 ? "LOW" : doubleValue > 17.5 ? "HIGH" : "NORMAL"
+        case "HCT":
+            return doubleValue < 41.0 ? "LOW" : doubleValue > 50.0 ? "HIGH" : "NORMAL"
+        case "MCV":
+            return doubleValue < 80 ? "LOW" : doubleValue > 100 ? "HIGH" : "NORMAL"
+        case "MCH":
+            return doubleValue < 27 ? "LOW" : doubleValue > 33 ? "HIGH" : "NORMAL"
+        case "MCHC":
+            return doubleValue < 32 ? "LOW" : doubleValue > 36 ? "HIGH" : "NORMAL"
+        case "RDW":
+            return doubleValue < 11.5 ? "LOW" : doubleValue > 14.5 ? "HIGH" : "NORMAL"
+        case "Platelets":
+            return doubleValue < 150 ? "LOW" : doubleValue > 450 ? "HIGH" : "NORMAL"
+        case "MPV":
+            return doubleValue < 7.5 ? "LOW" : doubleValue > 11.5 ? "HIGH" : "NORMAL"
+        case "Glucose":
+            return doubleValue < 70 ? "LOW" : doubleValue > 100 ? "HIGH" : "NORMAL"
+        case "Urea Nitrogen":
+            return doubleValue < 7 ? "LOW" : doubleValue > 20 ? "HIGH" : "NORMAL"
+        case "Creatinine":
+            return doubleValue < 0.7 ? "LOW" : doubleValue > 1.3 ? "HIGH" : "NORMAL"
+        case "eGFR":
+            return doubleValue < 60 ? "LOW" : "NORMAL"
+        case "Sodium":
+            return doubleValue < 135 ? "LOW" : doubleValue > 145 ? "HIGH" : "NORMAL"
+        case "Potassium":
+            return doubleValue < 3.5 ? "LOW" : doubleValue > 5.0 ? "HIGH" : "NORMAL"
+        case "Chloride":
+            return doubleValue < 96 ? "LOW" : doubleValue > 106 ? "HIGH" : "NORMAL"
+        case "CO2":
+            return doubleValue < 22 ? "LOW" : doubleValue > 28 ? "HIGH" : "NORMAL"
+        case "Anion Gap":
+            return doubleValue < 8 ? "LOW" : doubleValue > 16 ? "HIGH" : "NORMAL"
+        case "Calcium":
+            return doubleValue < 8.5 ? "LOW" : doubleValue > 10.5 ? "HIGH" : "NORMAL"
+        case "Total Protein":
+            return doubleValue < 6.0 ? "LOW" : doubleValue > 8.3 ? "HIGH" : "NORMAL"
+        case "Albumin":
+            return doubleValue < 3.5 ? "LOW" : doubleValue > 5.0 ? "HIGH" : "NORMAL"
+        case "AST":
+            return doubleValue < 8 ? "LOW" : doubleValue > 40 ? "HIGH" : "NORMAL"
+        case "ALT":
+            return doubleValue < 7 ? "LOW" : doubleValue > 56 ? "HIGH" : "NORMAL"
+        case "Alkaline Phosphatase":
+            return doubleValue < 44 ? "LOW" : doubleValue > 147 ? "HIGH" : "NORMAL"
+        case "Bilirubin Total":
+            return doubleValue < 0.3 ? "LOW" : doubleValue > 1.2 ? "HIGH" : "NORMAL"
+        case "Total Cholesterol":
+            return doubleValue > 200 ? "HIGH" : "NORMAL"
+        case "HDL":
+            return doubleValue < 40 ? "LOW" : "NORMAL"
+        case "LDL":
+            return doubleValue > 100 ? "HIGH" : "NORMAL"
+        case "Triglycerides":
+            return doubleValue > 150 ? "HIGH" : "NORMAL"
+        case "TSH":
+            return doubleValue < 0.4 ? "LOW" : doubleValue > 4.0 ? "HIGH" : "NORMAL"
+        case "T4":
+            return doubleValue < 5.0 ? "LOW" : doubleValue > 12.0 ? "HIGH" : "NORMAL"
+        case "T3":
+            return doubleValue < 80 ? "LOW" : doubleValue > 200 ? "HIGH" : "NORMAL"
+        case "Free T4":
+            return doubleValue < 0.8 ? "LOW" : doubleValue > 1.8 ? "HIGH" : "NORMAL"
+        case "Free T3":
+            return doubleValue < 2.3 ? "LOW" : doubleValue > 4.2 ? "HIGH" : "NORMAL"
+        case "HbA1c":
+            return doubleValue > 5.7 ? "HIGH" : "NORMAL"
+        case "Insulin":
+            return doubleValue < 3 ? "LOW" : doubleValue > 25 ? "HIGH" : "NORMAL"
+        case "C-Peptide":
+            return doubleValue < 0.8 ? "LOW" : doubleValue > 3.1 ? "HIGH" : "NORMAL"
+        default:
+            return ""
+        }
+    }
+    
+    private func getStatusColor(_ status: String) -> Color {
+        switch status {
+        case "NORMAL":
+            return .green
+        case "HIGH":
+            return .red
+        case "LOW":
+            return .orange
+        default:
+            return .secondary
+        }
+    }
+    
+    private func getReferenceRange(for testName: String) -> String {
+        switch testName {
+        case "WBC":
+            return "4.5-11.0 K/µL"
+        case "RBC":
+            return "4.5-5.9 M/µL"
+        case "HGB":
+            return "13.5-17.5 g/dL"
+        case "HCT":
+            return "41.0-50.0%"
+        case "MCV":
+            return "80-100 fL"
+        case "MCH":
+            return "27-33 pg"
+        case "MCHC":
+            return "32-36 g/dL"
+        case "RDW":
+            return "11.5-14.5%"
+        case "Platelets":
+            return "150-450 K/µL"
+        case "MPV":
+            return "7.5-11.5 fL"
+        case "Glucose":
+            return "70-100 mg/dL"
+        case "Urea Nitrogen":
+            return "7-20 mg/dL"
+        case "Creatinine":
+            return "0.7-1.3 mg/dL"
+        case "eGFR":
+            return ">60 mL/min/1.73m²"
+        case "Sodium":
+            return "135-145 mEq/L"
+        case "Potassium":
+            return "3.5-5.0 mEq/L"
+        case "Chloride":
+            return "96-106 mEq/L"
+        case "CO2":
+            return "22-28 mEq/L"
+        case "Anion Gap":
+            return "8-16 mEq/L"
+        case "Calcium":
+            return "8.5-10.5 mg/dL"
+        case "Total Protein":
+            return "6.0-8.3 g/dL"
+        case "Albumin":
+            return "3.5-5.0 g/dL"
+        case "AST":
+            return "8-40 U/L"
+        case "ALT":
+            return "7-56 U/L"
+        case "Alkaline Phosphatase":
+            return "44-147 U/L"
+        case "Bilirubin Total":
+            return "0.3-1.2 mg/dL"
+        case "Total Cholesterol":
+            return "<200 mg/dL"
+        case "HDL":
+            return ">40 mg/dL"
+        case "LDL":
+            return "<100 mg/dL"
+        case "Triglycerides":
+            return "<150 mg/dL"
+        case "TSH":
+            return "0.4-4.0 µIU/mL"
+        case "T4":
+            return "5.0-12.0 µg/dL"
+        case "T3":
+            return "80-200 ng/dL"
+        case "Free T4":
+            return "0.8-1.8 ng/dL"
+        case "Free T3":
+            return "2.3-4.2 pg/mL"
+        case "HbA1c":
+            return "<5.7%"
+        case "Insulin":
+            return "3-25 µIU/mL"
+        case "C-Peptide":
+            return "0.8-3.1 ng/mL"
+        default:
+            return "Check with your doctor"
         }
     }
 }
