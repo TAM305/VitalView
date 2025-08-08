@@ -379,42 +379,47 @@ struct HealthMetricsView: View {
         print("Requesting HealthKit authorization...")
         authorizationAttempted = true
         
-        healthStore.requestAuthorization(toShare: nil, read: basicTypes) { success, error in
-            DispatchQueue.main.async {
-                print("Authorization result: success=\(success), error=\(error?.localizedDescription ?? "none")")
-                if success {
-                    print("HealthKit authorization successful!")
-                    isAuthorized = true
-                    fetchLatestVitalSigns()
-                } else {
-                    print("HealthKit authorization failed: \(error?.localizedDescription ?? "Unknown error")")
-                    if let error = error {
-                        print("Error details: \(error)")
-                    }
+        // Try multiple authorization attempts with different timing
+        var attemptCount = 0
+        let maxAttempts = 3
+        
+        func attemptAuthorization() {
+            attemptCount += 1
+            print("Authorization attempt \(attemptCount) of \(maxAttempts)")
+            
+            healthStore.requestAuthorization(toShare: nil, read: basicTypes) { success, error in
+                DispatchQueue.main.async {
+                    print("Authorization attempt \(attemptCount) result: success=\(success), error=\(error?.localizedDescription ?? "none")")
                     
-                    // Try again after a delay if authorization failed
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                        print("Retrying HealthKit authorization...")
-                        self.healthStore.requestAuthorization(toShare: nil, read: basicTypes) { retrySuccess, retryError in
-                            DispatchQueue.main.async {
-                                print("Retry authorization result: success=\(retrySuccess), error=\(retryError?.localizedDescription ?? "none")")
-                                if retrySuccess {
-                                    print("HealthKit authorization successful on retry!")
-                                    isAuthorized = true
-                                    fetchLatestVitalSigns()
-                                } else {
-                                    print("HealthKit authorization failed on retry: \(retryError?.localizedDescription ?? "Unknown error")")
-                                    // Even if authorization fails, allow the app to continue
-                                    print("Continuing without HealthKit authorization")
-                                    isAuthorized = true
-                                    fetchLatestVitalSigns()
-                                }
+                    if success {
+                        print("HealthKit authorization successful!")
+                        isAuthorized = true
+                        fetchLatestVitalSigns()
+                    } else {
+                        print("HealthKit authorization failed: \(error?.localizedDescription ?? "Unknown error")")
+                        if let error = error {
+                            print("Error details: \(error)")
+                        }
+                        
+                        // Try again if we haven't reached max attempts
+                        if attemptCount < maxAttempts {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + Double(attemptCount) * 1.0) {
+                                print("Retrying HealthKit authorization...")
+                                attemptAuthorization()
                             }
+                        } else {
+                            print("All authorization attempts failed. Continuing without HealthKit.")
+                            // Even if authorization fails, allow the app to continue
+                            isAuthorized = true
+                            fetchLatestVitalSigns()
                         }
                     }
                 }
             }
         }
+        
+        // Start the first authorization attempt
+        attemptAuthorization()
     }
     
     private func fetchLatestVitalSigns() {
