@@ -401,10 +401,13 @@ struct HealthMetricsView: View {
             HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!
         ]
         
+        // Convert to HKSampleType for write permissions
+        let writeTypes: Set<HKSampleType> = Set(explicitTypes.compactMap { $0 as? HKSampleType })
+        
         print("Requesting authorization for explicit types: \(explicitTypes.count)")
         
         // Try requesting both read and write permissions to force the dialog
-        healthStore.requestAuthorization(toShare: explicitTypes, read: explicitTypes) { success, error in
+        healthStore.requestAuthorization(toShare: writeTypes, read: explicitTypes) { success, error in
             DispatchQueue.main.async {
                 print("Authorization result: success=\(success), error=\(error?.localizedDescription ?? "none")")
                 if success {
