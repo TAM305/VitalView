@@ -315,11 +315,11 @@ struct HealthMetricsView: View {
         
         // Create a correlation query to get both systolic and diastolic readings together
         let correlationQuery = HKCorrelationQuery(
-            correlationType: HKObjectType.correlationType(forIdentifier: .bloodPressure)!,
+            type: HKObjectType.correlationType(forIdentifier: .bloodPressure)!,
             predicate: predicate,
             sortDescriptors: [sortDescriptor]
-        ) { _, correlations, error in
-                    DispatchQueue.main.async {
+        ) { (query, correlations, error) in
+            DispatchQueue.main.async {
                 if let correlation = correlations?.first {
                     let systolicSamples = correlation.objects(for: systolicType)
                     let diastolicSamples = correlation.objects(for: diastolicType)
@@ -447,19 +447,22 @@ struct HealthMetricsView: View {
         let query = HKSampleQuery(sampleType: ecgType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
             guard let ecg = samples?.first as? HKElectrocardiogram else { return }
             
-            // Get the voltage measurements
-            let voltageQuery = HKElectrocardiogramQuery(ecg) { query, result in
+                        // Get the voltage measurements
+            let voltageQuery = HKElectrocardiogramQuery(ecg) { (query, result) in
                 switch result {
-                case let .measurement(measurement):
-                    if let quantity = measurement.quantity(for: .V1) {
+                case .measurement(let measurement):
+                    if let quantity = measurement.quantity(for: .appleWatchSimilarToLeadI) {
                         let voltageValue = quantity.doubleValue(for: HKUnit.volt())
-                DispatchQueue.main.async {
-                            self.ecgData = [ECGReading(value: voltageValue * 1000, date: ecg.startDate.addingTimeInterval(measurement.timeSinceSampleStart))]
+                        DispatchQueue.main.async {
+                            self.ecgData = [ECGReading(
+                                value: voltageValue * 1000, // mV
+                                date: ecg.startDate.addingTimeInterval(measurement.timeSinceSampleStart)
+                            )]
                         }
                     }
                 case .done:
                     query.stop()
-                case let .error(error):
+                case .error(let error):
                     print("Error fetching ECG data: \(error.localizedDescription)")
                 @unknown default:
                     break
