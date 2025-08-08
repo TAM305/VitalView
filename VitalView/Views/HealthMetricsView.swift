@@ -307,18 +307,17 @@ struct HealthMetricsView: View {
     }
 
     private func fetchBloodPressure() {
-        guard let systolicType = HKObjectType.quantityType(forIdentifier: .bloodPressureSystolic),
+        guard let bloodPressureType = HKObjectType.correlationType(forIdentifier: .bloodPressure),
+              let systolicType = HKObjectType.quantityType(forIdentifier: .bloodPressureSystolic),
               let diastolicType = HKObjectType.quantityType(forIdentifier: .bloodPressureDiastolic) else { return }
         
         let predicate = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(-24*60*60), end: Date(), options: .strictEndDate)
-        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
-        // Create a correlation query to get both systolic and diastolic readings together
-        let correlationQuery = HKCorrelationQuery(
-            type: HKObjectType.correlationType(forIdentifier: .bloodPressure)!,
+        let query = HKCorrelationQuery(
+            type: bloodPressureType,
             predicate: predicate,
-            sortDescriptors: [sortDescriptor]
-        ) { (query, correlations, error) in
+            samplePredicates: nil
+        ) { [self] _, correlations, error in
             DispatchQueue.main.async {
                 if let correlation = correlations?.first {
                     let systolicSamples = correlation.objects(for: systolicType)
@@ -340,25 +339,24 @@ struct HealthMetricsView: View {
                 }
             }
         }
-        
-        healthStore.execute(correlationQuery)
+        healthStore.execute(query)
     }
     
     private func fetchOxygenSaturation() {
         guard let oxygenType = HKObjectType.quantityType(forIdentifier: .oxygenSaturation) else { return }
         
         let predicate = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(-24*60*60), end: Date(), options: .strictEndDate)
-            let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
         let query = HKSampleQuery(sampleType: oxygenType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
-                    DispatchQueue.main.async {
+            DispatchQueue.main.async {
                 if let sample = samples?.first as? HKQuantitySample {
                     let value = sample.quantity.doubleValue(for: HKUnit.percent())
                     self.oxygenSaturation = HealthData(value: value * 100, date: sample.endDate)
                 }
-                }
             }
-            healthStore.execute(query)
+        }
+        healthStore.execute(query)
     }
     
     private func fetchBodyTemperature() {
@@ -461,7 +459,7 @@ struct HealthMetricsView: View {
                         }
                     }
                 case .done:
-                    query.stop()
+                    self.healthStore.stop(query)
                 case .error(let error):
                     print("Error fetching ECG data: \(error.localizedDescription)")
                 @unknown default:
