@@ -8,8 +8,6 @@ struct DashboardContentView: View {
     let onAuthorize: () -> Void
     let onSelectMetric: (Metric) -> Void
     
-    @State private var selectedMetricIndex = 0
-    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -79,119 +77,60 @@ struct DashboardContentView: View {
                     
                     Spacer().frame(height: 32)
                     
-                    // Interactive Tab Navigation
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 16) {
-                            ForEach(Array(healthMetrics.enumerated()), id: \.element.id) { index, metric in
-                                Button {
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        selectedMetricIndex = index
-                                    }
-                                } label: {
-                                    VStack(spacing: 8) {
-                                        Image(systemName: metric.icon)
-                                            .font(.title2)
-                                            .foregroundColor(selectedMetricIndex == index ? metric.color : .gray)
-                                            .scaleEffect(selectedMetricIndex == index ? 1.2 : 1.0)
-                                            .animation(.easeInOut(duration: 0.2), value: selectedMetricIndex)
-                                        
-                                        Text(metric.title)
-                                            .font(.caption)
-                                            .fontWeight(selectedMetricIndex == index ? .semibold : .regular)
-                                            .foregroundColor(selectedMetricIndex == index ? metric.color : .gray)
-                                    }
-                                    .padding(.vertical, 8)
-                                    .padding(.horizontal, 12)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(selectedMetricIndex == index ? metric.color.opacity(0.1) : Color.clear)
-                                    )
-                                    .animation(.easeInOut(duration: 0.2), value: selectedMetricIndex)
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                            }
-                        }
-                        .padding(.horizontal, 16)
-                    }
-                    .padding(.vertical, 8)
+                    let gridColumns = [GridItem(.flexible()), GridItem(.flexible())]
                     
-                    // Selected Metric Detail View
-                    if !healthMetrics.isEmpty {
-                        let selectedMetric = healthMetrics[selectedMetricIndex]
-                        
-                        VStack(spacing: 16) {
-                            // Large Metric Display
-                            VStack(spacing: 12) {
-                                Image(systemName: selectedMetric.icon)
-                                    .font(.system(size: 48))
-                                    .foregroundColor(selectedMetric.color)
-                                    .scaleEffect(1.0)
-                                    .animation(.easeInOut(duration: 0.3), value: selectedMetricIndex)
-                                
-                                Text(selectedMetric.value)
-                                    .font(.system(size: 36, weight: .bold, design: .rounded))
-                                    .foregroundColor(.primary)
-                                
-                                Text(selectedMetric.unit)
-                                    .font(.title3)
-                                    .foregroundColor(.secondary)
-                                
-                                Text(selectedMetric.title)
-                                    .font(.headline)
-                                    .foregroundColor(.primary)
-                            }
-                            .padding(24)
-                            .frame(maxWidth: .infinity)
-                            .background(Color(.systemBackground))
-                            .cornerRadius(16)
-                            .shadow(radius: 4)
-                            .padding(.horizontal, 16)
-                            
-                            // Additional Info
-                            if let date = selectedMetric.date {
-                                VStack(spacing: 8) {
-                                    Text("Last Updated")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
+                    LazyVGrid(columns: gridColumns, spacing: 12) {
+                        ForEach(healthMetrics) { metric in
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    onSelectMetric(metric)
+                                }
+                            } label: {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack {
+                                        Image(systemName: metric.icon)
+                                            .foregroundColor(metric.color)
+                                            .font(.title2)
+                                            .scaleEffect(1.0)
+                                            .animation(.easeInOut(duration: 0.2), value: metric.id)
+                                        Spacer()
+                                        Text(metric.value)
+                                            .font(.title2)
+                                            .fontWeight(.bold)
+                                            .foregroundColor(.primary)
+                                    }
                                     
-                                    Text(date, style: .relative)
-                                        .font(.subheadline)
+                                    Text(metric.title)
+                                        .font(.headline)
                                         .foregroundColor(.primary)
                                     
-                                    Text(date, style: .date)
+                                    Text(metric.unit)
                                         .font(.caption)
                                         .foregroundColor(.secondary)
+                                    
+                                    if let date = metric.date {
+                                        Text(date, style: .time)
+                                            .font(.caption2)
+                                            .foregroundColor(.secondary)
+                                    }
                                 }
                                 .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(Color(.systemGray6))
+                                .background(Color(.systemBackground))
                                 .cornerRadius(12)
-                                .padding(.horizontal, 16)
-                            }
-                            
-                            // Action Button
-                            Button {
-                                onSelectMetric(selectedMetric)
-                            } label: {
-                                HStack {
-                                    Image(systemName: "info.circle")
-                                    Text("Learn More")
-                                }
-                                .font(.subheadline)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 24)
-                                .padding(.vertical, 12)
-                                .background(selectedMetric.color)
-                                .cornerRadius(8)
+                                .shadow(radius: 2)
+                                .frame(height: 110)
+                                .scaleEffect(1.0)
+                                .animation(.easeInOut(duration: 0.2), value: metric.id)
                             }
                             .buttonStyle(PlainButtonStyle())
+                            .onTapGesture {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    // Add a subtle scale effect on tap
+                                }
+                            }
                         }
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .leading).combined(with: .opacity)
-                        ))
-                        .animation(.easeInOut(duration: 0.3), value: selectedMetricIndex)
                     }
+                    .padding(.horizontal, 12)
                 }
             }
             .frame(maxWidth: .infinity)
