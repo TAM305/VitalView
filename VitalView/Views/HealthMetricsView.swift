@@ -175,7 +175,7 @@ struct HealthMetricsView: View {
         let temperatureMetric = Metric(
             title: "Temperature",
             value: temperature.value.map { String(format: "%.1f", $0) } ?? "--",
-            unit: "°F",
+            unit: temperatureUnitSymbol,
             icon: "thermometer",
             color: .orange,
             date: temperature.date
@@ -424,10 +424,13 @@ struct HealthMetricsView: View {
         let processTemperature = { (samples: [HKSample]?, error: Error?) in
             DispatchQueue.main.async {
                 if let sample = samples?.first as? HKQuantitySample {
-                    let value = sample.quantity.doubleValue(for: HKUnit.degreeFahrenheit())
+                    let value = sample.quantity.doubleValue(for: self.temperatureHKUnit)
+                    print("Temperature fetched: \(String(format: "%.2f", value)) \(self.temperatureUnitSymbol)")
                     self.temperature = HealthData(value: value, date: sample.endDate)
                 } else if let error = error {
                     print("Error fetching temperature: \(error.localizedDescription)")
+                } else {
+                    print("No temperature data found in the last 24h")
                 }
             }
         }
@@ -437,22 +440,34 @@ struct HealthMetricsView: View {
             let query = HKSampleQuery(sampleType: tempType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
                 if samples?.isEmpty ?? true, let basalType = basalTempType {
                     // If no body temperature, try basal temperature
+                    print("No body temperature samples; attempting basal body temperature")
                     let basalQuery = HKSampleQuery(sampleType: basalType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, basalSamples, basalError in
                         processTemperature(basalSamples, basalError)
                     }
                     self.healthStore.execute(basalQuery)
                 } else {
+                    print("Using body temperature samples")
                     processTemperature(samples, error)
                 }
             }
             healthStore.execute(query)
         } else if let basalType = basalTempType {
             // If no body temperature type, try basal temperature directly
+            print("Body temperature type unavailable; using basal body temperature type")
             let query = HKSampleQuery(sampleType: basalType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
                 processTemperature(samples, error)
             }
             healthStore.execute(query)
         }
+    }
+
+    // MARK: - Temperature Unit Helpers
+    private var temperatureHKUnit: HKUnit {
+        Locale.current.usesMetricSystem ? HKUnit.degreeCelsius() : HKUnit.degreeFahrenheit()
+    }
+    
+    private var temperatureUnitSymbol: String {
+        Locale.current.usesMetricSystem ? "°C" : "°F"
     }
     
     private func fetchRespiratoryRate() {
