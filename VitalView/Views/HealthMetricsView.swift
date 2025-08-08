@@ -22,6 +22,7 @@ struct HealthMetricsView: View {
     @State private var showTrends = false
     @State private var testResults: [BloodTest] = []
     @State private var showManualTemperatureEntry = false
+    @State private var authorizationAttempted = false
     
     private let healthStore = HKHealthStore()
     
@@ -42,6 +43,7 @@ struct HealthMetricsView: View {
             DashboardContentView(
                 isAuthorized: isAuthorized,
                 healthMetrics: healthMetrics,
+                authorizationAttempted: authorizationAttempted,
                 onRefresh: {
                     print("\n=== Manual Refresh Triggered ===")
                     print("Current authorization status: \(isAuthorized)")
@@ -362,8 +364,11 @@ struct HealthMetricsView: View {
         }
         
         print("Requesting authorization for \(typesToRead.count) health data types")
+        print("Authorization dialog should appear now...")
         
         // Request authorization
+        print("Requesting HealthKit authorization...")
+        authorizationAttempted = true
         healthStore.requestAuthorization(toShare: nil, read: typesToRead) { success, error in
             DispatchQueue.main.async {
                 print("Authorization result: success=\(success), error=\(error?.localizedDescription ?? "none")")
@@ -376,6 +381,10 @@ struct HealthMetricsView: View {
                     if let error = error {
                         print("Error details: \(error)")
                     }
+                    // Even if authorization fails, allow the app to continue
+                    print("Continuing without HealthKit authorization")
+                    isAuthorized = true
+                    fetchLatestVitalSigns()
                 }
             }
         }

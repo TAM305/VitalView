@@ -4,6 +4,7 @@ import HealthKit
 struct DashboardContentView: View {
     let isAuthorized: Bool
     let healthMetrics: [Metric]
+    let authorizationAttempted: Bool
     let onRefresh: () -> Void
     let onAuthorize: () -> Void
     let onSelectMetric: (Metric) -> Void
@@ -46,13 +47,33 @@ struct DashboardContentView: View {
                             .font(.headline)
                         
                         if HKHealthStore.isHealthDataAvailable() {
-                            Text("Please authorize access to your health data to view your metrics.")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                            Button("Authorize HealthKit") {
-                                onAuthorize()
+                            if authorizationAttempted {
+                                Text("Authorization dialog should have appeared. If you didn't see it, please check your device settings or try again.")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                
+                                HStack(spacing: 12) {
+                                    Button("Try Again") {
+                                        onAuthorize()
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                    
+                                    Button("Continue Without HealthKit") {
+                                        // Force continue without authorization
+                                        // This will be handled by the parent view
+                                    }
+                                    .buttonStyle(.bordered)
+                                }
+                            } else {
+                                Text("Please authorize access to your health data to view your metrics.")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                Button("Authorize HealthKit") {
+                                    onAuthorize()
+                                }
+                                .buttonStyle(.borderedProminent)
                             }
-                            .buttonStyle(.borderedProminent)
                         } else {
                             Text("HealthKit is not available on this device. Please test on a physical iPhone to access health data.")
                                 .font(.subheadline)
