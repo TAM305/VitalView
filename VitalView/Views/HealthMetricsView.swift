@@ -296,7 +296,7 @@ struct HealthMetricsView: View {
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
         let query = HKSampleQuery(sampleType: heartRateType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
-                DispatchQueue.main.async {
+                        DispatchQueue.main.async {
                 if let sample = samples?.first as? HKQuantitySample {
                     let value = sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
                     self.heartRate = HealthData(value: value, date: sample.endDate)
@@ -315,11 +315,11 @@ struct HealthMetricsView: View {
         
         // Create a correlation query to get both systolic and diastolic readings together
         let correlationQuery = HKCorrelationQuery(
-            correlationType: HKObjectType.correlationType(forIdentifier: .bloodPressure)!,
+            type: HKObjectType.correlationType(forIdentifier: .bloodPressure)!,
             predicate: predicate,
             sortDescriptors: [sortDescriptor]
         ) { _, correlations, error in
-            DispatchQueue.main.async {
+                    DispatchQueue.main.async {
                 if let correlation = correlations?.first {
                     let systolicSamples = correlation.objects(for: systolicType)
                     let diastolicSamples = correlation.objects(for: diastolicType)
@@ -411,14 +411,14 @@ struct HealthMetricsView: View {
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
         let query = HKSampleQuery(sampleType: respiratoryType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
-                    DispatchQueue.main.async {
+                DispatchQueue.main.async {
                 if let sample = samples?.first as? HKQuantitySample {
                     let value = sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
                     self.respiratoryRate = HealthData(value: value, date: sample.endDate)
                 }
                 }
             }
-            healthStore.execute(query)
+        healthStore.execute(query)
     }
     
     private func fetchHeartRateVariability() {
@@ -428,7 +428,7 @@ struct HealthMetricsView: View {
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
         let query = HKSampleQuery(sampleType: hrvType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
-                DispatchQueue.main.async {
+                    DispatchQueue.main.async {
                 if let sample = samples?.first as? HKQuantitySample {
                     let value = sample.quantity.doubleValue(for: HKUnit.secondUnit(with: .milli))
                     self.heartRateVariability = HealthData(value: value, date: sample.endDate)
@@ -451,9 +451,9 @@ struct HealthMetricsView: View {
             let voltageQuery = HKElectrocardiogramQuery(ecg) { query, result in
                 switch result {
                 case let .measurement(measurement):
-                    if let quantity = measurement.quantity(for: .appleWatchEquivalentLead) {
+                    if let quantity = measurement.quantity(for: .default) {
                         let voltageValue = quantity.doubleValue(for: HKUnit.volt())
-                        DispatchQueue.main.async {
+                DispatchQueue.main.async {
                             self.ecgData = [ECGReading(value: voltageValue * 1000, date: ecg.startDate.addingTimeInterval(measurement.timeSinceSampleStart))]
                         }
                     }
