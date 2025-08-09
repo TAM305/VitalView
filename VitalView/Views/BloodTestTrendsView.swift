@@ -30,7 +30,16 @@ struct BloodTestTrendsView: View {
                 // Header with test selector and time range
                 VStack(spacing: 16) {
                     // Test selector
-                    Button(action: { showingTestSelector = true }) {
+                    Menu {
+                        let tests = getAvailableTests()
+                        if tests.isEmpty {
+                            Text("No tests available")
+                        } else {
+                            ForEach(tests, id: \.self) { test in
+                                Button(test) { selectedTest = test }
+                            }
+                        }
+                    } label: {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Selected Test")
@@ -119,9 +128,12 @@ struct BloodTestTrendsView: View {
                     }
                 }
             }
-        }
-        .sheet(isPresented: $showingTestSelector) {
-            TestSelectorView(selectedTest: $selectedTest, availableTests: getAvailableTests())
+            .onAppear {
+                let tests = getAvailableTests()
+                if let first = tests.first, !tests.contains(selectedTest) {
+                    selectedTest = first
+                }
+            }
         }
     }
     
