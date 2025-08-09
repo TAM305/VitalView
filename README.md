@@ -50,8 +50,9 @@ The app allows you to manually enter and track blood test results with:
 - Complete Blood Count (CBC) analysis
 - Comprehensive Metabolic Panel (CMP) tracking
 - Custom test result entry
-- Reference range validation
-- Trend analysis over time
+- Inline child‑friendly explanations for each analyte (tap the info icon)
+- Reference ranges shown next to each field with real‑time HIGH/LOW/NORMAL status
+- Trend analysis over time in a dedicated Trends tab
 
 ### Privacy and Security
 
@@ -66,17 +67,31 @@ Your health data is protected with:
 
 VitalView provides intelligent analysis of your health data:
 
-- Automatic status determination (normal, high, low)
-- Trend visualization
-- Reference range validation
-- Detailed explanations of test results
+- Automatic status determination (normal, high, low) with robust range parsing (units, <, >)
+- Trend visualization for Health metrics and Blood tests (separate views)
+- Reference range validation (non‑blocking; out‑of‑range values still save)
+- Detailed explanations of test results; educational summaries for blood tests
+
+### Navigation & UX
+
+- Tab‑based navigation for clarity:
+  - Dashboard tab (vital signs, HealthKit)
+  - Trends tab (segmented: Health Trends, Blood Test Trends)
+- Floating “+” button on Dashboard to add a blood test
+- Reduced bottom clutter per Apple HIG; moved secondary actions to Trends tab
+
+### Data Export/Import
+
+- Export to JSON with improved error handling and pretty‑printed format
+- Share via the system share sheet when encoding succeeds
+- Import supports security‑scoped bookmarks
 
 ## Getting Started
 
 1. **Install the App**: Download VitalView from the App Store
 2. **Grant Permissions**: Allow access to HealthKit data when prompted
-3. **Add Blood Tests**: Enter your blood test results manually
-4. **Monitor Trends**: View your health data over time
+3. **Add Blood Tests**: Tap the “+” button on Dashboard to enter results (see normal ranges and explanations)
+4. **Monitor Trends**: Open the Trends tab; select Health or Blood, then pick time range and analyte
 5. **Stay Informed**: Receive insights about your health metrics
 
 ## Privacy

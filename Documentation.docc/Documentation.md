@@ -52,8 +52,9 @@ The app allows you to manually enter and track blood test results with:
 - Complete Blood Count (CBC) analysis
 - Comprehensive Metabolic Panel (CMP) tracking
 - Custom test result entry
-- Reference range validation
-- Trend analysis over time
+- Inline, simplified explanations for each test (child‑friendly, info button)
+- Reference ranges displayed inline with real‑time HIGH/LOW/NORMAL feedback
+- Trend analysis over time via the Trends tab
 
 ### Privacy and Security
 
@@ -68,17 +69,17 @@ Your health data is protected with:
 
 VitalView provides intelligent analysis of your health data:
 
-- Automatic status determination (normal, high, low)
-- Trend visualization
-- Reference range validation
-- Detailed explanations of test results
+- Automatic status determination (normal, high, low) with robust reference parsing (units, <, >)
+- Trend visualization for both HealthKit metrics and Blood tests
+- Reference range validation is non‑blocking (values still save for longitudinal tracking)
+- Detailed explanations of test results and educational context
 
 ## Getting Started
 
 1. **Install the App**: Download VitalView from the App Store
 2. **Grant Permissions**: Allow access to HealthKit data when prompted
-3. **Add Blood Tests**: Enter your blood test results manually
-4. **Monitor Trends**: View your health data over time
+3. **Add Blood Tests**: Use the floating “+” on Dashboard to add results with inline ranges and explanations
+4. **Monitor Trends**: Open the Trends tab and switch between Health and Blood trends
 5. **Stay Informed**: Receive insights about your health metrics
 
 ## Privacy
