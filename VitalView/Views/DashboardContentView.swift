@@ -110,7 +110,6 @@ struct DashboardContentView: View {
                     Spacer().frame(height: 32)
                     
                     GeometryReader { proxy in
-                        let availableWidth = proxy.size.width - 24 // account for horizontal padding
                         let minCardWidth: CGFloat = (horizontalSizeClass == .regular) ? 220 : 160
                         let columns = [GridItem(.adaptive(minimum: minCardWidth), spacing: 12)]
                         let cardHeight: CGFloat = (horizontalSizeClass == .regular) ? 130 : 120
