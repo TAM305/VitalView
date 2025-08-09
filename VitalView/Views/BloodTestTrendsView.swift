@@ -25,114 +25,106 @@ struct BloodTestTrendsView: View {
     }
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Header with test selector and time range
-                VStack(spacing: 16) {
-                    // Test selector
-                    Menu {
-                        let tests = getAvailableTests()
-                        if tests.isEmpty {
-                            Text("No tests available")
-                        } else {
-                            ForEach(tests, id: \.self) { test in
-                                Button(test) { selectedTest = test }
-                            }
-                        }
-                    } label: {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Selected Test")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                Text(selectedTest)
-                                    .font(.headline)
-                                    .foregroundColor(.primary)
-                            }
-                            Spacer()
-                            Image(systemName: "chevron.down")
-                                .foregroundColor(.blue)
-                        }
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(10)
-                    }
-                    .padding(.horizontal)
-                    
-                    // Time range selector
-                    HStack(spacing: 8) {
-                        ForEach(TimeRange.allCases, id: \.self) { range in
-                            BloodTimeRangeButton(
-                                range: range,
-                                isSelected: timeRange == range
-                            ) {
-                                timeRange = range
-                            }
+        VStack(spacing: 0) {
+            // Header with test selector and time range
+            VStack(spacing: 16) {
+                // Test selector
+                Menu {
+                    let tests = getAvailableTests()
+                    if tests.isEmpty {
+                        Text("No tests available")
+                    } else {
+                        ForEach(tests, id: \.self) { test in
+                            Button(test) { selectedTest = test }
                         }
                     }
-                    .padding(.horizontal)
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Selected Test")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text(selectedTest)
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.down")
+                            .foregroundColor(.blue)
+                    }
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(10)
                 }
-                .padding(.top)
-                .background(Color(.systemBackground))
+                .padding(.horizontal)
                 
-                // Chart and analysis
-                if let trendData = getTrendData() {
-                    ScrollView {
-                        VStack(spacing: 20) {
-                            // Main chart
-                            BloodTestChartView(data: trendData, testName: selectedTest)
-                                .frame(height: 300)
-                                .padding()
-                            
-                            // Statistics
-                            BloodTestStatisticsView(data: trendData, testName: selectedTest)
-                                .padding(.horizontal)
-                            
-                            // Trend analysis
-                            BloodTestTrendAnalysisView(data: trendData, testName: selectedTest)
-                                .padding(.horizontal)
-                            
-                            // Health insights
-                            BloodTestHealthInsightsView(data: trendData, testName: selectedTest)
-                                .padding(.horizontal)
+                // Time range selector
+                HStack(spacing: 8) {
+                    ForEach(TimeRange.allCases, id: \.self) { range in
+                        BloodTimeRangeButton(
+                            range: range,
+                            isSelected: timeRange == range
+                        ) {
+                            timeRange = range
                         }
-                        .padding(.bottom)
                     }
-                } else {
-                    VStack {
-                        Image(systemName: "chart.line.uptrend.xyaxis")
-                            .font(.system(size: 60))
-                            .foregroundColor(.gray)
+                }
+                .padding(.horizontal)
+            }
+            .padding(.top)
+            .background(Color(.systemBackground))
+            
+            // Chart and analysis
+            if let trendData = getTrendData() {
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // Main chart
+                        BloodTestChartView(data: trendData, testName: selectedTest)
+                            .frame(height: 300)
                             .padding()
                         
-                        Text("No trend data available")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                        
-                        Text("Add more blood tests to see trends over time")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
+                        // Statistics
+                        BloodTestStatisticsView(data: trendData, testName: selectedTest)
                             .padding(.horizontal)
                         
-                        Spacer()
+                        // Trend analysis
+                        BloodTestTrendAnalysisView(data: trendData, testName: selectedTest)
+                            .padding(.horizontal)
+                        
+                        // Health insights
+                        BloodTestHealthInsightsView(data: trendData, testName: selectedTest)
+                            .padding(.horizontal)
                     }
+                    .padding(.bottom)
+                }
+            } else {
+                VStack {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 60))
+                        .foregroundColor(.gray)
+                        .padding()
+                    
+                    Text("No trend data available")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                    
+                    Text("Add more blood tests to see trends over time")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                    
+                    Spacer()
                 }
             }
-            .navigationTitle("Blood Test Trends")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
-            }
-            .onAppear {
-                let tests = getAvailableTests()
-                if let first = tests.first, !tests.contains(selectedTest) {
-                    selectedTest = first
-                }
+        }
+        .frame(maxWidth: 900)
+        .padding(.horizontal)
+        .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
+        .onAppear {
+            let tests = getAvailableTests()
+            if let first = tests.first, !tests.contains(selectedTest) {
+                selectedTest = first
             }
         }
     }
