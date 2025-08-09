@@ -7,9 +7,7 @@ import Charts
 struct HealthMetricsView: View {
     @StateObject private var viewModel = HealthMetricsViewModel()
     @State private var isAuthorized = false
-    @State private var showingAddTest = false
-    @State private var showingTrends = false
-    @State private var showingBloodTestTrends = false
+    // Moved add/trends actions to TabView and floating + in ContentView
     @State private var selectedMetric = "Heart Rate"
     @State private var isLoadingTrends = false
     @State private var trendData: [String: [HealthReading]] = [:]
@@ -61,18 +59,8 @@ struct HealthMetricsView: View {
                     showManualTemperatureEntry = true
                 }
             )
-            bottomButtonsView
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .sheet(isPresented: $showingAddTest) {
-            AddTestSheetView(isPresented: $showingAddTest)
-        }
-        .sheet(isPresented: $showingTrends) {
-            TrendsChartView()
-        }
-        .sheet(isPresented: $showingBloodTestTrends) {
-            BloodTestTrendsView(viewModel: BloodTestViewModel(context: PersistenceController.shared.container.viewContext))
-        }
         .sheet(isPresented: $showManualTemperatureEntry) {
             ManualTemperatureEntryView(isPresented: $showManualTemperatureEntry) { temperature in
                 // Save the manually entered temperature
@@ -91,49 +79,7 @@ struct HealthMetricsView: View {
         }
     }
     
-    private var bottomButtonsView: some View {
-        VStack {
-            Spacer()
-            HStack {
-                Button(action: { showingTrends = true }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "chart.line.uptrend.xyaxis")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(.blue)
-                        Text("Health Trends")
-                            .font(.headline)
-                            .foregroundColor(.blue)
-                    }
-                }
-                Spacer()
-                Button(action: { showingBloodTestTrends = true }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "chart.bar.fill")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(.purple)
-                        Text("Blood Trends")
-                            .font(.headline)
-                            .foregroundColor(.purple)
-                    }
-                }
-                Spacer()
-                Button(action: { showingAddTest = true }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "drop.fill")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(.red)
-                        Text("Add Blood Test")
-                            .font(.headline)
-                            .foregroundColor(.red)
-                    }
-                }
-            }
-            .padding(.horizontal, 36)
-            .padding(.vertical, 12)
-            .padding(.bottom, 24)
-        }
-        .ignoresSafeArea(edges: .bottom)
-    }
+    // Bottom overlay removed in favor of cleaner HIG-compliant layout
     
     // Computed property for metrics to avoid complex expressions in body
     private var healthMetrics: [Metric] {
