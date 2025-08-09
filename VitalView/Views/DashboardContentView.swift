@@ -25,7 +25,11 @@ struct DashboardContentView: View {
                 
                 HStack {
                     Spacer()
-                    Button(action: onRefresh) {
+                    Button(action: {
+                        // Restart animations and trigger data refresh
+                        restartAllAnimations(for: healthMetrics)
+                        onRefresh()
+                    }) {
                         HStack {
                             Image(systemName: "arrow.clockwise")
                                 .font(.system(size: 20))
@@ -230,6 +234,21 @@ struct DashboardContentView: View {
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                 withAnimation(.easeInOut(duration: 0.5)) {
+                    animationStates[metric.title] = true
+                }
+            }
+        }
+    }
+
+    /// Forces all metric icons to restart their repeating animations by
+    /// briefly disabling and re‑enabling the animation state.
+    private func restartAllAnimations(for metrics: [Metric]) {
+        for metric in metrics {
+            animationStates[metric.title] = false
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            for metric in metrics {
+                withAnimation(.easeInOut(duration: 0.3)) {
                     animationStates[metric.title] = true
                 }
             }
