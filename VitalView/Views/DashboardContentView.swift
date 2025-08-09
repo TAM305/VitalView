@@ -109,66 +109,63 @@ struct DashboardContentView: View {
                     
                     Spacer().frame(height: 32)
                     
-                    GeometryReader { proxy in
-                        let minCardWidth: CGFloat = (horizontalSizeClass == .regular) ? 220 : 160
-                        let columns = [GridItem(.adaptive(minimum: minCardWidth), spacing: 12)]
-                        let cardHeight: CGFloat = (horizontalSizeClass == .regular) ? 130 : 120
+                    let minCardWidth: CGFloat = (horizontalSizeClass == .regular) ? 220 : 160
+                    let cardHeight: CGFloat = (horizontalSizeClass == .regular) ? 130 : 120
+                    let columns = [GridItem(.adaptive(minimum: minCardWidth), spacing: 12)]
 
-                        LazyVGrid(columns: columns, spacing: 12) {
-                            ForEach(healthMetrics) { metric in
-                                Button {
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        if metric.title == "Temperature" && metric.value == "Tap to add" {
-                                            onManualTemperatureEntry?()
-                                        } else {
-                                            onSelectMetric(metric)
-                                        }
+                    LazyVGrid(columns: columns, spacing: 12) {
+                        ForEach(healthMetrics) { metric in
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    if metric.title == "Temperature" && metric.value == "Tap to add" {
+                                        onManualTemperatureEntry?()
+                                    } else {
+                                        onSelectMetric(metric)
                                     }
-                                } label: {
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        HStack {
-                                            Image(systemName: metric.icon)
-                                                .foregroundColor(metric.color)
-                                                .font(.title2)
-                                                .scaleEffect(getIconScale(for: metric.title))
-                                                .animation(getIconAnimation(for: metric.title), value: animationStates[metric.title] ?? false)
-                                                .onAppear { startIconAnimation(for: metric) }
-                                            Spacer()
-                                            Text(metric.value)
-                                                .font(.title2)
-                                                .fontWeight(.bold)
-                                                .foregroundColor(.primary)
-                                                .lineLimit(1)
-                                                .minimumScaleFactor(0.8)
-                                        }
-                                        Text(metric.title)
-                                            .font(.headline)
+                                }
+                            } label: {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack {
+                                        Image(systemName: metric.icon)
+                                            .foregroundColor(metric.color)
+                                            .font(.title2)
+                                            .scaleEffect(getIconScale(for: metric.title))
+                                            .animation(getIconAnimation(for: metric.title), value: animationStates[metric.title] ?? false)
+                                            .onAppear { startIconAnimation(for: metric) }
+                                        Spacer()
+                                        Text(metric.value)
+                                            .font(.title2)
+                                            .fontWeight(.bold)
                                             .foregroundColor(.primary)
                                             .lineLimit(1)
                                             .minimumScaleFactor(0.8)
-                                        Text(metric.unit)
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                            .lineLimit(1)
-                                            .minimumScaleFactor(0.8)
-                                        if let date = metric.date {
-                                            Text(date, style: .time)
-                                                .font(.caption2)
-                                                .foregroundColor(.secondary)
-                                        }
                                     }
-                                    .padding()
-                                    .frame(maxWidth: .infinity, minHeight: cardHeight, alignment: .topLeading)
-                                    .background(Color(.systemBackground))
-                                    .cornerRadius(12)
-                                    .shadow(radius: 2)
+                                    Text(metric.title)
+                                        .font(.headline)
+                                        .foregroundColor(.primary)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.8)
+                                    Text(metric.unit)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.8)
+                                    if let date = metric.date {
+                                        Text(date, style: .time)
+                                            .font(.caption2)
+                                            .foregroundColor(.secondary)
+                                    }
                                 }
-                                .buttonStyle(PlainButtonStyle())
+                                .padding()
+                                .frame(maxWidth: .infinity, minHeight: cardHeight, alignment: .topLeading)
+                                .background(Color(.systemBackground))
+                                .cornerRadius(12)
+                                .shadow(radius: 2)
                             }
+                            .buttonStyle(PlainButtonStyle())
                         }
-                        .padding(.horizontal, 12)
                     }
-                    .frame(minHeight: 0, maxHeight: .infinity)
+                    .padding(.horizontal, 12)
                 }
             }
             .frame(maxWidth: 800) // constrain content width on iPad
