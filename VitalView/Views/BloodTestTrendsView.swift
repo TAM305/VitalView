@@ -7,6 +7,7 @@ struct BloodTestTrendsView: View {
     @State private var selectedTest = "Glucose"
     @State private var timeRange: TimeRange = .threeMonths
     @State private var showingTestSelector = false
+    var onClose: (() -> Void)? = nil
     
     enum TimeRange: String, CaseIterable {
         case month = "1 Month"
@@ -28,6 +29,18 @@ struct BloodTestTrendsView: View {
         VStack(spacing: 0) {
             // Header with test selector and time range
             VStack(spacing: 16) {
+                HStack {
+                    Spacer()
+                    if let onClose {
+                        Button("Done") { onClose() }
+                            .buttonStyle(.bordered)
+                    } else {
+                        Button("Done") { dismiss() }
+                            .buttonStyle(.bordered)
+                    }
+                }
+                .padding(.horizontal)
+                
                 // Test selector
                 Menu {
                     let tests = getAvailableTests()

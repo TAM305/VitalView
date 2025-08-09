@@ -18,7 +18,10 @@ struct TrendsTabView: View {
                 if selected == .health {
                     TrendsChartView()
                 } else {
-                    BloodTestTrendsView(viewModel: BloodTestViewModel(context: PersistenceController.shared.container.viewContext))
+                    BloodTestTrendsView(
+                        viewModel: BloodTestViewModel(context: PersistenceController.shared.container.viewContext),
+                        onClose: { selected = .health }
+                    )
                 }
             }
             .frame(maxWidth: 900)

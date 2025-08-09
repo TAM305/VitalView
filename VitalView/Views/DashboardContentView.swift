@@ -168,7 +168,7 @@ struct DashboardContentView: View {
                     .padding(.horizontal, 12)
                 }
             }
-            .frame(maxWidth: 800) // constrain content width on iPad
+            .frame(maxWidth: 1200) // wider content on iPad to avoid boxed look
             .padding(.horizontal)
         }
         .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
