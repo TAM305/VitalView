@@ -11,6 +11,8 @@ import HealthKit
 /// - **Biometric Security**: Face ID/Touch ID protection for sensitive health data
 /// - **Data Export/Import**: Backup and restore your health data
 /// - **Privacy First**: All data stays on your device, never shared
+/// - **Trends Tab**: Dedicated trends for Health metrics and Blood tests
+/// - **Inline Guidance**: Child‑friendly explanations and normal ranges during input
 ///
 /// ## Technical Architecture:
 /// - **SwiftUI**: Modern declarative UI framework
@@ -18,10 +20,11 @@ import HealthKit
 /// - **HealthKit**: Secure health data access
 /// - **LocalAuthentication**: Biometric security
 /// - **File Protection**: Complete data encryption at rest
+/// - **Tab Navigation**: Dashboard + Trends with floating add button
 ///
 /// ## Data Flow:
 /// 1. **HealthKit** → Reads vital signs (heart rate, blood pressure, etc.)
-/// 2. **User Input** → Manual blood test entry with validation
+/// 2. **User Input** → Manual blood test entry with inline ranges/education (non‑blocking validation)
 /// 3. **Core Data** → Encrypted local storage
 /// 4. **SwiftUI** → Real-time UI updates
 /// 5. **Export/Import** → JSON data backup/restore
@@ -30,7 +33,7 @@ import HealthKit
 /// - **File Protection**: Complete encryption for Core Data
 /// - **Biometric Auth**: Face ID/Touch ID for data access
 /// - **No Network**: All data stays local
-/// - **Privacy Policy**: Clear data usage guidelines
+/// - **Privacy Policy**: Clear local‑only policy; no analytics, no ads, no third parties
 ///
 /// ## App Store Compliance:
 /// - **HealthKit**: Proper usage descriptions

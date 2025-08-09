@@ -35,7 +35,7 @@ struct PrivacyView: View {
                     HStack {
                         Image(systemName: "xmark.shield")
                             .foregroundColor(.blue)
-                        Text("No cloud synchronization")
+                        Text("No cloud synchronization or third‑party services")
                     }
                 }
                 
@@ -61,8 +61,25 @@ struct PrivacyView: View {
                     HStack {
                         Image(systemName: "eye.slash")
                             .foregroundColor(.blue)
-                        Text("No analytics or tracking")
+                        Text("No analytics, no tracking, no ads")
                     }
+                }
+                
+                Divider().padding(.vertical)
+                
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("HealthKit Usage")
+                        .font(.headline)
+                    Text("VitalVu reads select health data (e.g., heart rate, blood pressure, temperature) from Apple Health only after you grant permission. You can change permissions anytime in Settings > Health > Data Access & Devices.")
+                    Text("We do not write data to Health unless explicitly initiated by you.")
+                }
+                
+                Divider().padding(.vertical)
+                
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Export & Import")
+                        .font(.headline)
+                    Text("You can export your data as JSON for personal backup and import it back securely. Exports occur locally and use the system share sheet. Imports use security‑scoped access and never leave your device.")
                 }
             }
             .padding()
