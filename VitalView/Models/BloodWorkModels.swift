@@ -216,19 +216,9 @@ public struct TestResult: Identifiable, Codable {
     ///
     /// - Returns: The status of the test result
     public var status: TestStatus {
-        // Parse the reference range string (e.g., "4.5-11.0")
-        let components = referenceRange.split(separator: "-")
-        guard components.count == 2,
-              let lowerBound = Double(components[0]),
-              let upperBound = Double(components[1]) else {
-            return .normal // Default to normal if range parsing fails
-        }
-        
-        if value < lowerBound {
-            return .low
-        } else if value > upperBound {
-            return .high
-        }
+        let bounds = parseReferenceBounds(from: referenceRange)
+        if let lower = bounds.lower, value < lower { return .low }
+        if let upper = bounds.upper, value > upper { return .high }
         return .normal
     }
     
@@ -257,13 +247,48 @@ public struct TestResult: Identifiable, Codable {
     ///
     /// - Returns: `true` if the value is within the reference range, `false` otherwise
     public func isValidValue() -> Bool {
-        let components = referenceRange.split(separator: "-")
-        guard components.count == 2,
-              let lowerBound = Double(components[0]),
-              let upperBound = Double(components[1]) else {
-            return false
+        let bounds = parseReferenceBounds(from: referenceRange)
+        if let lower = bounds.lower, value < lower { return false }
+        if let upper = bounds.upper, value > upper { return false }
+        return true
+    }
+
+    /// Parses a reference range string with optional units and inequality symbols.
+    ///
+    /// Supported formats:
+    /// - "4.5-11.0 K/µL"
+    /// - "41.0-50.0%"
+    /// - "<200 mg/dL"
+    /// - ">60 mL/min/1.73m²"
+    /// - "8-16"
+    private func parseReferenceBounds(from range: String) -> (lower: Double?, upper: Double?) {
+        let trimmed = range.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return (nil, nil) }
+
+        // Handle inequalities
+        if trimmed.first == "<" || trimmed.first == "≤" {
+            let numberString = trimmed.dropFirst().extractLeadingNumber()
+            if let upper = Double(numberString) { return (nil, upper) }
         }
-        return value >= lowerBound && value <= upperBound
+        if trimmed.first == ">" || trimmed.first == "≥" {
+            let numberString = trimmed.dropFirst().extractLeadingNumber()
+            if let lower = Double(numberString) { return (lower, nil) }
+        }
+
+        // Handle range with dash
+        let parts = trimmed.split(separator: "-", maxSplits: 1, omittingEmptySubsequences: true)
+        if parts.count == 2 {
+            let leftNum = String(parts[0]).extractLeadingNumber()
+            let rightNum = String(parts[1]).extractLeadingNumber()
+            let lower = Double(leftNum)
+            let upper = Double(rightNum)
+            return (lower, upper)
+        }
+
+        // Fallback: try to read a single numeric threshold
+        let single = trimmed.extractLeadingNumber()
+        if let value = Double(single) { return (value, value) }
+        return (nil, nil)
     }
 }
 
@@ -482,6 +507,23 @@ class SecurityManager {
     }
 }
 
+// MARK: - Parsing Helpers
+private extension String {
+    /// Extracts the leading numeric portion (including decimal) from a string, ignoring trailing units.
+    func extractLeadingNumber() -> String {
+        var chars: [Character] = []
+        var hasDot = false
+        var hasSign = false
+        for ch in self.trimmingCharacters(in: .whitespaces) {
+            if ch == "+" || ch == "-" { if chars.isEmpty && !hasSign { hasSign = true; chars.append(ch); continue } else { break } }
+            if ch.isNumber { chars.append(ch); continue }
+            if ch == "." && !hasDot { hasDot = true; chars.append(ch); continue }
+            break
+        }
+        return String(chars)
+    }
+}
+
 // MARK: - View Models
 
 /// Observable view model for managing blood test data.
@@ -527,11 +569,10 @@ public final class BloodTestViewModel: ObservableObject {
     ///
     /// - Parameter test: The blood test to add
     public func addTest(_ test: BloodTest) {
-        // Validate test results
+        // Validate test results (non-blocking)
         let invalidResults = test.results.filter { !$0.isValidValue() }
         if !invalidResults.isEmpty {
-            errorMessage = "Some test results are outside their reference ranges. Please review the values."
-            return
+            errorMessage = "Some test results are outside their reference ranges. Saved anyway."
         }
         
         // Create BloodTestEntity
@@ -581,11 +622,10 @@ public final class BloodTestViewModel: ObservableObject {
     }
     
     public func updateTest(_ test: BloodTest) {
-        // Validate test results
+        // Validate test results (non-blocking)
         let invalidResults = test.results.filter { !$0.isValidValue() }
         if !invalidResults.isEmpty {
-            errorMessage = "Some test results are outside their reference ranges. Please review the values."
-            return
+            errorMessage = "Some test results are outside their reference ranges. Saved anyway."
         }
         
         // Find the existing test entity
