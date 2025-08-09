@@ -171,9 +171,10 @@ struct DashboardContentView: View {
                     .frame(minHeight: 0, maxHeight: .infinity)
                 }
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: 800) // constrain content width on iPad
+            .padding(.horizontal)
         }
-        .background(Color(UIColor.systemBackground))
+        .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     

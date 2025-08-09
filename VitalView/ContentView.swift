@@ -77,6 +77,7 @@ struct ContentView: View {
                     }
                 }
             }
+            .navigationViewStyle(StackNavigationViewStyle())
             .tabItem {
                 Image(systemName: "house.fill")
                 Text("Dashboard")
@@ -88,6 +89,7 @@ struct ContentView: View {
                     .navigationTitle("Trends")
                     .navigationBarTitleDisplayMode(.inline)
             }
+            .navigationViewStyle(StackNavigationViewStyle())
             .tabItem {
                 Image(systemName: "chart.line.uptrend.xyaxis")
                 Text("Trends")
