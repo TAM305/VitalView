@@ -21,49 +21,78 @@ struct ContentView: View {
     }
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Header with blood drop and app title
-                ZStack {
-                    // Centered app title
-                    Text("VitalVu")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
-                    
-                    // Blood drop icon positioned to the left
-                    HStack {
-                        AnimatedBloodDropView(size: 50, color: .red, isAnimating: true)
-                            .padding(.leading, 20)
-                        Spacer()
+        TabView {
+            // Dashboard tab
+            NavigationView {
+                ZStack(alignment: .bottomTrailing) {
+                    VStack(spacing: 0) {
+                        // Header with blood drop and app title
+                        ZStack {
+                            Text("VitalVu")
+                                .font(.largeTitle)
+                                .fontWeight(.bold)
+                                .foregroundColor(.primary)
+                            HStack {
+                                AnimatedBloodDropView(size: 50, color: .red, isAnimating: true)
+                                    .padding(.leading, 20)
+                                Spacer()
+                            }
+                        }
+                        .padding(.top)
+                        .frame(maxWidth: .infinity)
+
+                        HealthMetricsView()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
-                }
-                .padding(.top)
-                .frame(maxWidth: .infinity)
-                
-                HealthMetricsView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .navigationTitle("VitalVu")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        showingSettings = true
-                    }) {
-                        Image(systemName: "gearshape.fill")
-                            .font(.system(size: 20))
+                    .navigationTitle("Dashboard")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(action: { showingSettings = true }) {
+                                Image(systemName: "gearshape.fill")
+                                    .font(.system(size: 20))
+                            }
+                        }
+                    }
+
+                    // Floating add button
+                    Button(action: { showBloodTests = true }) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 56, height: 56)
+                            .background(Color.accentColor)
+                            .clipShape(Circle())
+                            .shadow(radius: 6)
+                    }
+                    .padding()
+                    .sheet(isPresented: $showBloodTests) {
+                        AddTestSheetView(isPresented: $showBloodTests)
+                    }
+                }
+                .sheet(isPresented: $showingSettings) {
+                    NavigationView {
+                        SettingsView(viewModel: BloodTestViewModel(context: PersistenceController.shared.container.viewContext))
                     }
                 }
             }
-            .sheet(isPresented: $showingSettings) {
-                NavigationView {
-                    SettingsView(viewModel: BloodTestViewModel(context: PersistenceController.shared.container.viewContext))
-                }
+            .tabItem {
+                Image(systemName: "house.fill")
+                Text("Dashboard")
+            }
+
+            // Trends tab
+            NavigationView {
+                TrendsTabView()
+                    .navigationTitle("Trends")
+                    .navigationBarTitleDisplayMode(.inline)
+            }
+            .tabItem {
+                Image(systemName: "chart.line.uptrend.xyaxis")
+                Text("Trends")
             }
         }
-        .navigationViewStyle(StackNavigationViewStyle())
     }
 }
 
