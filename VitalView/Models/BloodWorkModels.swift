@@ -267,11 +267,11 @@ public struct TestResult: Identifiable, Codable {
 
         // Handle inequalities
         if trimmed.first == "<" || trimmed.first == "≤" {
-            let numberString = trimmed.dropFirst().extractLeadingNumber()
+            let numberString = String(trimmed.dropFirst()).extractLeadingNumber()
             if let upper = Double(numberString) { return (nil, upper) }
         }
         if trimmed.first == ">" || trimmed.first == "≥" {
-            let numberString = trimmed.dropFirst().extractLeadingNumber()
+            let numberString = String(trimmed.dropFirst()).extractLeadingNumber()
             if let lower = Double(numberString) { return (lower, nil) }
         }
 
