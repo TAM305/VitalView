@@ -28,142 +28,134 @@ struct TrendsChartView: View {
     }
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Header with metric selector and time range
-                VStack(spacing: 16) {
-                    // Metric selector with icons
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            MetricButton(
-                                title: "Heart Rate",
-                                icon: "heart.fill",
-                                color: .red,
-                                isSelected: selectedMetric == "Heart Rate"
-                            ) {
-                                selectedMetric = "Heart Rate"
-                            }
-                            
-                            MetricButton(
-                                title: "Blood Pressure",
-                                icon: "waveform.path.ecg",
-                                color: .blue,
-                                isSelected: selectedMetric == "Blood Pressure"
-                            ) {
-                                selectedMetric = "Blood Pressure"
-                            }
-                            
-                            MetricButton(
-                                title: "Oxygen",
-                                icon: "lungs.fill",
-                                color: .green,
-                                isSelected: selectedMetric == "Oxygen Saturation"
-                            ) {
-                                selectedMetric = "Oxygen Saturation"
-                            }
-                            
-                            MetricButton(
-                                title: "Temperature",
-                                icon: "thermometer",
-                                color: .orange,
-                                isSelected: selectedMetric == "Temperature"
-                            ) {
-                                selectedMetric = "Temperature"
-                            }
-                            
-                            MetricButton(
-                                title: "Respiratory",
-                                icon: "wind",
-                                color: .purple,
-                                isSelected: selectedMetric == "Respiratory Rate"
-                            ) {
-                                selectedMetric = "Respiratory Rate"
-                            }
-                            
-                            MetricButton(
-                                title: "HRV",
-                                icon: "heart.text.square",
-                                color: .indigo,
-                                isSelected: selectedMetric == "Heart Rate Variability"
-                            ) {
-                                selectedMetric = "Heart Rate Variability"
-                            }
+        VStack(spacing: 0) {
+            // Header with metric selector and time range
+            VStack(spacing: 16) {
+                // Metric selector with icons
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        MetricButton(
+                            title: "Heart Rate",
+                            icon: "heart.fill",
+                            color: .red,
+                            isSelected: selectedMetric == "Heart Rate"
+                        ) {
+                            selectedMetric = "Heart Rate"
                         }
-                        .padding(.horizontal)
-                    }
-                    
-                    // Time range selector
-                    HStack(spacing: 8) {
-                        ForEach(TimeRange.allCases, id: \.self) { range in
-                            TimeRangeButton(
-                                range: range,
-                                isSelected: timeRange == range
-                            ) {
-                                timeRange = range
-                            }
+                        
+                        MetricButton(
+                            title: "Blood Pressure",
+                            icon: "waveform.path.ecg",
+                            color: .blue,
+                            isSelected: selectedMetric == "Blood Pressure"
+                        ) {
+                            selectedMetric = "Blood Pressure"
+                        }
+                        
+                        MetricButton(
+                            title: "Oxygen",
+                            icon: "lungs.fill",
+                            color: .green,
+                            isSelected: selectedMetric == "Oxygen Saturation"
+                        ) {
+                            selectedMetric = "Oxygen Saturation"
+                        }
+                        
+                        MetricButton(
+                            title: "Temperature",
+                            icon: "thermometer",
+                            color: .orange,
+                            isSelected: selectedMetric == "Temperature"
+                        ) {
+                            selectedMetric = "Temperature"
+                        }
+                        
+                        MetricButton(
+                            title: "Respiratory",
+                            icon: "wind",
+                            color: .purple,
+                            isSelected: selectedMetric == "Respiratory Rate"
+                        ) {
+                            selectedMetric = "Respiratory Rate"
+                        }
+                        
+                        MetricButton(
+                            title: "HRV",
+                            icon: "heart.text.square",
+                            color: .indigo,
+                            isSelected: selectedMetric == "Heart Rate Variability"
+                        ) {
+                            selectedMetric = "Heart Rate Variability"
                         }
                     }
                     .padding(.horizontal)
                 }
-                .padding(.top)
-                .background(Color(.systemBackground))
                 
-                // Chart area
-                if isLoading {
-                    VStack {
-                        ProgressView("Loading data...")
-                            .padding()
-                        Spacer()
-                    }
-                } else if chartData.isEmpty {
-                    VStack {
-                        Image(systemName: "chart.line.uptrend.xyaxis")
-                            .font(.system(size: 60))
-                            .foregroundColor(.gray)
-                            .padding()
-                        
-                        Text("No data available")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                        
-                        Text("Try selecting a different time range or metric")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                        
-                        Spacer()
-                    }
-                } else {
-                    ScrollView {
-                        VStack(spacing: 20) {
-                            // Main chart
-                            ChartView(data: chartData, metric: selectedMetric)
-                                .frame(height: 300)
-                                .padding()
-                            
-                            // Statistics
-                            StatisticsView(data: chartData, metric: selectedMetric)
-                                .padding(.horizontal)
-                            
-                            // Trend analysis
-                            TrendAnalysisView(data: chartData, metric: selectedMetric)
-                                .padding(.horizontal)
+                // Time range selector
+                HStack(spacing: 8) {
+                    ForEach(TimeRange.allCases, id: \.self) { range in
+                        TimeRangeButton(
+                            range: range,
+                            isSelected: timeRange == range
+                        ) {
+                            timeRange = range
                         }
-                        .padding(.bottom)
                     }
                 }
+                .padding(.horizontal)
             }
-            .navigationTitle("Health Trends")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
+            .padding(.top)
+            .background(Color(.systemBackground))
+            
+            // Chart area
+            if isLoading {
+                VStack {
+                    ProgressView("Loading data...")
+                        .padding()
+                    Spacer()
+                }
+            } else if chartData.isEmpty {
+                VStack {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 60))
+                        .foregroundColor(.gray)
+                        .padding()
+                    
+                    Text("No data available")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                    
+                    Text("Try selecting a different time range or metric")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                    
+                    Spacer()
+                }
+            } else {
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // Main chart
+                        ChartView(data: chartData, metric: selectedMetric)
+                            .frame(height: 300)
+                            .padding()
+                        
+                        // Statistics
+                        StatisticsView(data: chartData, metric: selectedMetric)
+                            .padding(.horizontal)
+                        
+                        // Trend analysis
+                        TrendAnalysisView(data: chartData, metric: selectedMetric)
+                            .padding(.horizontal)
                     }
+                    .padding(.bottom)
                 }
             }
         }
+        .frame(maxWidth: 900)
+        .padding(.horizontal)
+        .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
         .onAppear {
             loadChartData()
         }

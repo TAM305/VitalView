@@ -14,13 +14,18 @@ struct TrendsTabView: View {
             .pickerStyle(.segmented)
             .padding(.horizontal)
             
-            if selected == .health {
-                TrendsChartView()
-            } else {
-                BloodTestTrendsView(viewModel: BloodTestViewModel(context: PersistenceController.shared.container.viewContext))
+            Group {
+                if selected == .health {
+                    TrendsChartView()
+                } else {
+                    BloodTestTrendsView(viewModel: BloodTestViewModel(context: PersistenceController.shared.container.viewContext))
+                }
             }
-            Spacer()
+            .frame(maxWidth: 900)
+            .padding(.horizontal)
+            Spacer(minLength: 0)
         }
+        .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
     }
 }
 
