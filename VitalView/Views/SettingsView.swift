@@ -130,7 +130,7 @@ struct SettingsView: View {
     
     private func importData(_ data: Data) {
         let decoder = JSONDecoder()
-        decoder.dateEncodingStrategy = .iso8601
+        decoder.dateDecodingStrategy = .iso8601
         
         // First try to decode as standard BloodTest format
         if let tests = try? decoder.decode([BloodTest].self, from: data) {
