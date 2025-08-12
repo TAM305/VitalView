@@ -130,10 +130,261 @@ struct SettingsView: View {
     
     private func importData(_ data: Data) {
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        decoder.dateEncodingStrategy = .iso8601
+        
+        // First try to decode as standard BloodTest format
         if let tests = try? decoder.decode([BloodTest].self, from: data) {
             for test in tests {
                 viewModel.addTest(test)
+            }
+            alertMessage = "Data imported successfully"
+            return
+        }
+        
+        // If that fails, try to decode as VA lab format
+        if let vaLabData = try? decoder.decode(VALabData.self, from: data) {
+            importVALabData(vaLabData)
+            alertMessage = "VA Lab data imported successfully"
+            return
+        }
+        
+        // If both fail, show error
+        alertMessage = "Failed to import data: Unsupported format"
+    }
+    
+    private func importVALabData(_ vaData: VALabData) {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MM/dd/yyyy"
+        
+        // Import CBC data
+        if let cbcData = vaData.lab_tests.cbc {
+            let cbcDate = dateFormatter.date(from: cbcData.test_date) ?? Date()
+            var cbcResults: [TestResult] = []
+            
+            // Convert CBC results
+            if let wbc = cbcData.results.wbc?.value {
+                cbcResults.append(TestResult(
+                    name: "WBC",
+                    value: wbc,
+                    unit: cbcData.results.wbc?.units ?? "K/uL",
+                    referenceRange: "4.5-11.0",
+                    explanation: "White Blood Cell Count - measures immune system cells"
+                ))
+            }
+            
+            if let rbc = cbcData.results.rbc?.value {
+                cbcResults.append(TestResult(
+                    name: "RBC",
+                    value: rbc,
+                    unit: cbcData.results.rbc?.units ?? "M/uL",
+                    referenceRange: "4.5-5.9",
+                    explanation: "Red Blood Cell Count - measures oxygen-carrying cells"
+                ))
+            }
+            
+            if let hgb = cbcData.results.hgb?.value {
+                cbcResults.append(TestResult(
+                    name: "Hemoglobin",
+                    value: hgb,
+                    unit: cbcData.results.hgb?.units ?? "g/dL",
+                    referenceRange: "13.5-17.5",
+                    explanation: "Hemoglobin - measures oxygen-carrying protein"
+                ))
+            }
+            
+            if let hct = cbcData.results.hct?.value {
+                cbcResults.append(TestResult(
+                    name: "Hematocrit",
+                    value: hct,
+                    unit: cbcData.results.hct?.units ?? "%",
+                    referenceRange: "41.0-50.0",
+                    explanation: "Hematocrit - percentage of blood volume occupied by red cells"
+                ))
+            }
+            
+            if let platelets = cbcData.results.platelet_count?.value {
+                cbcResults.append(TestResult(
+                    name: "Platelets",
+                    value: platelets,
+                    unit: cbcData.results.platelet_count?.units ?? "K/uL",
+                    referenceRange: "150-450",
+                    explanation: "Platelet Count - measures clotting cells"
+                ))
+            }
+            
+            if let neutrophils = cbcData.results.neutrophils_percent?.value {
+                cbcResults.append(TestResult(
+                    name: "Neutrophils %",
+                    value: neutrophils,
+                    unit: cbcData.results.neutrophils_percent?.units ?? "%",
+                    referenceRange: "40.0-70.0",
+                    explanation: "Neutrophils Percentage - measures infection-fighting cells"
+                ))
+            }
+            
+            if let lymphs = cbcData.results.lymphs_percent?.value {
+                cbcResults.append(TestResult(
+                    name: "Lymphocytes %",
+                    value: lymphs,
+                    unit: cbcData.results.lymphs_percent?.units ?? "%",
+                    referenceRange: "20.0-40.0",
+                    explanation: "Lymphocytes Percentage - measures immune system cells"
+                ))
+            }
+            
+            if let monocytes = cbcData.results.monos_percent?.value {
+                cbcResults.append(TestResult(
+                    name: "Monocytes %",
+                    value: monocytes,
+                    unit: cbcData.results.monos_percent?.units ?? "%",
+                    referenceRange: "2.0-8.0",
+                    explanation: "Monocytes Percentage - measures immune system cells"
+                ))
+            }
+            
+            if let eosinophils = cbcData.results.eos_percent?.value {
+                cbcResults.append(TestResult(
+                    name: "Eosinophils %",
+                    value: eosinophils,
+                    unit: cbcData.results.eos_percent?.units ?? "%",
+                    referenceRange: "1.0-4.0",
+                    explanation: "Eosinophils Percentage - measures allergy/infection response"
+                ))
+            }
+            
+            if let basophils = cbcData.results.basos_percent?.value {
+                cbcResults.append(TestResult(
+                    name: "Basophils %",
+                    value: basophils,
+                    unit: cbcData.results.basos_percent?.units ?? "%",
+                    referenceRange: "0.5-1.0",
+                    explanation: "Basophils Percentage - measures inflammatory response"
+                ))
+            }
+            
+            if !cbcResults.isEmpty {
+                let cbcTest = BloodTest(
+                    date: cbcDate,
+                    testType: "CBC",
+                    results: cbcResults
+                )
+                viewModel.addTest(cbcTest)
+            }
+        }
+        
+        // Import CMP data
+        if let cmpData = vaData.lab_tests.cmp {
+            let cmpDate = dateFormatter.date(from: cmpData.test_date) ?? Date()
+            var cmpResults: [TestResult] = []
+            
+            // Convert CMP results
+            if let glucose = cmpData.results.glucose?.value {
+                cmpResults.append(TestResult(
+                    name: "Glucose",
+                    value: glucose,
+                    unit: cmpData.results.glucose?.units ?? "mg/dL",
+                    referenceRange: "70-100",
+                    explanation: "Glucose - measures blood sugar levels"
+                ))
+            }
+            
+            if let bun = cmpData.results.urea_nitrogen?.value {
+                cmpResults.append(TestResult(
+                    name: "Urea Nitrogen",
+                    value: bun,
+                    unit: cmpData.results.urea_nitrogen?.units ?? "mg/dL",
+                    referenceRange: "7-20",
+                    explanation: "Urea Nitrogen (BUN) - measures kidney function"
+                ))
+            }
+            
+            if let creatinine = cmpData.results.creatinine?.value {
+                cmpResults.append(TestResult(
+                    name: "Creatinine",
+                    value: creatinine,
+                    unit: cmpData.results.creatinine?.units ?? "mg/dL",
+                    referenceRange: "0.7-1.3",
+                    explanation: "Creatinine - measures kidney function"
+                ))
+            }
+            
+            if let sodium = cmpData.results.sodium?.value {
+                cmpResults.append(TestResult(
+                    name: "Sodium",
+                    value: sodium,
+                    unit: cmpData.results.sodium?.units ?? "mmol/L",
+                    referenceRange: "135-145",
+                    explanation: "Sodium - measures electrolyte balance"
+                ))
+            }
+            
+            if let potassium = cmpData.results.potassium?.value {
+                cmpResults.append(TestResult(
+                    name: "Potassium",
+                    value: potassium,
+                    unit: cmpData.results.potassium?.units ?? "mmol/L",
+                    referenceRange: "3.5-5.0",
+                    explanation: "Potassium - measures electrolyte balance"
+                ))
+            }
+            
+            if let chloride = cmpData.results.chloride?.value {
+                cmpResults.append(TestResult(
+                    name: "Chloride",
+                    value: chloride,
+                    unit: cmpData.results.chloride?.units ?? "mmol/L",
+                    referenceRange: "96-106",
+                    explanation: "Chloride - measures electrolyte balance"
+                ))
+            }
+            
+            if let co2 = cmpData.results.co2?.value {
+                cmpResults.append(TestResult(
+                    name: "CO2",
+                    value: co2,
+                    unit: cmpData.results.co2?.units ?? "mmol/L",
+                    referenceRange: "22-28",
+                    explanation: "Carbon Dioxide - measures acid-base balance"
+                ))
+            }
+            
+            if let calcium = cmpData.results.calcium?.value {
+                cmpResults.append(TestResult(
+                    name: "Calcium",
+                    value: calcium,
+                    unit: cmpData.results.calcium?.units ?? "mg/dL",
+                    referenceRange: "8.5-10.5",
+                    explanation: "Calcium - measures bone and muscle function"
+                ))
+            }
+            
+            if let albumin = cmpData.results.albumin?.value {
+                cmpResults.append(TestResult(
+                    name: "Albumin",
+                    value: albumin,
+                    unit: cmpData.results.albumin?.units ?? "g/dL",
+                    referenceRange: "3.5-5.0",
+                    explanation: "Albumin - measures protein levels and liver function"
+                ))
+            }
+            
+            if let ast = cmpData.results.ast?.value {
+                cmpResults.append(TestResult(
+                    name: "AST",
+                    value: ast,
+                    unit: cmpData.results.ast?.units ?? "U/L",
+                    referenceRange: "10-40",
+                    explanation: "AST - measures liver function"
+                ))
+            }
+            
+            if !cmpResults.isEmpty {
+                let cmpTest = BloodTest(
+                    date: cmpDate,
+                    testType: "CMP",
+                    results: cmpResults
+                )
+                viewModel.addTest(cmpTest)
             }
         }
     }

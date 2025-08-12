@@ -770,3 +770,100 @@ struct PrivacyInfo {
     Your health data belongs to you. We believe in complete privacy and local control of your information.
     """
 } 
+
+// MARK: - VA Lab Data Models
+
+/// Models for importing VA lab results in their specific JSON format
+struct VALabData: Codable {
+    let healthcare_facility: VALabFacility
+    let patient: VALabPatient
+    let report: VALabReport
+    let lab_tests: VALabTests
+}
+
+struct VALabFacility: Codable {
+    let name: String
+    let address: VALabAddress
+}
+
+struct VALabAddress: Codable {
+    let street: String
+    let city: String
+    let state: String
+    let zip_code: String
+}
+
+struct VALabPatient: Codable {
+    let name: String
+    let address: VALabAddress
+}
+
+struct VALabReport: Codable {
+    let type: String
+    let description: String
+    let date: String
+}
+
+struct VALabTests: Codable {
+    let cbc: VALabCBC?
+    let cmp: VALabCMP?
+}
+
+struct VALabCBC: Codable {
+    let test_name: String
+    let test_date: String
+    let results: VALabCBCResults
+    let interpretation: String
+}
+
+struct VALabCBCResults: Codable {
+    let wbc: VALabResult?
+    let neutrophils_percent: VALabResult?
+    let lymphs_percent: VALabResult?
+    let monos_percent: VALabResult?
+    let eos_percent: VALabResult?
+    let basos_percent: VALabResult?
+    let neutrophils_absolute: VALabResult?
+    let lymphs_absolute: VALabResult?
+    let monos_absolute: VALabResult?
+    let eos_absolute: VALabResult?
+    let basos_absolute: VALabResult?
+    let rbc: VALabResult?
+    let hgb: VALabResult?
+    let hct: VALabResult?
+    let mcv: VALabResult?
+    let mch: VALabResult?
+    let mchc: VALabResult?
+    let rdw: VALabResult?
+    let platelet_count: VALabResult?
+    let mpv: VALabResult?
+}
+
+struct VALabCMP: Codable {
+    let test_name: String
+    let test_date: String
+    let results: VALabCMPResults
+}
+
+struct VALabCMPResults: Codable {
+    let glucose: VALabResult?
+    let urea_nitrogen: VALabResult?
+    let creatinine: VALabResult?
+    let egfr_creatinine: VALabResult?
+    let sodium: VALabResult?
+    let potassium: VALabResult?
+    let chloride: VALabResult?
+    let co2: VALabResult?
+    let anion_gap: VALabResult?
+    let calcium: VALabResult?
+    let total_protein: VALabResult?
+    let albumin: VALabResult?
+    let ast: VALabResult?
+}
+
+struct VALabResult: Codable {
+    let name: String
+    let value: Double?
+    let units: String
+    let flag: String?
+} 
