@@ -132,8 +132,12 @@ struct SettingsView: View {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         
+        print("=== Import Debug ===")
+        print("Attempting to decode data of size: \(data.count)")
+        
         // First try to decode as standard BloodTest format
         if let tests = try? decoder.decode([BloodTest].self, from: data) {
+            print("Successfully decoded as standard BloodTest format: \(tests.count) tests")
             for test in tests {
                 viewModel.addTest(test)
             }
@@ -143,43 +147,64 @@ struct SettingsView: View {
         
         // If that fails, try to decode as VA lab format
         if let vaLabData = try? decoder.decode(VALabData.self, from: data) {
+            print("Successfully decoded as VA lab format")
             importVALabData(vaLabData)
             alertMessage = "VA Lab data imported successfully"
             return
         }
         
         // If both fail, show error
+        print("Failed to decode data in any format")
         alertMessage = "Failed to import data: Unsupported format"
     }
     
     private func importVALabData(_ vaData: VALabData) {
+        print("=== Starting VA Lab Import ===")
+        print("Facility: \(vaData.healthcare_facility.name)")
+        print("Patient: \(vaData.patient.name)")
+        print("Report date: \(vaData.report.date)")
+        print("Has CBC: \(vaData.lab_tests.cbc != nil)")
+        print("Has CMP: \(vaData.lab_tests.cmp != nil)")
+        
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "MM/dd/yyyy"
         
+        var totalTestsAdded = 0
+        
         // Import CBC data
         if let cbcData = vaData.lab_tests.cbc {
+            print("=== Processing CBC Data ===")
+            print("CBC test date: \(cbcData.test_date)")
             let cbcDate = dateFormatter.date(from: cbcData.test_date) ?? Date()
+            print("Parsed CBC date: \(cbcDate)")
+            
             var cbcResults: [TestResult] = []
             
             // Convert CBC results
             if let wbc = cbcData.results.wbc?.value {
                 cbcResults.append(TestResult(
-                    name: "WBC",
+                    name: "White Blood Cell Count",
                     value: wbc,
                     unit: cbcData.results.wbc?.units ?? "K/uL",
                     referenceRange: "4.5-11.0",
                     explanation: "White Blood Cell Count - measures immune system cells"
                 ))
+                print("Added WBC: \(wbc)")
+            } else {
+                print("WBC value is nil")
             }
             
             if let rbc = cbcData.results.rbc?.value {
                 cbcResults.append(TestResult(
-                    name: "RBC",
+                    name: "Red Blood Cell Count",
                     value: rbc,
                     unit: cbcData.results.rbc?.units ?? "M/uL",
                     referenceRange: "4.5-5.9",
                     explanation: "Red Blood Cell Count - measures oxygen-carrying cells"
                 ))
+                print("Added RBC: \(rbc)")
+            } else {
+                print("RBC value is nil")
             }
             
             if let hgb = cbcData.results.hgb?.value {
@@ -190,6 +215,9 @@ struct SettingsView: View {
                     referenceRange: "13.5-17.5",
                     explanation: "Hemoglobin - measures oxygen-carrying protein"
                 ))
+                print("Added Hemoglobin: \(hgb)")
+            } else {
+                print("Hemoglobin value is nil")
             }
             
             if let hct = cbcData.results.hct?.value {
@@ -200,6 +228,9 @@ struct SettingsView: View {
                     referenceRange: "41.0-50.0",
                     explanation: "Hematocrit - percentage of blood volume occupied by red cells"
                 ))
+                print("Added Hematocrit: \(hct)")
+            } else {
+                print("Hematocrit value is nil")
             }
             
             if let platelets = cbcData.results.platelet_count?.value {
@@ -210,6 +241,9 @@ struct SettingsView: View {
                     referenceRange: "150-450",
                     explanation: "Platelet Count - measures clotting cells"
                 ))
+                print("Added Platelets: \(platelets)")
+            } else {
+                print("Platelets value is nil")
             }
             
             if let neutrophils = cbcData.results.neutrophils_percent?.value {
@@ -220,6 +254,9 @@ struct SettingsView: View {
                     referenceRange: "40.0-70.0",
                     explanation: "Neutrophils Percentage - measures infection-fighting cells"
                 ))
+                print("Added Neutrophils %: \(neutrophils)")
+            } else {
+                print("Neutrophils % value is nil")
             }
             
             if let lymphs = cbcData.results.lymphs_percent?.value {
@@ -230,6 +267,9 @@ struct SettingsView: View {
                     referenceRange: "20.0-40.0",
                     explanation: "Lymphocytes Percentage - measures immune system cells"
                 ))
+                print("Added Lymphocytes %: \(lymphs)")
+            } else {
+                print("Lymphocytes % value is nil")
             }
             
             if let monocytes = cbcData.results.monos_percent?.value {
@@ -240,6 +280,9 @@ struct SettingsView: View {
                     referenceRange: "2.0-8.0",
                     explanation: "Monocytes Percentage - measures immune system cells"
                 ))
+                print("Added Monocytes %: \(monocytes)")
+            } else {
+                print("Monocytes % value is nil")
             }
             
             if let eosinophils = cbcData.results.eos_percent?.value {
@@ -250,6 +293,9 @@ struct SettingsView: View {
                     referenceRange: "1.0-4.0",
                     explanation: "Eosinophils Percentage - measures allergy/infection response"
                 ))
+                print("Added Eosinophils %: \(eosinophils)")
+            } else {
+                print("Eosinophils % value is nil")
             }
             
             if let basophils = cbcData.results.basos_percent?.value {
@@ -260,8 +306,12 @@ struct SettingsView: View {
                     referenceRange: "0.5-1.0",
                     explanation: "Basophils Percentage - measures inflammatory response"
                 ))
+                print("Added Basophils %: \(basophils)")
+            } else {
+                print("Basophils % value is nil")
             }
             
+            print("CBC results count: \(cbcResults.count)")
             if !cbcResults.isEmpty {
                 let cbcTest = BloodTest(
                     date: cbcDate,
@@ -269,12 +319,22 @@ struct SettingsView: View {
                     results: cbcResults
                 )
                 viewModel.addTest(cbcTest)
+                totalTestsAdded += 1
+                print("Added CBC test with \(cbcResults.count) results")
+            } else {
+                print("No CBC results to add!")
             }
+        } else {
+            print("No CBC data found in VA lab results")
         }
         
         // Import CMP data
         if let cmpData = vaData.lab_tests.cmp {
+            print("=== Processing CMP Data ===")
+            print("CMP test date: \(cmpData.test_date)")
             let cmpDate = dateFormatter.date(from: cmpData.test_date) ?? Date()
+            print("Parsed CMP date: \(cmpDate)")
+            
             var cmpResults: [TestResult] = []
             
             // Convert CMP results
@@ -286,6 +346,9 @@ struct SettingsView: View {
                     referenceRange: "70-100",
                     explanation: "Glucose - measures blood sugar levels"
                 ))
+                print("Added Glucose: \(glucose)")
+            } else {
+                print("Glucose value is nil")
             }
             
             if let bun = cmpData.results.urea_nitrogen?.value {
@@ -296,6 +359,9 @@ struct SettingsView: View {
                     referenceRange: "7-20",
                     explanation: "Urea Nitrogen (BUN) - measures kidney function"
                 ))
+                print("Added Urea Nitrogen: \(bun)")
+            } else {
+                print("Urea Nitrogen value is nil")
             }
             
             if let creatinine = cmpData.results.creatinine?.value {
@@ -306,6 +372,9 @@ struct SettingsView: View {
                     referenceRange: "0.7-1.3",
                     explanation: "Creatinine - measures kidney function"
                 ))
+                print("Added Creatinine: \(creatinine)")
+            } else {
+                print("Creatinine value is nil")
             }
             
             if let sodium = cmpData.results.sodium?.value {
@@ -316,6 +385,9 @@ struct SettingsView: View {
                     referenceRange: "135-145",
                     explanation: "Sodium - measures electrolyte balance"
                 ))
+                print("Added Sodium: \(sodium)")
+            } else {
+                print("Sodium value is nil")
             }
             
             if let potassium = cmpData.results.potassium?.value {
@@ -326,6 +398,9 @@ struct SettingsView: View {
                     referenceRange: "3.5-5.0",
                     explanation: "Potassium - measures electrolyte balance"
                 ))
+                print("Added Potassium: \(potassium)")
+            } else {
+                print("Potassium value is nil")
             }
             
             if let chloride = cmpData.results.chloride?.value {
@@ -336,6 +411,9 @@ struct SettingsView: View {
                     referenceRange: "96-106",
                     explanation: "Chloride - measures electrolyte balance"
                 ))
+                print("Added Chloride: \(chloride)")
+            } else {
+                print("Chloride value is nil")
             }
             
             if let co2 = cmpData.results.co2?.value {
@@ -346,6 +424,9 @@ struct SettingsView: View {
                     referenceRange: "22-28",
                     explanation: "Carbon Dioxide - measures acid-base balance"
                 ))
+                print("Added CO2: \(co2)")
+            } else {
+                print("CO2 value is nil")
             }
             
             if let calcium = cmpData.results.calcium?.value {
@@ -356,6 +437,9 @@ struct SettingsView: View {
                     referenceRange: "8.5-10.5",
                     explanation: "Calcium - measures bone and muscle function"
                 ))
+                print("Added Calcium: \(calcium)")
+            } else {
+                print("Calcium value is nil")
             }
             
             if let albumin = cmpData.results.albumin?.value {
@@ -366,6 +450,9 @@ struct SettingsView: View {
                     referenceRange: "3.5-5.0",
                     explanation: "Albumin - measures protein levels and liver function"
                 ))
+                print("Added Albumin: \(albumin)")
+            } else {
+                print("Albumin value is nil")
             }
             
             if let ast = cmpData.results.ast?.value {
@@ -376,8 +463,12 @@ struct SettingsView: View {
                     referenceRange: "10-40",
                     explanation: "AST - measures liver function"
                 ))
+                print("Added AST: \(ast)")
+            } else {
+                print("AST value is nil")
             }
             
+            print("CMP results count: \(cmpResults.count)")
             if !cmpResults.isEmpty {
                 let cmpTest = BloodTest(
                     date: cmpDate,
@@ -385,8 +476,18 @@ struct SettingsView: View {
                     results: cmpResults
                 )
                 viewModel.addTest(cmpTest)
+                totalTestsAdded += 1
+                print("Added CMP test with \(cmpResults.count) results")
+            } else {
+                print("No CMP results to add!")
             }
+        } else {
+            print("No CMP data found in VA lab results")
         }
+        
+        print("=== VA Lab Import Complete ===")
+        print("Total tests added: \(totalTestsAdded)")
+        print("Current bloodTests count: \(viewModel.bloodTests.count)")
     }
     
     private func deleteAllData() {
@@ -481,6 +582,27 @@ struct SettingsView: View {
             .sheet(isPresented: $showingExportSheet) {
                 if let data = exportData {
                     ShareSheet(items: [data])
+                } else {
+                    VStack(spacing: 20) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.system(size: 50))
+                            .foregroundColor(.orange)
+                        
+                        Text("No Data to Export")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                        
+                        Text("There are no blood tests available to export.")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                        
+                        Button("OK") {
+                            showingExportSheet = false
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    .padding()
                 }
             }
             .sheet(isPresented: $showingAboutApp) {

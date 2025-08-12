@@ -813,30 +813,28 @@ struct VALabCBC: Codable {
     let test_name: String
     let test_date: String
     let results: VALabCBCResults
-    let interpretation: String
 }
 
 struct VALabCBCResults: Codable {
-    let wbc: VALabResult?
-    let neutrophils_percent: VALabResult?
-    let lymphs_percent: VALabResult?
-    let monos_percent: VALabResult?
-    let eos_percent: VALabResult?
-    let basos_percent: VALabResult?
-    let neutrophils_absolute: VALabResult?
-    let lymphs_absolute: VALabResult?
-    let monos_absolute: VALabResult?
-    let eos_absolute: VALabResult?
-    let basos_absolute: VALabResult?
-    let rbc: VALabResult?
-    let hgb: VALabResult?
-    let hct: VALabResult?
-    let mcv: VALabResult?
-    let mch: VALabResult?
-    let mchc: VALabResult?
-    let rdw: VALabResult?
-    let platelet_count: VALabResult?
-    let mpv: VALabResult?
+    let wbc: VALabTestValue?
+    let neutrophils_percent: VALabTestValue?
+    let lymphs_percent: VALabTestValue?
+    let monos_percent: VALabTestValue?
+    let eos_percent: VALabTestValue?
+    let basos_percent: VALabTestValue?
+    let neutrophils_absolute: VALabTestValue?
+    let lymphs_absolute: VALabTestValue?
+    let monos_absolute: VALabTestValue?
+    let eos_absolute: VALabTestValue?
+    let basos_absolute: VALabTestValue?
+    let rbc: VALabTestValue?
+    let hgb: VALabTestValue?
+    let hct: VALabTestValue?
+    let mcv: VALabTestValue?
+    let mch: VALabTestValue?
+    let mchc: VALabTestValue?
+    let rdw: VALabTestValue?
+    let platelet_count: VALabTestValue?
 }
 
 struct VALabCMP: Codable {
@@ -846,24 +844,27 @@ struct VALabCMP: Codable {
 }
 
 struct VALabCMPResults: Codable {
-    let glucose: VALabResult?
-    let urea_nitrogen: VALabResult?
-    let creatinine: VALabResult?
-    let egfr_creatinine: VALabResult?
-    let sodium: VALabResult?
-    let potassium: VALabResult?
-    let chloride: VALabResult?
-    let co2: VALabResult?
-    let anion_gap: VALabResult?
-    let calcium: VALabResult?
-    let total_protein: VALabResult?
-    let albumin: VALabResult?
-    let ast: VALabResult?
+    let glucose: VALabTestValue?
+    let urea_nitrogen: VALabTestValue?
+    let creatinine: VALabTestValue?
+    let sodium: VALabTestValue?
+    let potassium: VALabTestValue?
+    let chloride: VALabTestValue?
+    let co2: VALabTestValue?
+    let calcium: VALabTestValue?
+    let albumin: VALabTestValue?
+    let ast: VALabTestValue?
+    let alt: VALabTestValue?
+    let alkaline_phosphatase: VALabTestValue?
+    let total_bilirubin: VALabTestValue?
+    let direct_bilirubin: VALabTestValue?
+    let total_protein: VALabTestValue?
+    let globulin: VALabTestValue?
+    let a_g_ratio: VALabTestValue?
 }
 
-struct VALabResult: Codable {
+struct VALabTestValue: Codable {
     let name: String
     let value: Double?
     let units: String
-    let flag: String?
 } 
