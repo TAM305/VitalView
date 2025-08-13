@@ -868,3 +868,88 @@ struct VALabTestValue: Codable {
     let value: Double?
     let units: String
 } 
+
+// MARK: - Comprehensive Health Data Models
+
+/// Models for importing comprehensive health data including clinical vitals and lab results
+struct ComprehensiveHealthData: Codable {
+    let patient: HealthDataPatient
+    let clinical_vitals: [ClinicalVital]?
+    let lab_results: [LabResult]?
+}
+
+struct HealthDataPatient: Codable {
+    let name: String
+    let date_of_birth: String?
+    let provider: String?
+}
+
+struct ClinicalVital: Codable {
+    let date: String
+    let blood_pressure: [String]?
+    let temperature_f: Double?
+    let heart_rate_bpm: Double?
+    let oxygen_saturation_percent: Double?
+    let pain_score: Double?
+    let respiratory_rate_bpm: Double?
+    let weight_lb: Double?
+    let height_in: Double?
+}
+
+struct LabResult: Codable {
+    let date: String
+    let tests: [LabTest]
+    let notes: [String]?
+}
+
+struct LabTest: Codable {
+    let name: String
+    let value: LabTestValue?
+    let unit: String?
+    let reference_range: String?
+    let qualifier: String?
+}
+
+enum LabTestValue: Codable {
+    case number(Double)
+    case string(String)
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let doubleValue = try? container.decode(Double.self) {
+            self = .number(doubleValue)
+        } else if let stringValue = try? container.decode(String.self) {
+            self = .string(stringValue)
+        } else {
+            throw DecodingError.typeMismatch(LabTestValue.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Expected number or string"))
+        }
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .number(let value):
+            try container.encode(value)
+        case .string(let value):
+            try container.encode(value)
+        }
+    }
+    
+    var numericValue: Double? {
+        switch self {
+        case .number(let value):
+            return value
+        case .string(let value):
+            return Double(value)
+        }
+    }
+    
+    var stringValue: String {
+        switch self {
+        case .number(let value):
+            return String(value)
+        case .string(let value):
+            return value
+        }
+    }
+} 

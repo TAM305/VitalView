@@ -145,6 +145,14 @@ struct SettingsView: View {
             return
         }
         
+        // If that fails, try to decode as comprehensive health data format
+        if let healthData = try? decoder.decode(ComprehensiveHealthData.self, from: data) {
+            print("Successfully decoded as comprehensive health data format")
+            importComprehensiveHealthData(healthData)
+            alertMessage = "Comprehensive health data imported successfully"
+            return
+        }
+        
         // If that fails, try to decode as VA lab format
         if let vaLabData = try? decoder.decode(VALabData.self, from: data) {
             print("Successfully decoded as VA lab format")
@@ -153,7 +161,7 @@ struct SettingsView: View {
             return
         }
         
-        // If both fail, show error
+        // If all fail, show error
         print("Failed to decode data in any format")
         alertMessage = "Failed to import data: Unsupported format"
     }
@@ -486,6 +494,84 @@ struct SettingsView: View {
         }
         
         print("=== VA Lab Import Complete ===")
+        print("Total tests added: \(totalTestsAdded)")
+        print("Current bloodTests count: \(viewModel.bloodTests.count)")
+    }
+    
+    private func importComprehensiveHealthData(_ healthData: ComprehensiveHealthData) {
+        print("=== Starting Comprehensive Health Data Import ===")
+        print("Patient: \(healthData.patient.name)")
+        print("Has clinical vitals: \(healthData.clinical_vitals?.count ?? 0)")
+        print("Has lab results: \(healthData.lab_results?.count ?? 0)")
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM dd, yyyy"
+        
+        var totalTestsAdded = 0
+        
+        // Import lab results
+        if let labResults = healthData.lab_results {
+            print("=== Processing Lab Results ===")
+            
+            for labResult in labResults {
+                print("Processing lab result for date: \(labResult.date)")
+                let labDate = dateFormatter.date(from: labResult.date) ?? Date()
+                print("Parsed lab date: \(labDate)")
+                
+                var testResults: [TestResult] = []
+                
+                for test in labResult.tests {
+                    print("Processing test: \(test.name)")
+                    
+                    if let numericValue = test.value?.numericValue {
+                        // Create test result with numeric value
+                        let testResult = TestResult(
+                            name: test.name,
+                            value: numericValue,
+                            unit: test.unit ?? "",
+                            referenceRange: test.reference_range ?? "",
+                            explanation: "Imported from comprehensive health data"
+                        )
+                        testResults.append(testResult)
+                        print("Added test result: \(test.name) = \(numericValue)")
+                    } else if let stringValue = test.value?.stringValue, stringValue != "Unknown" {
+                        // For non-numeric values that aren't "Unknown", try to convert to number if possible
+                        if let convertedValue = Double(stringValue) {
+                            let testResult = TestResult(
+                                name: test.name,
+                                value: convertedValue,
+                                unit: test.unit ?? "",
+                                referenceRange: test.reference_range ?? "",
+                                explanation: "Imported from comprehensive health data"
+                            )
+                            testResults.append(testResult)
+                            print("Added converted test result: \(test.name) = \(convertedValue)")
+                        } else {
+                            print("Skipping non-numeric test: \(test.name) = \(stringValue)")
+                        }
+                    } else {
+                        print("Skipping test with no valid value: \(test.name)")
+                    }
+                }
+                
+                if !testResults.isEmpty {
+                    let bloodTest = BloodTest(
+                        date: labDate,
+                        testType: "Comprehensive",
+                        results: testResults
+                    )
+                    viewModel.addTest(bloodTest)
+                    totalTestsAdded += 1
+                    print("Added comprehensive test with \(testResults.count) results for date \(labResult.date)")
+                } else {
+                    print("No valid test results for date \(labResult.date)")
+                }
+            }
+        } else {
+            print("No lab results found in comprehensive health data")
+        }
+        
+        print("=== Comprehensive Health Data Import Complete ===")
         print("Total tests added: \(totalTestsAdded)")
         print("Current bloodTests count: \(viewModel.bloodTests.count)")
     }
