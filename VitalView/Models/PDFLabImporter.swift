@@ -933,4 +933,24 @@ class PDFLabImporter: ObservableObject {
         
         return !matches.isEmpty
     }
+    
+    /// Returns a description of the regex pattern for debugging
+    private func getPatternDescription(for index: Int) -> String {
+        switch index {
+        case 1: return "Date Name LongSpace Data (MM/DD/YYYY format)"
+        case 2: return "Date Name LongSpace Data (YYYY/MM/DD format)"
+        case 3: return "Date Name Data (MM/DD/YYYY format, any spacing)"
+        case 4: return "Date Name Data (YYYY/MM/DD format, any spacing)"
+        case 5: return "Test Name: Value Unit (Reference Range)"
+        case 6: return "Test Name: Value Unit"
+        case 7: return "Test Name: Value Unit [Flag]"
+        case 8: return "Test Name: <Value Unit"
+        case 9: return "TestName Value Unit"
+        case 10: return "TestName Value.Unit"
+        case 11: return "TestName Value Unit (flexible)"
+        case 12: return "Test Name Only (no value/unit)"
+        case 13: return "Value Unit Only (no test name)"
+        default: return "Unknown Pattern"
+        }
+    }
 }
