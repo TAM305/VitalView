@@ -619,13 +619,11 @@ public final class BloodTestViewModel: ObservableObject {
     public func importComprehensiveLabData(_ jsonData: String) -> (success: Bool, errorMessage: String?) {
         do {
             let data = jsonData.data(using: .utf8)!
-            let comprehensiveData = try JSONDecoder().decode(ComprehensiveLabData.self, from: data)
+            _ = try JSONDecoder().decode(ComprehensiveLabData.self, from: data)
             
             // The comprehensive format is no longer supported - use enhanced format instead
             print("Comprehensive format is deprecated. Please use the enhanced JSON format.")
             return (false, "Comprehensive format is deprecated. Please use the enhanced JSON format.")
-            
-            return (true, nil)
         } catch {
             return (false, "Failed to import lab data: \(error.localizedDescription)")
         }
@@ -911,15 +909,16 @@ public final class BloodTestViewModel: ObservableObject {
                 print("Processing CBC panel with \(cbcPanel.results.count) tests")
                 let cbcTests = convertEnhancedCBCResultsToTestResults(cbcPanel.results, testDate: cbcPanel.test_date)
                 
-                // Create BloodTest for CBC
-                let cbcBloodTest = BloodTest(
-                    date: parseDate(cbcPanel.test_date) ?? Date(),
-                    testType: "Complete Blood Count (CBC)",
-                    results: cbcTests
-                )
-                
-                totalTestsImported += cbcTests.count
-                print("Imported \(cbcTests.count) CBC tests")
+                if !cbcTests.isEmpty {
+                    let cbcBloodTest = BloodTest(
+                        date: parseDate(from: cbcPanel.test_date) ?? Date(),
+                        testType: "Complete Blood Count (CBC)",
+                        results: cbcTests
+                    )
+                    addTest(cbcBloodTest)
+                    totalTestsImported += cbcTests.count
+                    print("Imported \(cbcTests.count) CBC tests")
+                }
             }
             
             // Import CMP results
@@ -927,15 +926,16 @@ public final class BloodTestViewModel: ObservableObject {
                 print("Processing CMP panel with \(cmpPanel.results.count) tests")
                 let cmpTests = convertEnhancedCMPResultsToTestResults(cmpPanel.results, testDate: cmpPanel.test_date)
                 
-                // Create BloodTest for CMP
-                let cmpBloodTest = BloodTest(
-                    date: parseDate(cmpPanel.test_date) ?? Date(),
-                    testType: "Comprehensive Metabolic Panel (CMP)",
-                    results: cmpTests
-                )
-                
-                totalTestsImported += cmpTests.count
-                print("Imported \(cmpTests.count) CMP tests")
+                if !cmpTests.isEmpty {
+                    let cmpBloodTest = BloodTest(
+                        date: parseDate(from: cmpPanel.test_date) ?? Date(),
+                        testType: "Comprehensive Metabolic Panel (CMP)",
+                        results: cmpTests
+                    )
+                    addTest(cmpBloodTest)
+                    totalTestsImported += cmpTests.count
+                    print("Imported \(cmpTests.count) CMP tests")
+                }
             }
             
             // Import Cholesterol results
@@ -943,21 +943,26 @@ public final class BloodTestViewModel: ObservableObject {
                 print("Processing Cholesterol panel with \(cholesterolPanel.results.count) tests")
                 let cholesterolTests = convertEnhancedCholesterolResultsToTestResults(cholesterolPanel.results, testDate: cholesterolPanel.test_date)
                 
-                // Create BloodTest for Cholesterol
-                let cholesterolBloodTest = BloodTest(
-                    date: parseDate(cholesterolPanel.test_date) ?? Date(),
-                    testType: "Cholesterol Panel",
-                    results: cholesterolTests
-                )
-                
-                totalTestsImported += cholesterolTests.count
-                print("Imported \(cholesterolTests.count) Cholesterol tests")
+                if !cholesterolTests.isEmpty {
+                    let cholesterolBloodTest = BloodTest(
+                        date: parseDate(from: cholesterolPanel.test_date) ?? Date(),
+                        testType: "Cholesterol Panel",
+                        results: cholesterolTests
+                    )
+                    addTest(cholesterolBloodTest)
+                    totalTestsImported += cholesterolTests.count
+                    print("Imported \(cholesterolTests.count) Cholesterol tests")
+                }
             }
             
-            // Save to Core Data
+            // Save to Core Data and refresh the view model
             do {
                 try viewContext.save()
                 print("Successfully saved \(totalTestsImported) enhanced lab tests to Core Data")
+                
+                // Refresh the view model's data from Core Data
+                loadTests()
+                print("Enhanced lab results import completed successfully")
             } catch {
                 print("Failed to save enhanced lab results to Core Data: \(error)")
             }
