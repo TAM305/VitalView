@@ -340,6 +340,7 @@ class PDFLabImporter: ObservableObject {
 
                 for match in matches {
                     print("    Pattern \(index + 1) matched! Ranges: \(match.numberOfRanges)")
+                    print("    Pattern description: \(getPatternDescription(for: index + 1))")
                     
                     // Skip pattern 6 (just test names) if we have a better match
                     if index == 5 && match.numberOfRanges == 2 {
@@ -454,6 +455,7 @@ class PDFLabImporter: ObservableObject {
         // Handle different pattern types
         if pattern.contains("Date Name LongSpace Data") {
             // Pattern: Date Name LongSpace Data (for your specific PDF format)
+            // This pattern has 4 capture groups: date, name, value, unit (plus full match at index 0)
             guard match.numberOfRanges >= 5 else { 
                 print("    Date Name LongSpace Data pattern needs 5 groups, got \(match.numberOfRanges)")
                 return nil 
@@ -496,6 +498,7 @@ class PDFLabImporter: ObservableObject {
             
         } else if pattern.contains("Date Name Data") {
             // Pattern: Date Name Data (any spacing between name and data)
+            // This pattern has 4 capture groups: date, name, value, unit (plus full match at index 0)
             guard match.numberOfRanges >= 5 else { 
                 print("    Date Name Data pattern needs 5 groups, got \(match.numberOfRanges)")
                 return nil 
