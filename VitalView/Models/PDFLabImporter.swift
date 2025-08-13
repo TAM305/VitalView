@@ -14,40 +14,43 @@ class PDFLabImporter: ObservableObject {
     /// Extracts text from a PDF file
     /// - Parameter url: URL to the PDF file
     func extractTextFromPDF(url: URL) {
+        print("=== PDF Import Debug ===")
+        print("Starting PDF extraction from: \(url)")
         isProcessing = true
         errorMessage = nil
         
         DispatchQueue.global(qos: .userInitiated).async {
-            do {
-                let document = PDFDocument(url: url)
-                guard let document = document else {
-                    DispatchQueue.main.async {
-                        self.errorMessage = "Could not open PDF document"
-                        self.isProcessing = false
-                    }
-                    return
-                }
-                
-                var fullText = ""
-                for i in 0..<document.pageCount {
-                    if let page = document.page(at: i) {
-                        if let pageContent = page.string {
-                            fullText += pageContent + "\n"
-                        }
-                    }
-                }
-                
+            let document = PDFDocument(url: url)
+            guard let document = document else {
+                print("Failed to create PDF document from URL")
                 DispatchQueue.main.async {
-                    self.extractedText = fullText
-                    self.parseLabResults(from: fullText)
+                    self.errorMessage = "Could not open PDF document"
                     self.isProcessing = false
                 }
-                
-            } catch {
-                DispatchQueue.main.async {
-                    self.errorMessage = "Error processing PDF: \(error.localizedDescription)"
-                    self.isProcessing = false
+                return
+            }
+            
+            print("PDF document created successfully with \(document.pageCount) pages")
+            var fullText = ""
+            for i in 0..<document.pageCount {
+                if let page = document.page(at: i) {
+                    if let pageContent = page.string {
+                        fullText += pageContent + "\n"
+                        print("Page \(i+1): Extracted \(pageContent.count) characters")
+                    } else {
+                        print("Page \(i+1): No text content found")
+                    }
                 }
+            }
+            
+            print("Total extracted text length: \(fullText.count)")
+            print("First 200 characters: \(String(fullText.prefix(200)))")
+            
+            DispatchQueue.main.async {
+                self.extractedText = fullText
+                self.parseLabResults(from: fullText)
+                print("Parsed \(self.parsedResults.count) test results")
+                self.isProcessing = false
             }
         }
     }
@@ -55,15 +58,19 @@ class PDFLabImporter: ObservableObject {
     /// Parses extracted text to find lab results
     /// - Parameter text: Raw text extracted from PDF
     private func parseLabResults(from text: String) {
+        print("=== Parsing Lab Results ===")
         let lines = text.components(separatedBy: .newlines)
+        print("Total lines to parse: \(lines.count)")
         var results: [TestResult] = []
         
-        for line in lines {
+        for (index, line) in lines.enumerated() {
             if let result = parseLabLine(line) {
+                print("Line \(index + 1): Found result - \(result.name): \(result.value) \(result.unit)")
                 results.append(result)
             }
         }
         
+        print("Total results parsed: \(results.count)")
         parsedResults = results
     }
     
@@ -108,7 +115,6 @@ class PDFLabImporter: ObservableObject {
     ///   - pattern: Pattern that matched
     /// - Returns: TestResult object
     private func createTestResult(from match: NSTextCheckingResult, in line: String, pattern: String) -> TestResult? {
-        let nsString = line as NSString
         
         // Extract test name
         guard let nameRange = Range(match.range(at: 1), in: line),

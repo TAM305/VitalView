@@ -172,6 +172,14 @@ struct PDFImportView: View {
         } message: {
             Text("Successfully imported \(pdfImporter.parsedResults.count) test results from your PDF lab report.")
         }
+        .alert("Import Error", isPresented: Binding(
+            get: { pdfImporter.errorMessage != nil },
+            set: { if !$0 { pdfImporter.errorMessage = nil } }
+        )) {
+            Button("OK") { pdfImporter.errorMessage = nil }
+        } message: {
+            Text(pdfImporter.errorMessage ?? "Unknown error occurred")
+        }
     }
     
     /// Imports the extracted results into the app
