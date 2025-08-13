@@ -869,6 +869,65 @@ struct VALabTestValue: Codable {
     let units: String
 } 
 
+// MARK: - Simple Lab Results Format
+/// Models for importing simple lab results in array format (matches user's JSON structure)
+struct SimpleLabResult: Codable {
+    let date: String
+    let tests: [SimpleLabTest]
+}
+
+struct SimpleLabTest: Codable {
+    let name: String
+    let value: LabTestValue?
+    let unit: String?
+    let reference_range: String?
+}
+
+// Custom enum to handle both string and numeric values
+enum LabTestValue: Codable {
+    case string(String)
+    case number(Double)
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let stringValue = try? container.decode(String.self) {
+            self = .string(stringValue)
+        } else if let numberValue = try? container.decode(Double.self) {
+            self = .number(numberValue)
+        } else {
+            throw DecodingError.typeMismatch(LabTestValue.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Expected String or Double"))
+        }
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .string(let value):
+            try container.encode(value)
+        case .number(let value):
+            try container.encode(value)
+        }
+    }
+    
+    var stringValue: String {
+        switch self {
+        case .string(let value):
+            return value
+        case .number(let value):
+            return String(value)
+        }
+    }
+    
+    var numericValue: Double? {
+        switch self {
+        case .string(let value):
+            return Double(value)
+        case .number(let value):
+            return value
+        }
+    }
+}
+
 // MARK: - Comprehensive Health Data Models
 
 /// Models for importing comprehensive health data including clinical vitals and lab results
@@ -908,48 +967,4 @@ struct LabTest: Codable {
     let unit: String?
     let reference_range: String?
     let qualifier: String?
-}
-
-enum LabTestValue: Codable {
-    case number(Double)
-    case string(String)
-    
-    init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        if let doubleValue = try? container.decode(Double.self) {
-            self = .number(doubleValue)
-        } else if let stringValue = try? container.decode(String.self) {
-            self = .string(stringValue)
-        } else {
-            throw DecodingError.typeMismatch(LabTestValue.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Expected number or string"))
-        }
-    }
-    
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        switch self {
-        case .number(let value):
-            try container.encode(value)
-        case .string(let value):
-            try container.encode(value)
-        }
-    }
-    
-    var numericValue: Double? {
-        switch self {
-        case .number(let value):
-            return value
-        case .string(let value):
-            return Double(value)
-        }
-    }
-    
-    var stringValue: String {
-        switch self {
-        case .number(let value):
-            return String(value)
-        case .string(let value):
-            return value
-        }
-    }
 } 
