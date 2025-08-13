@@ -34,11 +34,32 @@ class PDFLabImporter: ObservableObject {
             var fullText = ""
             for i in 0..<document.pageCount {
                 if let page = document.page(at: i) {
-                    if let pageContent = page.string {
+                    print("Processing page \(i + 1)")
+                    
+                    // Method 1: Try direct string extraction
+                    if let pageContent = page.string, !pageContent.isEmpty {
+                        print("Page \(i+1): Direct text extraction successful (\(pageContent.count) characters)")
                         fullText += pageContent + "\n"
-                        print("Page \(i+1): Extracted \(pageContent.count) characters")
                     } else {
-                        print("Page \(i+1): No text content found")
+                        print("Page \(i+1): Direct text extraction failed, trying alternative methods")
+                        
+                        // Method 2: Try using PDFPage's attributedString
+                        if let attributedString = page.attributedString {
+                            let pageContent = attributedString.string
+                            if !pageContent.isEmpty {
+                                print("Page \(i+1): AttributedString extraction successful (\(pageContent.count) characters)")
+                                fullText += pageContent + "\n"
+                            }
+                        }
+                        
+                        // Method 3: Try different page content extraction
+                        if fullText.isEmpty {
+                            print("Page \(i+1): Attempting alternative content extraction...")
+                            // Try to get content as data and convert
+                            if let pageData = page.dataRepresentation {
+                                print("Page \(i+1): Page data representation available (\(pageData.count) bytes)")
+                            }
+                        }
                     }
                 }
             }
