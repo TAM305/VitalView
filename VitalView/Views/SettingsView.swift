@@ -200,13 +200,24 @@ struct SettingsView: View {
         
         // If that fails, try to decode as simple lab results format
         do {
-            let simpleLabResults = try decoder.decode([SimpleLabResult].self, from: data)
-            print("Successfully decoded as simple lab results format: \(simpleLabResults.count) results")
-            importSimpleLabResults(simpleLabResults)
+            let simpleResults = try decoder.decode(SimpleLabResults.self, from: data)
+            print("Successfully decoded as simple lab results format")
+            importSimpleLabResults(simpleResults)
             alertMessage = "Simple lab results imported successfully"
             return
         } catch {
             print("Failed to decode as simple lab results format: \(error)")
+        }
+        
+        // If that fails, try to decode as comprehensive lab data format
+        do {
+            let comprehensiveData = try decoder.decode(ComprehensiveLabData.self, from: data)
+            print("Successfully decoded as comprehensive lab data format")
+            importComprehensiveLabData(comprehensiveData)
+            alertMessage = "Comprehensive lab data imported successfully"
+            return
+        } catch {
+            print("Failed to decode as comprehensive lab data format: \(error)")
         }
         
         // If all fail, show error
@@ -673,110 +684,46 @@ struct SettingsView: View {
         }
     }
     
-    private func importSimpleLabResults(_ labResults: [SimpleLabResult]) {
-        print("=== Starting Simple Lab Results Import ===")
-        print("Total lab results to process: \(labResults.count)")
+    private func importComprehensiveLabData(_ comprehensiveData: ComprehensiveLabData) {
+        print("=== Starting Comprehensive Lab Data Import ===")
+        print("Facility: \(comprehensiveData.healthcare_facility.name)")
+        print("Patient: \(comprehensiveData.patient.name)")
+        print("Report date: \(comprehensiveData.report.date)")
+        print("Has CBC: \(comprehensiveData.lab_tests.cbc != nil)")
+        print("Has CMP: \(comprehensiveData.lab_tests.cmp != nil)")
         
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMM dd, yyyy"
-        dateFormatter.locale = Locale(identifier: "en_US")
-        
-        var totalTestsAdded = 0
-        
-        for (index, labResult) in labResults.enumerated() {
-            print("=== Processing Lab Result \(index + 1)/\(labResults.count) ===")
-            print("Raw date string: '\(labResult.date)'")
-            
-            let labDate = dateFormatter.date(from: labResult.date)
-            if let labDate = labDate {
-                print("Successfully parsed date: \(labDate)")
-            } else {
-                print("FAILED to parse date: '\(labResult.date)'")
-                print("Trying alternative date formats...")
-                
-                // Try alternative date formats
-                let alternativeFormats = ["MMM dd, yyyy", "MMM d, yyyy", "MMM dd yyyy", "MMM d yyyy"]
-                var parsedDate: Date?
-                
-                for format in alternativeFormats {
-                    let altFormatter = DateFormatter()
-                    altFormatter.dateFormat = format
-                    altFormatter.locale = Locale(identifier: "en_US")
-                    if let date = altFormatter.date(from: labResult.date) {
-                        parsedDate = date
-                        print("Successfully parsed with format '\(format)': \(date)")
-                        break
-                    }
-                }
-                
-                if let parsedDate = parsedDate {
-                    print("Using alternative parsed date: \(parsedDate)")
-                    // Continue with the parsed date
-                } else {
-                    print("All date parsing attempts failed for: '\(labResult.date)'")
-                    print("Skipping this lab result")
-                    continue
-                }
-            }
-            
-            print("Tests in this lab result: \(labResult.tests.count)")
-            var testResults: [TestResult] = []
-            
-            for (testIndex, test) in labResult.tests.enumerated() {
-                print("Processing test \(testIndex + 1)/\(labResult.tests.count): '\(test.name)'")
-                print("Test value: \(test.value?.stringValue ?? "nil")")
-                print("Test unit: \(test.unit ?? "nil")")
-                print("Test reference range: \(test.reference_range ?? "nil")")
-                
-                // Handle the new LabTestValue type
-                if let testValue = test.value {
-                    if let numericValue = testValue.numericValue {
-                        let testResult = TestResult(
-                            name: test.name,
-                            value: numericValue,
-                            unit: test.unit ?? "",
-                            referenceRange: test.reference_range ?? "",
-                            explanation: "Imported from simple lab results"
-                        )
-                        testResults.append(testResult)
-                        print("✓ Added numeric test result: \(test.name) = \(numericValue)")
-                    } else {
-                        // Skip non-numeric values for now
-                        print("⚠ Skipping non-numeric test: \(test.name) = \(testValue.stringValue)")
-                    }
-                } else {
-                    print("⚠ Skipping test with no value: \(test.name)")
-                }
-            }
-            
-            print("Valid test results for this date: \(testResults.count)")
-            if !testResults.isEmpty {
-                let bloodTest = BloodTest(
-                    date: labDate ?? Date(),
-                    testType: "Simple Lab",
-                    results: testResults
-                )
-                print("Creating BloodTest with \(testResults.count) results for date \(labResult.date)")
-                
-                viewModel.addTest(bloodTest)
-                totalTestsAdded += 1
-                print("✓ Added simple lab test with \(testResults.count) results for date \(labResult.date)")
-                print("Current total tests in viewModel: \(viewModel.bloodTests.count)")
-            } else {
-                print("⚠ No valid test results for date \(labResult.date)")
-            }
-        }
-        
-        print("=== Simple Lab Results Import Complete ===")
-        print("Total tests added: \(totalTestsAdded)")
-        print("Final bloodTests count in viewModel: \(viewModel.bloodTests.count)")
-        
-        // Force a save to Core Data
+        // Convert back to JSON string and use the viewModel's import method
         do {
-            try PersistenceController.shared.container.viewContext.save()
-            print("✓ Successfully saved to Core Data")
+            let jsonData = try JSONEncoder().encode(comprehensiveData)
+            let jsonString = String(data: jsonData, encoding: .utf8) ?? ""
+            let result = viewModel.importComprehensiveLabData(jsonString)
+            
+            if result.success {
+                print("✓ Comprehensive lab data imported successfully")
+            } else {
+                print("❌ Failed to import comprehensive lab data: \(result.errorMessage ?? "Unknown error")")
+            }
         } catch {
-            print("❌ Failed to save to Core Data: \(error)")
+            print("❌ Failed to encode comprehensive data: \(error)")
+        }
+    }
+    
+    private func importSimpleLabResults(_ simpleResults: SimpleLabResults) {
+        print("=== Starting Simple Lab Results Import ===")
+        
+        // Convert back to JSON string and use the viewModel's import method
+        do {
+            let jsonData = try JSONEncoder().encode(simpleResults)
+            let jsonString = String(data: jsonData, encoding: .utf8) ?? ""
+            let result = viewModel.importSimpleLabResults(jsonString)
+            
+            if result.success {
+                print("✓ Simple lab results imported successfully")
+            } else {
+                print("❌ Failed to import simple lab results: \(result.errorMessage ?? "Unknown error")")
+            }
+        } catch {
+            print("❌ Failed to encode simple results: \(error)")
         }
     }
     

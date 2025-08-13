@@ -14,6 +14,7 @@ struct ContentView: View {
     @StateObject private var viewModel: BloodTestViewModel
     @State private var showBloodTests = false
     @State private var showingSettings = false
+    @State private var showingImport = false
     
     init() {
         let context = PersistenceController.shared.container.viewContext
@@ -48,6 +49,13 @@ struct ContentView: View {
                     .navigationTitle("Dashboard")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button(action: { showingImport = true }) {
+                                Image(systemName: "square.and.arrow.down")
+                                    .font(.system(size: 20))
+                            }
+                        }
+                        
                         ToolbarItem(placement: .navigationBarTrailing) {
                             Button(action: { showingSettings = true }) {
                                 Image(systemName: "gearshape.fill")
@@ -56,8 +64,16 @@ struct ContentView: View {
                         }
                     }
 
-                    // Floating add button
-                    Button(action: { showBloodTests = true }) {
+                    // Floating add button with menu
+                    Menu {
+                        Button(action: { showBloodTests = true }) {
+                            Label("Add Test Manually", systemImage: "plus.circle")
+                        }
+                        
+                        Button(action: { showingImport = true }) {
+                            Label("Import Lab Data", systemImage: "square.and.arrow.down")
+                        }
+                    } label: {
                         Image(systemName: "plus")
                             .font(.system(size: 20, weight: .bold))
                             .foregroundColor(.white)
@@ -67,14 +83,17 @@ struct ContentView: View {
                             .shadow(radius: 6)
                     }
                     .padding()
-                    .sheet(isPresented: $showBloodTests) {
-                        AddTestSheetView(isPresented: $showBloodTests)
-                    }
+                }
+                .sheet(isPresented: $showBloodTests) {
+                    AddTestSheetView(isPresented: $showBloodTests)
                 }
                 .sheet(isPresented: $showingSettings) {
                     NavigationView {
                         SettingsView(viewModel: BloodTestViewModel(context: PersistenceController.shared.container.viewContext))
                     }
+                }
+                .sheet(isPresented: $showingImport) {
+                    ImportLabDataView(viewModel: viewModel)
                 }
             }
             .navigationViewStyle(StackNavigationViewStyle())
