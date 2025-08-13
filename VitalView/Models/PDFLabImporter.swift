@@ -303,27 +303,31 @@ class PDFLabImporter: ObservableObject {
 
         // Improved lab result patterns - ordered from most specific to most general
         let patterns = [
-            // Pattern 1: Date Name LongSpace Data (for your specific PDF format)
+            // Pattern 1: Date Name LongSpace Data (for your specific PDF format) - very flexible spacing
             "(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})\\s+([A-Za-z\\s\\-]+)\\s{2,}([\\d\\.]+)\\s*([a-zA-Z/%]+)",
-            // Pattern 2: Date Name LongSpace Data (alternative date formats)
+            // Pattern 2: Date Name LongSpace Data (alternative date formats) - very flexible spacing
             "(\\d{4}[/-]\\d{1,2}[/-]\\d{1,2})\\s+([A-Za-z\\s\\-]+)\\s{2,}([\\d\\.]+)\\s*([a-zA-Z/%]+)",
-            // Pattern 3: Standard format with reference range: Test Name: Value Unit (Reference Range)
+            // Pattern 3: Date Name Data (any spacing between name and data)
+            "(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})\\s+([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)\\s*([a-zA-Z/%]+)",
+            // Pattern 4: Date Name Data (alternative date formats, any spacing)
+            "(\\d{4}[/-]\\d{1,2}[/-]\\d{1,2})\\s+([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)\\s*([a-zA-Z/%]+)",
+            // Pattern 5: Standard format with reference range: Test Name: Value Unit (Reference Range)
             "([A-Za-z\\s\\-]+):\\s*([\\d\\.]+)\\s*([a-zA-Z/%]+)\\s*\\(([\\d\\.\\-\\s]+)\\)",
-            // Pattern 4: Standard format without reference range: Test Name: Value Unit
+            // Pattern 6: Standard format without reference range: Test Name: Value Unit
             "([A-Za-z\\s\\-]+):\\s*([\\d\\.]+)\\s*([a-zA-Z/%]+)",
-            // Pattern 5: Pattern with flag: Test Name: Value Unit [H/L]
+            // Pattern 7: Pattern with flag: Test Name: Value Unit [H/L]
             "([A-Za-z\\s\\-]+):\\s*([\\d\\.]+)\\s*([a-zA-Z/%]+)\\s*\\[([HL])\\]",
-            // Pattern 6: Pattern with inequality: Test Name: <Value Unit
+            // Pattern 8: Pattern with inequality: Test Name: <Value Unit
             "([A-Za-z\\s\\-]+):\\s*([<>≤≥])\\s*([\\d\\.]+)\\s*([a-zA-Z/%]+)",
-            // Pattern 7: Simple format: TestName Value Unit (most flexible)
+            // Pattern 9: Simple format: TestName Value Unit (most flexible)
             "([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)\\s*([a-zA-Z/%]+)",
-            // Pattern 8: TestName with decimal: TestName Value.Unit (for cases like "TestName 12.5mg/dL")
+            // Pattern 10: TestName with decimal: TestName Value.Unit (for cases like "TestName 12.5mg/dL")
             "([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)\\.([a-zA-Z/%]+)",
-            // Pattern 9: Very flexible: Any text followed by number and unit
+            // Pattern 11: Very flexible: Any text followed by number and unit
             "([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)\\s*([a-zA-Z/%]+)",
-            // Pattern 10: Just a test name (might be followed by value on next line)
+            // Pattern 12: Just a test name (might be followed by value on next line)
             "^([A-Za-z\\s\\-]+)$",
-            // Pattern 11: Just a value and unit (might be preceded by test name on previous line)
+            // Pattern 13: Just a value and unit (might be preceded by test name on previous line)
             "^([\\d\\.]+)\\s*([a-zA-Z/%]+)$"
         ]
 
@@ -450,12 +454,16 @@ class PDFLabImporter: ObservableObject {
         // Handle different pattern types
         if pattern.contains("Date Name LongSpace Data") {
             // Pattern: Date Name LongSpace Data (for your specific PDF format)
-            guard match.numberOfRanges >= 5 else { return nil }
+            guard match.numberOfRanges >= 5 else { 
+                print("    Date Name LongSpace Data pattern needs 5 groups, got \(match.numberOfRanges)")
+                return nil 
+            }
             
             guard let dateRange = Range(match.range(at: 1), in: line),
                   let nameRange = Range(match.range(at: 2), in: line),
                   let valueRange = Range(match.range(at: 3), in: line),
                   let unitRange = Range(match.range(at: 4), in: line) else {
+                print("    Failed to extract ranges from Date Name LongSpace Data match")
                 return nil
             }
             
@@ -464,12 +472,59 @@ class PDFLabImporter: ObservableObject {
             let valueString = String(line[valueRange])
             let unit = String(line[unitRange]).trimmingCharacters(in: .whitespaces)
             
-            guard let value = Double(valueString) else { return nil }
+            print("    Extracted from Date Name LongSpace Data - Date: '\(dateString)', Name: '\(name)', Value: '\(valueString)', Unit: '\(unit)'")
+            
+            guard let value = Double(valueString) else { 
+                print("    Could not convert value to number: '\(valueString)'")
+                return nil 
+            }
             
             // Clean and validate the test name
             let cleanedName = cleanTestName(name)
             guard isValidTestName(cleanedName) else {
                 print("    Invalid test name in Date Name LongSpace Data format: '\(cleanedName)'")
+                return nil
+            }
+            
+            return TestResult(
+                name: cleanedName,
+                value: value,
+                unit: unit,
+                referenceRange: "N/A",
+                explanation: "Imported from PDF lab report - Date: \(dateString)"
+            )
+            
+        } else if pattern.contains("Date Name Data") {
+            // Pattern: Date Name Data (any spacing between name and data)
+            guard match.numberOfRanges >= 5 else { 
+                print("    Date Name Data pattern needs 5 groups, got \(match.numberOfRanges)")
+                return nil 
+            }
+            
+            guard let dateRange = Range(match.range(at: 1), in: line),
+                  let nameRange = Range(match.range(at: 2), in: line),
+                  let valueRange = Range(match.range(at: 3), in: line),
+                  let unitRange = Range(match.range(at: 4), in: line) else {
+                print("    Failed to extract ranges from Date Name Data match")
+                return nil
+            }
+            
+            let dateString = String(line[dateRange])
+            let name = String(line[nameRange]).trimmingCharacters(in: .whitespaces)
+            let valueString = String(line[valueRange])
+            let unit = String(line[unitRange]).trimmingCharacters(in: .whitespaces)
+            
+            print("    Extracted from Date Name Data - Date: '\(dateString)', Name: '\(name)', Value: '\(valueString)', Unit: '\(unit)'")
+            
+            guard let value = Double(valueString) else { 
+                print("    Could not convert value to number: '\(valueString)'")
+                return nil 
+            }
+            
+            // Clean and validate the test name
+            let cleanedName = cleanTestName(name)
+            guard isValidTestName(cleanedName) else {
+                print("    Invalid test name in Date Name Data format: '\(cleanedName)'")
                 return nil
             }
             
@@ -577,6 +632,59 @@ class PDFLabImporter: ObservableObject {
             )
             
         } else {
+            // Handle patterns that only capture test names (like Pattern 12: ^([A-Za-z\s\-]+)$)
+            if pattern.contains("^([A-Za-z\\s\\-]+)$") {
+                // This pattern only captures a test name, no value or unit
+                guard let nameRange = Range(match.range(at: 1), in: line) else {
+                    print("    Failed to extract test name from simple pattern")
+                    return nil
+                }
+                
+                let name = String(line[nameRange]).trimmingCharacters(in: .whitespaces)
+                let cleanedName = cleanTestName(name)
+                
+                guard isValidTestName(cleanedName) else {
+                    print("    Invalid test name from simple pattern: '\(cleanedName)'")
+                    return nil
+                }
+                
+                // Return a placeholder result that can be updated later
+                return TestResult(
+                    name: cleanedName,
+                    value: 0.0,
+                    unit: "N/A",
+                    referenceRange: "N/A",
+                    explanation: "Imported from PDF lab report - test name only (value may be on next line)"
+                )
+            }
+            
+            // Handle patterns that only capture value and unit (like Pattern 13: ^([\d\.]+)\s*([a-zA-Z/%]+)$)
+            if pattern.contains("^([\\d\\.]+)\\s*([a-zA-Z/%]+)$") {
+                // This pattern only captures a value and unit, no test name
+                guard let valueRange = Range(match.range(at: 1), in: line),
+                      let unitRange = Range(match.range(at: 2), in: line) else {
+                    print("    Failed to extract value/unit from simple pattern")
+                    return nil
+                }
+                
+                let valueString = String(line[valueRange])
+                let unit = String(line[unitRange]).trimmingCharacters(in: .whitespaces)
+                
+                guard let value = Double(valueString) else {
+                    print("    Could not convert value to number: '\(valueString)'")
+                    return nil
+                }
+                
+                // Return a placeholder result that can be updated later
+                return TestResult(
+                    name: "Unknown Test",
+                    value: value,
+                    unit: unit,
+                    referenceRange: "N/A",
+                    explanation: "Imported from PDF lab report - value/unit only (test name may be on previous line)"
+                )
+            }
+            
             // Original patterns for standard format with colons
             guard let nameRange = Range(match.range(at: 1), in: line),
                   let name = String(line[nameRange]).trimmingCharacters(in: .whitespaces) as String? else {
@@ -684,7 +792,7 @@ class PDFLabImporter: ObservableObject {
     }
     
     /// Specialized parsing for Date Name LongSpace Data format
-    /// This handles the specific format: Date + Space + Name + Space + LongSpace + Data
+    /// This handles the specific format: Date + Space + Name + LongSpace + Data
     /// - Parameter line: Single line of text from the PDF
     /// - Returns: TestResult if found, nil otherwise
     private func parseDateNameLongSpaceData(from line: String) -> TestResult? {
@@ -722,36 +830,48 @@ class PDFLabImporter: ObservableObject {
         let afterDate = String(line[dateRange.upperBound...]).trimmingCharacters(in: .whitespaces)
         print("      Text after date: '\(afterDate)'")
         
-        // Look for the last numeric value and unit in the line
-        let valueUnitPattern = "([\\d\\.]+)\\s*([a-zA-Z/%]+)$"
-        guard let valueRegex = try? NSRegularExpression(pattern: valueUnitPattern, options: []) else {
-            return nil
+        // Try multiple patterns to find the value and unit
+        let valueUnitPatterns = [
+            "([A-Za-z\\s\\-]+)\\s{2,}([\\d\\.]+)\\s*([a-zA-Z/%]+)",  // Name + LongSpace + Value + Unit
+            "([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)\\s*([a-zA-Z/%]+)",     // Name + Space + Value + Unit
+            "([A-Za-z\\s\\-]+)([\\d\\.]+)\\s*([a-zA-Z/%]+)"          // Name + Value + Unit (no space)
+        ]
+        
+        var testName = ""
+        var valueString = ""
+        var unit = ""
+        
+        for pattern in valueUnitPatterns {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
+                if let match = regex.firstMatch(in: afterDate, options: [], range: NSRange(afterDate.startIndex..., in: afterDate)) {
+                    guard let nameRange = Range(match.range(at: 1), in: afterDate),
+                          let valRange = Range(match.range(at: 2), in: afterDate),
+                          let unitRange = Range(match.range(at: 3), in: afterDate) else {
+                        continue
+                    }
+                    
+                    testName = String(afterDate[nameRange]).trimmingCharacters(in: .whitespaces)
+                    valueString = String(afterDate[valRange])
+                    unit = String(afterDate[unitRange]).trimmingCharacters(in: .whitespaces)
+                    
+                    print("      Pattern '\(pattern)' matched - Name: '\(testName)', Value: '\(valueString)', Unit: '\(unit)'")
+                    break
+                }
+            }
         }
         
-        guard let valueMatch = valueRegex.firstMatch(in: afterDate, options: [], range: NSRange(afterDate.startIndex..., in: afterDate)) else {
-            print("      No value/unit found at end of line")
+        guard !testName.isEmpty && !valueString.isEmpty else {
+            print("      Could not extract test name, value, or unit")
             return nil
         }
-        
-        guard let valueRange = Range(valueMatch.range(at: 1), in: afterDate),
-              let unitRange = Range(valueMatch.range(at: 2), in: afterDate) else {
-            return nil
-        }
-        
-        let valueString = String(afterDate[valueRange])
-        let unit = String(afterDate[unitRange]).trimmingCharacters(in: .whitespaces)
         
         guard let value = Double(valueString) else {
             print("      Could not convert value to number: '\(valueString)'")
             return nil
         }
         
-        // Extract the test name (everything between date and value, excluding the long space)
-        let beforeValue = String(afterDate[..<valueRange.lowerBound]).trimmingCharacters(in: .whitespaces)
-        print("      Test name (before value): '\(beforeValue)'")
-        
         // Clean and validate the test name
-        let cleanedName = cleanTestName(beforeValue)
+        let cleanedName = cleanTestName(testName)
         guard isValidTestName(cleanedName) else {
             print("      Invalid test name: '\(cleanedName)'")
             return nil
