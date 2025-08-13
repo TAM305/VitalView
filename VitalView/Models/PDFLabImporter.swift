@@ -212,14 +212,32 @@ class PDFLabImporter: ObservableObject {
                     results.append(multiLineResult.result)
                     index += multiLineResult.lineCount
                 } else {
-                    // Try to combine with adjacent lines
-                    if let combinedResult = tryCombineAdjacentLines(lines: lines, currentIndex: index) {
-                        print("Lines \(index + 1)-\(index + 2): Found combined result - \(combinedResult.name): \(combinedResult.value) \(combinedResult.unit)")
-                        results.append(combinedResult)
-                        index += 2 // Skip both lines since we used them
-                    } else {
-                        // No result found, move to next line
-                        index += 1
+                                    // Try to parse date + test name + value (common OCR pattern)
+                if let dateTestValueResult = parseDateTestNameValue(lines: lines, currentIndex: index) {
+                    print("Lines \(index + 1)-\(index + 2): Found date + test name + value - \(dateTestValueResult.name): \(dateTestValueResult.value) \(dateTestValueResult.unit)")
+                    results.append(dateTestValueResult)
+                    index += 2 // Skip both lines since we used them
+                } else if let testValueResult = parseTestNameValuePair(lines: lines, currentIndex: index) {
+                    print("Lines \(index + 1)-\(index + 2): Found test name + value pair - \(testValueResult.name): \(testValueResult.value) \(testValueResult.unit)")
+                    results.append(testValueResult)
+                    index += 2 // Skip both lines since we used them
+                } else {
+                        // Try to combine fragmented lines (especially useful for OCR output)
+                        if let fragmentedResult = combineFragmentedLines(lines: lines, currentIndex: index) {
+                            print("Lines \(index + 1)-\(index + 3): Found fragmented result - \(fragmentedResult.name): \(fragmentedResult.value) \(fragmentedResult.unit)")
+                            results.append(fragmentedResult)
+                            index += 3 // Skip all three lines since we used them
+                        } else {
+                            // Try to combine with adjacent lines (legacy method)
+                            if let combinedResult = tryCombineAdjacentLines(lines: lines, currentIndex: index) {
+                                print("Lines \(index + 1)-\(index + 2): Found combined result - \(combinedResult.name): \(combinedResult.value) \(combinedResult.unit)")
+                                results.append(combinedResult)
+                                index += 2 // Skip both lines since we used them
+                            } else {
+                                // No result found, move to next line
+                                index += 1
+                            }
+                        }
                     }
                 }
             }
@@ -254,22 +272,92 @@ class PDFLabImporter: ObservableObject {
         let testNamePattern = "[A-Za-z]"
         let isTestNameLine = (try? NSRegularExpression(pattern: testNamePattern, options: []))?.firstMatch(in: line2, options: [], range: NSRange(line2.startIndex..., in: line2)) != nil
         
-        // Check if line 3 contains a numeric value
-        let valuePattern = "([\\d\\.]+)\\s*([a-zA-Z/%]+)"
-        let valueMatch = (try? NSRegularExpression(pattern: valuePattern, options: []))?.firstMatch(in: line3, options: [], range: NSRange(line3.startIndex..., in: line3))
-        
-        if isDateLine && isTestNameLine && valueMatch != nil {
-            // Extract the value and unit from line 3
-            guard let match = valueMatch,
-                  let valueRange = Range(match.range(at: 1), in: line3),
-                  let unitRange = Range(match.range(at: 2), in: line3) else {
-                return nil
+        if isDateLine && isTestNameLine {
+            print("      Date and test name lines confirmed, analyzing line 3 for value/unit")
+            
+            // Enhanced value extraction from line 3
+            var value: Double?
+            var unit = "N/A"
+            
+            // Try multiple patterns to extract value and unit from line 3
+            let valuePatterns = [
+                "([\\d\\.]+)\\s*([a-zA-Z/%]+)",           // Standard: 12.5 mg/dL
+                "([\\d\\.]+)\\s*([a-zA-Z/%]+)\\s*([A-Za-z\\s]+)", // With additional text: 12.5 mg/dL NEUTROPHILS
+                "([\\d\\.]+)\\s*([a-zA-Z/%]+)\\s*([\\d\\.]+)",     // Range: 12.5 mg/dL 4.5-11.0
+                "([\\d\\.]+)\\s*([a-zA-Z/%]+)\\s*([<>≤≥]\\s*[\\d\\.]+)", // With flag: 12.5 mg/dL > 11.0
+                "([\\d\\.]+)\\s*([a-zA-Z/%]+)\\s*([HL])",          // With H/L flag: 12.5 mg/dL H
+                "([\\d\\.]+)\\s*([a-zA-Z/%]+)\\s*([A-Za-z]+)",     // With text: 12.5 mg/dL HIGH
+                "([\\d\\.]+)\\s*([a-zA-Z/%]+)",                    // Just value and unit
+                "([\\d\\.]+)"                                       // Just value
+            ]
+            
+            for (patternIndex, pattern) in valuePatterns.enumerated() {
+                if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
+                    if let match = regex.firstMatch(in: line3, options: [], range: NSRange(line3.startIndex..., in: line3)) {
+                        print("      Pattern \(patternIndex) matched line 3: '\(pattern)'")
+                        
+                        // Extract value (always first capture group)
+                        if let valueRange = Range(match.range(at: 1), in: line3) {
+                            let valueString = String(line3[valueRange])
+                            print("        Extracted value: '\(valueString)'")
+                            
+                            if let extractedValue = Double(valueString) {
+                                value = extractedValue
+                                
+                                // Extract unit if available (second capture group)
+                                if match.numberOfRanges >= 3 {
+                                    if let unitRange = Range(match.range(at: 2), in: line3) {
+                                        let extractedUnit = String(line3[unitRange]).trimmingCharacters(in: .whitespaces)
+                                        if !extractedUnit.isEmpty {
+                                            unit = extractedUnit
+                                            print("        Extracted unit: '\(unit)'")
+                                        }
+                                    }
+                                }
+                                
+                                print("        Successfully extracted: \(value!) \(unit)")
+                                break
+                            } else {
+                                print("        Could not convert '\(valueString)' to number")
+                            }
+                        }
+                    }
+                }
             }
             
-            let valueString = String(line3[valueRange])
-            let unit = String(line3[unitRange]).trimmingCharacters(in: .whitespaces)
+            // If we still don't have a value, try to extract any number from line 3
+            if value == nil {
+                print("      No pattern matched, trying to extract any number from line 3")
+                let numberPattern = "([\\d\\.]+)"
+                if let regex = try? NSRegularExpression(pattern: numberPattern, options: []) {
+                    if let match = regex.firstMatch(in: line3, options: [], range: NSRange(line3.startIndex..., in: line3)) {
+                        if let valueRange = Range(match.range(at: 1), in: line3) {
+                            let valueString = String(line3[valueRange])
+                            print("        Found number: '\(valueString)'")
+                            value = Double(valueString)
+                            
+                            // Try to extract unit from after the number
+                            let afterNumber = String(line3[valueRange.upperBound...]).trimmingCharacters(in: .whitespaces)
+                            if !afterNumber.isEmpty {
+                                let unitPattern = "^([a-zA-Z/%]+)"
+                                if let unitRegex = try? NSRegularExpression(pattern: unitPattern, options: []) {
+                                    if let unitMatch = unitRegex.firstMatch(in: afterNumber, options: [], range: NSRange(afterNumber.startIndex..., in: afterNumber)) {
+                                        if let unitRange = Range(unitMatch.range(at: 1), in: afterNumber) {
+                                            unit = String(afterNumber[unitRange])
+                                            print("        Extracted unit from after number: '\(unit)'")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             
-            guard let value = Double(valueString) else { return nil }
+            guard let extractedValue = value else {
+                print("      Could not extract any numeric value from line 3")
+                return nil
+            }
             
             // Clean and validate the test name
             let cleanedName = cleanTestName(line2)
@@ -280,12 +368,13 @@ class PDFLabImporter: ObservableObject {
             
             let result = TestResult(
                 name: cleanedName,
-                value: value,
+                value: extractedValue,
                 unit: unit,
                 referenceRange: "N/A",
                 explanation: "Imported from PDF lab report - Date: \(line1)"
             )
             
+            print("    Successfully created multi-line result: \(cleanedName) = \(extractedValue) \(unit)")
             return (result: result, lineCount: 3)
         }
         
@@ -386,6 +475,8 @@ class PDFLabImporter: ObservableObject {
     
     /// Fallback extraction method for lines that don't match standard patterns
     private func extractFallbackResult(from line: String) -> TestResult? {
+        print("    Using fallback extraction for line: '\(line)'")
+        
         // Look for any number in the line
         let numberPattern = "([\\d\\.]+)"
         guard let regex = try? NSRegularExpression(pattern: numberPattern, options: []) else { return nil }
@@ -398,9 +489,14 @@ class PDFLabImporter: ObservableObject {
         let valueString = String(line[valueRange])
         guard let value = Double(valueString) else { return nil }
         
+        print("    Fallback: Found value \(value) at position \(valueRange)")
+        
         // Try to extract test name from before the number
         let beforeNumber = String(line[..<valueRange.lowerBound]).trimmingCharacters(in: .whitespaces)
         let afterNumber = String(line[valueRange.upperBound...]).trimmingCharacters(in: .whitespaces)
+        
+        print("    Fallback: Text before number: '\(beforeNumber)'")
+        print("    Fallback: Text after number: '\(afterNumber)'")
         
         // Determine test name and unit
         var testName = beforeNumber
@@ -413,17 +509,36 @@ class PDFLabImporter: ObservableObject {
             if let unitRegex = try? NSRegularExpression(pattern: unitPattern, options: []) {
                 if unitRegex.firstMatch(in: afterNumber, options: [], range: NSRange(afterNumber.startIndex..., in: afterNumber)) != nil {
                     unit = afterNumber
+                    print("    Fallback: Extracted unit: '\(unit)'")
                 } else {
                     // If it's not a unit, it might be part of the test name
                     testName = beforeNumber + " " + afterNumber
+                    print("    Fallback: Combined text as test name: '\(testName)'")
                 }
             }
         }
         
         // Clean up test name
         testName = testName.trimmingCharacters(in: .whitespaces)
+        
+        // Only use "Unknown Test" if we really have no text at all
         if testName.isEmpty {
-            testName = "Unknown Test"
+            // Check if the line contains any letters that might be a test name
+            let letterPattern = "[A-Za-z]+"
+            if let letterRegex = try? NSRegularExpression(pattern: letterPattern, options: []) {
+                if let letterMatch = letterRegex.firstMatch(in: line, options: [], range: NSRange(line.startIndex..., in: line)) {
+                    if let letterRange = Range(letterMatch.range(at: 0), in: line) {
+                        testName = String(line[letterRange])
+                        print("    Fallback: Extracted test name from letters: '\(testName)'")
+                    }
+                }
+            }
+            
+            // If still no test name, use a more descriptive placeholder
+            if testName.isEmpty {
+                testName = "Lab Test"
+                print("    Fallback: Using generic test name: '\(testName)'")
+            }
         }
         
         // Clean and validate the test name
@@ -432,6 +547,8 @@ class PDFLabImporter: ObservableObject {
             print("    Fallback: Invalid test name: '\(cleanedName)'")
             return nil
         }
+        
+        print("    Fallback: Successfully created result: \(cleanedName) = \(value) \(unit)")
         
         return TestResult(
             name: cleanedName,
@@ -748,6 +865,391 @@ class PDFLabImporter: ObservableObject {
         return nil
     }
     
+    /// Intelligently combines fragmented lines that appear to be parts of a single lab result
+    /// This is especially useful for OCR output where single entries get split across multiple lines
+    /// - Parameters:
+    ///   - lines: All lines from the PDF
+    ///   - currentIndex: Current line index
+    /// - Returns: TestResult if fragments can be combined, nil otherwise
+    private func combineFragmentedLines(lines: [String], currentIndex: Int) -> TestResult? {
+        guard currentIndex + 2 < lines.count else { return nil }
+        
+        let line1 = lines[currentIndex].trimmingCharacters(in: .whitespacesAndNewlines)
+        let line2 = lines[currentIndex + 1].trimmingCharacters(in: .whitespacesAndNewlines)
+        let line3 = lines[currentIndex + 2].trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        print("    Trying to combine fragmented lines:")
+        print("      Line 1: '\(line1)'")
+        print("      Line 2: '\(line2)'")
+        print("      Line 3: '\(line3)'")
+        
+        // Pattern 1: Date on line 1, Test name on line 2, Value/Unit on line 3
+        if isDateLine(line1) && isTestNameLine(line2) && hasValueUnit(line3) {
+            print("      Pattern 1: Date + Test + Value/Unit")
+            return createResultFromFragments(date: line1, testName: line2, valueLine: line3)
+        }
+        
+        // Pattern 2: Date + Test name on line 1, Value/Unit on line 2
+        if isDateLine(line1) && hasValueUnit(line2) {
+            // Extract test name from line 1 after the date
+            if let testName = extractTestNameAfterDate(from: line1) {
+                print("      Pattern 2: Date+Test + Value/Unit")
+                return createResultFromFragments(date: line1, testName: testName, valueLine: line2)
+            }
+        }
+        
+        // Pattern 3: Test name on line 1, Value/Unit on line 2
+        if isTestNameLine(line1) && hasValueUnit(line2) {
+            print("      Pattern 3: Test + Value/Unit (no date)")
+            return createResultFromFragments(date: "Unknown", testName: line1, valueLine: line2)
+        }
+        
+        // Pattern 4: Date + Test name on line 1, partial value on line 2, complete value on line 3
+        if isDateLine(line1) && isPartialValueLine(line2) && hasValueUnit(line3) {
+            if let testName = extractTestNameAfterDate(from: line1) {
+                print("      Pattern 4: Date+Test + Partial + Complete Value")
+                return createResultFromFragments(date: line1, testName: testName, valueLine: line3)
+            }
+        }
+        
+        return nil
+    }
+    
+    /// Helper method to check if a line contains a date
+    private func isDateLine(_ line: String) -> Bool {
+        let datePattern = "(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})|(\\d{4}[/-]\\d{1,2}[/-]\\d{1,2})"
+        return (try? NSRegularExpression(pattern: datePattern, options: []))?.firstMatch(in: line, options: [], range: NSRange(line.startIndex..., in: line)) != nil
+    }
+    
+    /// Helper method to check if a line contains a test name
+    private func isTestNameLine(_ line: String) -> Bool {
+        let testNamePattern = "[A-Za-z]"
+        return (try? NSRegularExpression(pattern: testNamePattern, options: []))?.firstMatch(in: line, options: [], range: NSRange(line.startIndex..., in: line)) != nil
+    }
+    
+    /// Helper method to check if a line contains a value and unit
+    private func hasValueUnit(_ line: String) -> Bool {
+        let valueUnitPattern = "([\\d\\.]+)\\s*([a-zA-Z/%]+)"
+        return (try? NSRegularExpression(pattern: valueUnitPattern, options: []))?.firstMatch(in: line, options: [], range: NSRange(line.startIndex..., in: line)) != nil
+    }
+    
+    /// Helper method to check if a line contains a partial value (just a number)
+    private func isPartialValueLine(_ line: String) -> Bool {
+        let partialValuePattern = "^([\\d\\.]+)$"
+        return (try? NSRegularExpression(pattern: partialValuePattern, options: []))?.firstMatch(in: line, options: [], range: NSRange(line.startIndex..., in: line)) != nil
+    }
+    
+    /// Helper method to extract test name from a line that starts with a date
+    private func extractTestNameAfterDate(from line: String) -> String? {
+        let datePattern = "(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})|(\\d{4}[/-]\\d{1,2}[/-]\\d{1,2})"
+        guard let regex = try? NSRegularExpression(pattern: datePattern, options: []) else { return nil }
+        
+        if let match = regex.firstMatch(in: line, options: [], range: NSRange(line.startIndex..., in: line)) {
+            if let range = Range(match.range(at: 0), in: line) {
+                let afterDate = String(line[range.upperBound...]).trimmingCharacters(in: .whitespaces)
+                if !afterDate.isEmpty {
+                    return afterDate
+                }
+            }
+        }
+        return nil
+    }
+    
+    /// Helper method to create a TestResult from fragmented lines
+    private func createResultFromFragments(date: String, testName: String, valueLine: String) -> TestResult? {
+        // Extract value and unit from the value line
+        let valueUnitPattern = "([\\d\\.]+)\\s*([a-zA-Z/%]+)"
+        guard let regex = try? NSRegularExpression(pattern: valueUnitPattern, options: []) else { return nil }
+        
+        if let match = regex.firstMatch(in: valueLine, options: [], range: NSRange(valueLine.startIndex..., in: valueLine)) {
+            guard let valueRange = Range(match.range(at: 1), in: valueLine),
+                  let unitRange = Range(match.range(at: 2), in: valueLine) else {
+                return nil
+            }
+            
+            let valueString = String(valueLine[valueRange])
+            let unit = String(valueLine[unitRange]).trimmingCharacters(in: .whitespaces)
+            
+            guard let value = Double(valueString) else { return nil }
+            
+            // Clean and validate the test name
+            let cleanedName = cleanTestName(testName)
+            guard isValidTestName(cleanedName) else {
+                print("      Invalid test name from fragments: '\(cleanedName)'")
+                return nil
+            }
+            
+            let result = TestResult(
+                name: cleanedName,
+                value: value,
+                unit: unit,
+                referenceRange: "N/A",
+                explanation: "Imported from PDF lab report - Date: \(date) (combined from fragments)"
+            )
+            
+            print("      Successfully created result from fragments: \(cleanedName) = \(value) \(unit)")
+            return result
+        }
+        
+        return nil
+    }
+    
+    /// Parses the common OCR pattern: test name on one line, value on the next line
+    /// This handles cases like "AST" on line 1, "116.00 H" on line 2
+    /// - Parameters:
+    ///   - lines: All lines from the PDF
+    ///   - currentIndex: Current line index
+    /// - Returns: TestResult if found, nil otherwise
+    private func parseTestNameValuePair(lines: [String], currentIndex: Int) -> TestResult? {
+        guard currentIndex + 1 < lines.count else { return nil }
+        
+        let testNameLine = lines[currentIndex].trimmingCharacters(in: .whitespacesAndNewlines)
+        let valueLine = lines[currentIndex + 1].trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        print("    Trying to parse test name/value pair:")
+        print("      Test name line: '\(testNameLine)'")
+        print("      Value line: '\(valueLine)'")
+        
+        // Check if first line looks like a test name (contains letters, not just numbers or dates)
+        let testNamePattern = "^[A-Za-z\\s\\-]+$"
+        let isTestName = (try? NSRegularExpression(pattern: testNamePattern, options: []))?.firstMatch(in: testNameLine, options: [], range: NSRange(testNameLine.startIndex..., in: testNameLine)) != nil
+        
+        // Check if second line contains a numeric value
+        let hasNumericValue = (try? NSRegularExpression(pattern: "([\\d\\.]+)", options: []))?.firstMatch(in: valueLine, options: [], range: NSRange(valueLine.startIndex..., in: valueLine)) != nil
+        
+        if isTestName && hasNumericValue {
+            print("      Confirmed test name + value pattern")
+            
+            // Extract the numeric value and any unit/flag
+            var value: Double?
+            var unit = "N/A"
+            var flag = ""
+            
+            // Try to extract value and unit from the value line
+            let valueUnitPatterns = [
+                "([\\d\\.]+)\\s*([a-zA-Z/%]+)\\s*([HL#\\$])",  // Value + Unit + Flag (H, L, #, $)
+                "([\\d\\.]+)\\s*([a-zA-Z/%]+)",                 // Value + Unit
+                "([\\d\\.]+)\\s*([HL#\\$])",                     // Value + Flag only
+                "([\\d\\.]+)"                                    // Just value
+            ]
+            
+            for pattern in valueUnitPatterns {
+                if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
+                    if let match = regex.firstMatch(in: valueLine, options: [], range: NSRange(valueLine.startIndex..., in: valueLine)) {
+                        guard let valueRange = Range(match.range(at: 1), in: valueLine) else { continue }
+                        let valueString = String(valueLine[valueRange])
+                        
+                        if let extractedValue = Double(valueString) {
+                            value = extractedValue
+                            
+                            // Extract unit if available
+                            if match.numberOfRanges >= 3 {
+                                if let unitRange = Range(match.range(at: 2), in: valueLine) {
+                                    let extractedUnit = String(valueLine[unitRange]).trimmingCharacters(in: .whitespaces)
+                                    if !extractedUnit.isEmpty {
+                                        unit = extractedUnit
+                                    }
+                                }
+                            }
+                            
+                            // Extract flag if available
+                            if match.numberOfRanges >= 4 {
+                                if let flagRange = Range(match.range(at: 3), in: valueLine) {
+                                    let extractedFlag = String(valueLine[flagRange]).trimmingCharacters(in: .whitespaces)
+                                    if !extractedFlag.isEmpty {
+                                        flag = extractedFlag
+                                    }
+                                }
+                            }
+                            
+                            print("      Extracted: Value=\(extractedValue), Unit=\(unit), Flag=\(flag)")
+                            break
+                        }
+                    }
+                }
+            }
+            
+            // If we still don't have a value, try to extract any number
+            if value == nil {
+                let numberPattern = "([\\d\\.]+)"
+                if let regex = try? NSRegularExpression(pattern: numberPattern, options: []) {
+                    if let match = regex.firstMatch(in: valueLine, options: [], range: NSRange(valueLine.startIndex..., in: valueLine)) {
+                        if let valueRange = Range(match.range(at: 1), in: valueLine) {
+                            let valueString = String(valueLine[valueRange])
+                            value = Double(valueString)
+                            print("      Extracted just value: \(valueString)")
+                        }
+                    }
+                }
+            }
+            
+            guard let extractedValue = value else {
+                print("      Could not extract numeric value")
+                return nil
+            }
+            
+            // Clean and validate the test name
+            let cleanedName = cleanTestName(testNameLine)
+            guard isValidTestName(cleanedName) else {
+                print("      Invalid test name: '\(cleanedName)'")
+                return nil
+            }
+            
+            // Create explanation with flag if present
+            var explanation = "Imported from PDF lab report (test name + value pair)"
+            if !flag.isEmpty {
+                explanation += " - Flag: \(flag)"
+            }
+            
+            let result = TestResult(
+                name: cleanedName,
+                value: extractedValue,
+                unit: unit,
+                referenceRange: "N/A",
+                explanation: explanation
+            )
+            
+            print("      Successfully created test name/value pair result: \(cleanedName) = \(extractedValue) \(unit)")
+            return result
+        }
+        
+        return nil
+    }
+    
+    /// Parses the pattern: date + test name on one line, value on the next line
+    /// This handles cases like "05/01/2025 ALT" on line 1, "31.00" on line 2
+    /// - Parameters:
+    ///   - lines: All lines from the PDF
+    ///   - currentIndex: Current line index
+    /// - Returns: TestResult if found, nil otherwise
+    private func parseDateTestNameValue(lines: [String], currentIndex: Int) -> TestResult? {
+        guard currentIndex + 1 < lines.count else { return nil }
+        
+        let dateTestLine = lines[currentIndex].trimmingCharacters(in: .whitespacesAndNewlines)
+        let valueLine = lines[currentIndex + 1].trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        print("    Trying to parse date + test name + value:")
+        print("      Date+Test line: '\(dateTestLine)'")
+        print("      Value line: '\(valueLine)'")
+        
+        // Check if first line contains a date followed by a test name
+        let dateTestPattern = "(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})\\s+([A-Za-z\\s\\-]+)"
+        guard let regex = try? NSRegularExpression(pattern: dateTestPattern, options: []) else { return nil }
+        
+        if let match = regex.firstMatch(in: dateTestLine, options: [], range: NSRange(dateTestLine.startIndex..., in: dateTestLine)) {
+            guard let dateRange = Range(match.range(at: 1), in: dateTestLine),
+                  let testNameRange = Range(match.range(at: 2), in: dateTestLine) else {
+                return nil
+            }
+            
+            let dateString = String(dateTestLine[dateRange])
+            let testName = String(dateTestLine[testNameRange]).trimmingCharacters(in: .whitespaces)
+            
+            print("      Extracted date: '\(dateString)', test name: '\(testName)'")
+            
+            // Check if second line contains a numeric value
+            let hasNumericValue = (try? NSRegularExpression(pattern: "([\\d\\.]+)", options: []))?.firstMatch(in: valueLine, options: [], range: NSRange(valueLine.startIndex..., in: valueLine)) != nil
+            
+            if hasNumericValue {
+                print("      Confirmed date + test name + value pattern")
+                
+                // Extract the numeric value and any unit/flag
+                var value: Double?
+                var unit = "N/A"
+                var flag = ""
+                
+                // Try to extract value and unit from the value line
+                let valueUnitPatterns = [
+                    "([\\d\\.]+)\\s*([a-zA-Z/%]+)\\s*([HL#\\$])",  // Value + Unit + Flag (H, L, #, $)
+                    "([\\d\\.]+)\\s*([a-zA-Z/%]+)",                 // Value + Unit
+                    "([\\d\\.]+)\\s*([HL#\\$])",                     // Value + Flag only
+                    "([\\d\\.]+)"                                    // Just value
+                ]
+                
+                for pattern in valueUnitPatterns {
+                    if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
+                        if let match = regex.firstMatch(in: valueLine, options: [], range: NSRange(valueLine.startIndex..., in: valueLine)) {
+                            guard let valueRange = Range(match.range(at: 1), in: valueLine) else { continue }
+                            let valueString = String(valueLine[valueRange])
+                            
+                            if let extractedValue = Double(valueString) {
+                                value = extractedValue
+                                
+                                // Extract unit if available
+                                if match.numberOfRanges >= 3 {
+                                    if let unitRange = Range(match.range(at: 2), in: valueLine) {
+                                        let extractedUnit = String(valueLine[unitRange]).trimmingCharacters(in: .whitespaces)
+                                        if !extractedUnit.isEmpty {
+                                            unit = extractedUnit
+                                        }
+                                    }
+                                }
+                                
+                                // Extract flag if available
+                                if match.numberOfRanges >= 4 {
+                                    if let flagRange = Range(match.range(at: 3), in: valueLine) {
+                                        let extractedFlag = String(valueLine[flagRange]).trimmingCharacters(in: .whitespaces)
+                                        if !extractedFlag.isEmpty {
+                                            flag = extractedFlag
+                                        }
+                                    }
+                                }
+                                
+                                print("      Extracted: Value=\(extractedValue), Unit=\(unit), Flag=\(flag)")
+                                break
+                            }
+                        }
+                    }
+                }
+                
+                // If we still don't have a value, try to extract any number
+                if value == nil {
+                    let numberPattern = "([\\d\\.]+)"
+                    if let regex = try? NSRegularExpression(pattern: numberPattern, options: []) {
+                        if let match = regex.firstMatch(in: valueLine, options: [], range: NSRange(valueLine.startIndex..., in: valueLine)) {
+                            if let valueRange = Range(match.range(at: 1), in: valueLine) {
+                                let valueString = String(valueLine[valueRange])
+                                value = Double(valueString)
+                                print("      Extracted just value: \(valueString)")
+                            }
+                        }
+                    }
+                }
+                
+                guard let extractedValue = value else {
+                    print("      Could not extract numeric value")
+                    return nil
+                }
+                
+                // Clean and validate the test name
+                let cleanedName = cleanTestName(testName)
+                guard isValidTestName(cleanedName) else {
+                    print("      Invalid test name: '\(cleanedName)'")
+                    return nil
+                }
+                
+                // Create explanation with flag if present
+                var explanation = "Imported from PDF lab report - Date: \(dateString) (date + test name + value)"
+                if !flag.isEmpty {
+                    explanation += " - Flag: \(flag)"
+                }
+                
+                let result = TestResult(
+                    name: cleanedName,
+                    value: extractedValue,
+                    unit: unit,
+                    referenceRange: "N/A",
+                    explanation: explanation
+                )
+                
+                print("      Successfully created date + test name + value result: \(cleanedName) = \(extractedValue) \(unit)")
+                return result
+            }
+        }
+        
+        return nil
+    }
+    
     /// Specialized parsing for Date Name LongSpace Data format
     /// This handles the specific format: Date + Space + Name + LongSpace + Data
     /// - Parameter line: Single line of text from the PDF
@@ -786,6 +1288,12 @@ class PDFLabImporter: ObservableObject {
         // Extract the text after the date (Name + LongSpace + Data)
         let afterDate = String(line[dateRange.upperBound...]).trimmingCharacters(in: .whitespaces)
         print("      Text after date: '\(afterDate)'")
+        
+        // If text after date is empty or very short, this line is incomplete
+        if afterDate.isEmpty || afterDate.count < 3 {
+            print("      Text after date is too short or empty, line appears incomplete")
+            return nil
+        }
         
         // Try to find the "long space" that separates name from data
         // Look for 3 or more consecutive spaces
