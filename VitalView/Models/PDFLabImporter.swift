@@ -163,9 +163,41 @@ class PDFLabImporter: ObservableObject {
         }
         print("=== End Sample Lines ===")
         
+        // Look for lab results section markers
+        var labResultsStartIndex = -1
+        for (index, line) in lines.enumerated() {
+            let lowerLine = line.lowercased()
+            if lowerLine.contains("test results") || 
+               lowerLine.contains("laboratory results") || 
+               lowerLine.contains("lab results") ||
+               lowerLine.contains("results:") ||
+               lowerLine.contains("values:") {
+                labResultsStartIndex = index
+                print("=== Found Lab Results Section at Line \(index + 1) ===")
+                break
+            }
+        }
+        
+        // If no specific section found, start from middle of document
+        if labResultsStartIndex == -1 {
+            labResultsStartIndex = max(0, lines.count / 3)
+            print("=== No specific section found, starting from line \(labResultsStartIndex + 1) ===")
+        }
+        
+        // Show lines around the lab results section
+        let startIndex = max(0, labResultsStartIndex - 2)
+        let endIndex = min(lines.count, labResultsStartIndex + 8)
+        print("=== Lab Results Section Preview ===")
+        for index in startIndex..<endIndex {
+            print("Line \(index + 1): '\(lines[index])'")
+        }
+        print("=== End Lab Results Preview ===")
+        
         var results: [TestResult] = []
         
-        for (index, line) in lines.enumerated() {
+        // Parse from the lab results section onwards
+        for index in labResultsStartIndex..<lines.count {
+            let line = lines[index]
             if let result = parseLabLine(line) {
                 print("Line \(index + 1): Found result - \(result.name): \(result.value) \(result.unit)")
                 results.append(result)
