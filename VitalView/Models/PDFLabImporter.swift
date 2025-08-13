@@ -208,13 +208,15 @@ class PDFLabImporter: ObservableObject {
         parsedResults = results
     }
     
-    /// Parses individual lines to extract lab values
+        /// Parses individual lines to extract lab values
     /// - Parameter line: Single line of text from the PDF
     /// - Returns: TestResult if a lab value is found, nil otherwise
     private func parseLabLine(_ line: String) -> TestResult? {
         let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmedLine.isEmpty { return nil }
-        
+
+        print("=== Parsing Line: '\(trimmedLine)' ===")
+
         // Common lab result patterns
         let patterns = [
             // Basic pattern: Test Name: Value Unit (Reference Range)
@@ -224,21 +226,36 @@ class PDFLabImporter: ObservableObject {
             // Pattern with flag: Test Name: Value Unit [H/L]
             "([A-Za-z\\s]+):\\s*([\\d\\.]+)\\s*([a-zA-Z/%]+)\\s*\\[([HL])\\]",
             // Pattern with inequality: Test Name: <Value Unit
-            "([A-Za-z\\s]+):\\s*([<>≤≥])\\s*([\\d\\.]+)\\s*([a-zA-Z/%]+)"
+            "([A-Za-z\\s]+):\\s*([<>≤≥])\\s*([\\d\\.]+)\\s*([a-zA-Z/%]+)",
+            // New pattern for your lab format: Date TestName Value Unit
+            "(\\d{2}/\\d{2}/\\d{4})\\s+([A-Za-z\\s]+)\\s+([\\d\\.]+)\\s*([a-zA-Z/%]+)",
+            // Pattern for just test names (common in lab reports)
+            "^([A-Za-z\\s]+)$",
+            // Pattern for test names with possible values
+            "^([A-Za-z\\s]+)\\s+([\\d\\.]+)\\s*([a-zA-Z/%]+)$"
         ]
-        
-        for pattern in patterns {
+
+        for (index, pattern) in patterns.enumerated() {
+            print("  Trying pattern \(index + 1): \(pattern)")
+            
             if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
                 let matches = regex.matches(in: trimmedLine, options: [], range: NSRange(trimmedLine.startIndex..., in: trimmedLine))
-                
+
                 for match in matches {
+                    print("    Pattern \(index + 1) matched! Ranges: \(match.numberOfRanges)")
                     if let result = createTestResult(from: match, in: trimmedLine, pattern: pattern) {
+                        print("    Successfully created TestResult: \(result.name)")
                         return result
+                    } else {
+                        print("    Failed to create TestResult from match")
                     }
                 }
+            } else {
+                print("    Failed to create regex for pattern \(index + 1)")
             }
         }
-        
+
+        print("  No patterns matched this line")
         return nil
     }
     
@@ -249,59 +266,120 @@ class PDFLabImporter: ObservableObject {
     ///   - pattern: Pattern that matched
     /// - Returns: TestResult object
     private func createTestResult(from match: NSTextCheckingResult, in line: String, pattern: String) -> TestResult? {
-        
-        // Extract test name
-        guard let nameRange = Range(match.range(at: 1), in: line),
-              let name = String(line[nameRange]).trimmingCharacters(in: .whitespaces) as String? else {
-            return nil
-        }
-        
-        // Extract value
-        guard let valueRange = Range(match.range(at: 2), in: line),
-              let valueString = String(line[valueRange]) as String?,
-              let value = Double(valueString) else {
-            return nil
-        }
-        
-        // Extract unit
-        guard let unitRange = Range(match.range(at: 3), in: line),
-              let unit = String(line[unitRange]).trimmingCharacters(in: .whitespaces) as String? else {
-            return nil
-        }
-        
-        // Extract reference range if available
-        var referenceRange = "N/A"
-        var explanation = "Imported from PDF lab report"
-        
-        if pattern.contains("Reference Range") && match.numberOfRanges > 4 {
-            if let refRange = Range(match.range(at: 4), in: line) {
-                referenceRange = String(line[refRange]).trimmingCharacters(in: .whitespaces)
+        print("    Creating TestResult from pattern: \(pattern)")
+        print("    Match ranges: \(match.numberOfRanges)")
+
+        // Handle different pattern types
+        if pattern.contains("Date TestName Value Unit") {
+            // Pattern: Date TestName Value Unit
+            guard match.numberOfRanges >= 5 else { return nil }
+            
+            guard let dateRange = Range(match.range(at: 1), in: line),
+                  let nameRange = Range(match.range(at: 2), in: line),
+                  let valueRange = Range(match.range(at: 3), in: line),
+                  let unitRange = Range(match.range(at: 4), in: line) else {
+                return nil
             }
-        }
-        
-        // Add flag information if available
-        if pattern.contains("Flag") && match.numberOfRanges > 4 {
-            if let flagRange = Range(match.range(at: 4), in: line) {
-                let flag = String(line[flagRange])
-                explanation += " [Flag: \(flag)]"
+            
+            let dateString = String(line[dateRange])
+            let name = String(line[nameRange]).trimmingCharacters(in: .whitespaces)
+            let valueString = String(line[valueRange])
+            let unit = String(line[unitRange]).trimmingCharacters(in: .whitespaces)
+            
+            guard let value = Double(valueString) else { return nil }
+            
+            return TestResult(
+                name: name,
+                value: value,
+                unit: unit,
+                referenceRange: "N/A",
+                explanation: "Imported from PDF lab report - Date: \(dateString)"
+            )
+            
+        } else if pattern.contains("^([A-Za-z\\s]+)$") {
+            // Pattern: Just test name (no value)
+            guard let nameRange = Range(match.range(at: 1), in: line) else { return nil }
+            let name = String(line[nameRange]).trimmingCharacters(in: .whitespaces)
+            
+            // For test names without values, create a placeholder result
+            return TestResult(
+                name: name,
+                value: 0.0, // Placeholder value
+                unit: "N/A",
+                referenceRange: "N/A",
+                explanation: "Imported from PDF lab report - Test name only (no value found)"
+            )
+            
+        } else if pattern.contains("^([A-Za-z\\s]+)\\s+([\\d\\.]+)\\s*([a-zA-Z/%]+)$") {
+            // Pattern: TestName Value Unit
+            guard match.numberOfRanges >= 4 else { return nil }
+            
+            guard let nameRange = Range(match.range(at: 1), in: line),
+                  let valueRange = Range(match.range(at: 2), in: line),
+                  let unitRange = Range(match.range(at: 3), in: line) else {
+                return nil
             }
-        }
-        
-        // Handle inequality patterns
-        if pattern.contains("Inequality") && match.numberOfRanges > 3 {
-            if let inequalityRange = Range(match.range(at: 2), in: line) {
-                let inequality = String(line[inequalityRange])
-                explanation += " [\(inequality)]"
+            
+            let name = String(line[nameRange]).trimmingCharacters(in: .whitespaces)
+            let valueString = String(line[valueRange])
+            let unit = String(line[unitRange]).trimmingCharacters(in: .whitespaces)
+            
+            guard let value = Double(valueString) else { return nil }
+            
+            return TestResult(
+                name: name,
+                value: value,
+                unit: unit,
+                referenceRange: "N/A",
+                explanation: "Imported from PDF lab report"
+            )
+            
+        } else {
+            // Original patterns for standard format
+            guard let nameRange = Range(match.range(at: 1), in: line),
+                  let name = String(line[nameRange]).trimmingCharacters(in: .whitespaces) as String? else {
+                return nil
             }
+
+            // Extract value
+            guard let valueRange = Range(match.range(at: 2), in: line),
+                  let valueString = String(line[valueRange]) as String?,
+                  let value = Double(valueString) else {
+                return nil
+            }
+
+            // Extract unit
+            guard let unitRange = Range(match.range(at: 3), in: line),
+                  let unit = String(line[unitRange]).trimmingCharacters(in: .whitespaces) as String? else {
+                return nil
+            }
+
+            // Extract reference range if available
+            var referenceRange = "N/A"
+            var explanation = "Imported from PDF lab report"
+
+            if pattern.contains("Reference Range") && match.numberOfRanges > 4 {
+                if let refRange = Range(match.range(at: 4), in: line) {
+                    referenceRange = String(line[refRange]).trimmingCharacters(in: .whitespaces)
+                }
+            }
+
+            // Add flag information if available
+            if pattern.contains("Flag") && match.numberOfRanges > 4 {
+                if let flagRange = Range(match.range(at: 4), in: line) {
+                    let flag = String(line[flagRange])
+                    explanation += " [Flag: \(flag)]"
+                }
+            }
+
+            return TestResult(
+                name: name,
+                value: value,
+                unit: unit,
+                referenceRange: referenceRange,
+                explanation: explanation
+            )
         }
-        
-        return TestResult(
-            name: name,
-            value: value,
-            unit: unit,
-            referenceRange: referenceRange,
-            explanation: explanation
-        )
     }
     
     /// Clears all extracted data
