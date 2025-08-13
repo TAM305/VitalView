@@ -506,22 +506,59 @@ struct SettingsView: View {
         
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "MMM dd, yyyy"
+        dateFormatter.locale = Locale(identifier: "en_US") // Ensure English month abbreviations
         
         var totalTestsAdded = 0
         
         // Import lab results
         if let labResults = healthData.lab_results {
             print("=== Processing Lab Results ===")
+            print("Total lab results to process: \(labResults.count)")
             
-            for labResult in labResults {
-                print("Processing lab result for date: \(labResult.date)")
-                let labDate = dateFormatter.date(from: labResult.date) ?? Date()
-                print("Parsed lab date: \(labDate)")
+            for (index, labResult) in labResults.enumerated() {
+                print("=== Processing Lab Result \(index + 1)/\(labResults.count) ===")
+                print("Raw date string: '\(labResult.date)'")
                 
+                let labDate = dateFormatter.date(from: labResult.date)
+                if let labDate = labDate {
+                    print("Successfully parsed date: \(labDate)")
+                } else {
+                    print("FAILED to parse date: '\(labResult.date)'")
+                    print("Trying alternative date formats...")
+                    
+                    // Try alternative date formats
+                    let alternativeFormats = ["MMM dd, yyyy", "MMM d, yyyy", "MMM dd yyyy", "MMM d yyyy"]
+                    var parsedDate: Date?
+                    
+                    for format in alternativeFormats {
+                        let altFormatter = DateFormatter()
+                        altFormatter.dateFormat = format
+                        altFormatter.locale = Locale(identifier: "en_US")
+                        if let date = altFormatter.date(from: labResult.date) {
+                            parsedDate = date
+                            print("Successfully parsed with format '\(format)': \(date)")
+                            break
+                        }
+                    }
+                    
+                    if let parsedDate = parsedDate {
+                        print("Using alternative parsed date: \(parsedDate)")
+                        // Continue with the parsed date
+                    } else {
+                        print("All date parsing attempts failed for: '\(labResult.date)'")
+                        print("Skipping this lab result")
+                        continue
+                    }
+                }
+                
+                print("Tests in this lab result: \(labResult.tests.count)")
                 var testResults: [TestResult] = []
                 
-                for test in labResult.tests {
-                    print("Processing test: \(test.name)")
+                for (testIndex, test) in labResult.tests.enumerated() {
+                    print("Processing test \(testIndex + 1)/\(labResult.tests.count): '\(test.name)'")
+                    print("Test value: \(test.value?.stringValue ?? "nil")")
+                    print("Test unit: \(test.unit ?? "nil")")
+                    print("Test reference range: \(test.reference_range ?? "nil")")
                     
                     if let numericValue = test.value?.numericValue {
                         // Create test result with numeric value
@@ -533,7 +570,7 @@ struct SettingsView: View {
                             explanation: "Imported from comprehensive health data"
                         )
                         testResults.append(testResult)
-                        print("Added test result: \(test.name) = \(numericValue)")
+                        print("✓ Added numeric test result: \(test.name) = \(numericValue)")
                     } else if let stringValue = test.value?.stringValue, stringValue != "Unknown" {
                         // For non-numeric values that aren't "Unknown", try to convert to number if possible
                         if let convertedValue = Double(stringValue) {
@@ -545,26 +582,30 @@ struct SettingsView: View {
                                 explanation: "Imported from comprehensive health data"
                             )
                             testResults.append(testResult)
-                            print("Added converted test result: \(test.name) = \(convertedValue)")
+                            print("✓ Added converted test result: \(test.name) = \(convertedValue)")
                         } else {
-                            print("Skipping non-numeric test: \(test.name) = \(stringValue)")
+                            print("⚠ Skipping non-numeric test: \(test.name) = \(stringValue)")
                         }
                     } else {
-                        print("Skipping test with no valid value: \(test.name)")
+                        print("⚠ Skipping test with no valid value: \(test.name)")
                     }
                 }
                 
+                print("Valid test results for this date: \(testResults.count)")
                 if !testResults.isEmpty {
                     let bloodTest = BloodTest(
-                        date: labDate,
+                        date: labDate ?? Date(),
                         testType: "Comprehensive",
                         results: testResults
                     )
+                    print("Creating BloodTest with \(testResults.count) results for date \(labResult.date)")
+                    
                     viewModel.addTest(bloodTest)
                     totalTestsAdded += 1
-                    print("Added comprehensive test with \(testResults.count) results for date \(labResult.date)")
+                    print("✓ Added comprehensive test with \(testResults.count) results for date \(labResult.date)")
+                    print("Current total tests in viewModel: \(viewModel.bloodTests.count)")
                 } else {
-                    print("No valid test results for date \(labResult.date)")
+                    print("⚠ No valid test results for date \(labResult.date)")
                 }
             }
         } else {
@@ -573,7 +614,15 @@ struct SettingsView: View {
         
         print("=== Comprehensive Health Data Import Complete ===")
         print("Total tests added: \(totalTestsAdded)")
-        print("Current bloodTests count: \(viewModel.bloodTests.count)")
+        print("Final bloodTests count in viewModel: \(viewModel.bloodTests.count)")
+        
+        // Force a save to Core Data
+        do {
+            try PersistenceController.shared.container.viewContext.save()
+            print("✓ Successfully saved to Core Data")
+        } catch {
+            print("❌ Failed to save to Core Data: \(error)")
+        }
     }
     
     private func deleteAllData() {
