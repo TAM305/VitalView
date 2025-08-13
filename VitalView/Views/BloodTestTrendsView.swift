@@ -827,6 +827,8 @@ struct BloodTestListView: View {
 struct BloodTestPanelCard: View {
     let test: BloodTest
     @State private var isExpanded = false
+    @State private var showingTestInfo = false
+    @State private var selectedTestName = ""
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -848,6 +850,19 @@ struct BloodTestPanelCard: View {
                     }
                     
                     Spacer()
+                    
+                    // Info button for test panel education
+                    Button(action: {
+                        // Extract panel type from test type for info lookup
+                        let panelType = extractPanelType(from: test.testType)
+                        selectedTestName = panelType
+                        showingTestInfo = true
+                    }) {
+                        Image(systemName: "info.circle")
+                            .foregroundColor(.blue)
+                            .font(.caption)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                     
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .foregroundColor(.blue)
@@ -884,6 +899,17 @@ struct BloodTestPanelCard: View {
                                     .fontWeight(.medium)
                                     .foregroundColor(getStatusColor(result.status))
                             }
+                            
+                            // Info button for test education
+                            Button(action: {
+                                selectedTestName = result.name
+                                showingTestInfo = true
+                            }) {
+                                Image(systemName: "info.circle")
+                                    .foregroundColor(.blue)
+                                    .font(.caption)
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
                         .padding(.vertical, 4)
                         
@@ -899,6 +925,15 @@ struct BloodTestPanelCard: View {
         .background(Color(.systemBackground))
         .cornerRadius(12)
         .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+        .sheet(isPresented: $showingTestInfo) {
+            NavigationView {
+                if isPanelType(selectedTestName) {
+                    TestInfoView(testType: selectedTestName)
+                } else {
+                    IndividualTestInfo(testName: selectedTestName)
+                }
+            }
+        }
     }
     
     private func getStatusColor(_ status: TestStatus) -> Color {
@@ -910,5 +945,22 @@ struct BloodTestPanelCard: View {
         case .low:
             return .orange
         }
+    }
+    
+    private func extractPanelType(from testType: String) -> String {
+        if testType.contains("CBC") || testType.contains("Complete Blood Count") {
+            return "CBC"
+        } else if testType.contains("CMP") || testType.contains("Comprehensive Metabolic Panel") {
+            return "CMP"
+        } else if testType.contains("Cholesterol") {
+            return "Cholesterol"
+        } else {
+            return testType
+        }
+    }
+    
+    private func isPanelType(_ testName: String) -> Bool {
+        let panelTypes = ["CBC", "CMP", "Cholesterol"]
+        return panelTypes.contains(testName)
     }
 }
