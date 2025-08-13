@@ -14,6 +14,8 @@ struct BloodTestTrendsView: View {
         case threeMonths = "3 Months"
         case sixMonths = "6 Months"
         case year = "1 Year"
+        case fiveYears = "5 Years"
+        case tenYears = "10 Years"
         
         var days: Int {
             switch self {
@@ -21,6 +23,8 @@ struct BloodTestTrendsView: View {
             case .threeMonths: return 90
             case .sixMonths: return 180
             case .year: return 365
+            case .fiveYears: return 365 * 5
+            case .tenYears: return 365 * 10
             }
         }
     }
@@ -91,8 +95,26 @@ struct BloodTestTrendsView: View {
             if let trendData = getTrendData() {
                 ScrollView {
                     VStack(spacing: 20) {
+                        // Data sufficiency indicator for longer time ranges
+                        if timeRange == .fiveYears || timeRange == .tenYears {
+                            HStack {
+                                Image(systemName: hasEnoughDataForTimeRange() ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                                    .foregroundColor(hasEnoughDataForTimeRange() ? .green : .orange)
+                                Text(hasEnoughDataForTimeRange() ? 
+                                     "Sufficient data for \(timeRange.rawValue) trend analysis" : 
+                                     "Limited data for \(timeRange.rawValue) analysis - consider shorter time ranges")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                            }
+                            .padding(.horizontal)
+                            .padding(.vertical, 8)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
+                        }
+                        
                         // Main chart
-                        BloodTestChartView(data: trendData, testName: selectedTest)
+                        BloodTestChartView(data: trendData, testName: selectedTest, timeRange: timeRange)
                             .frame(height: 300)
                             .padding()
                         
@@ -139,6 +161,9 @@ struct BloodTestTrendsView: View {
             if let first = tests.first, !tests.contains(selectedTest) {
                 selectedTest = first
             }
+            
+            // Auto-select appropriate time range based on available data
+            autoSelectTimeRange()
         }
     }
     
@@ -168,11 +193,43 @@ struct BloodTestTrendsView: View {
         })
         return Array(allTests).sorted()
     }
+    
+    private func autoSelectTimeRange() {
+        let latestDate = viewModel.bloodTests.map(\.date).max() ?? Date()
+        
+        let daysSinceLatest = Calendar.current.dateComponents([.day], from: latestDate, to: Date()).day ?? 0
+        
+        if daysSinceLatest < 30 {
+            timeRange = .month
+        } else if daysSinceLatest < 90 {
+            timeRange = .threeMonths
+        } else if daysSinceLatest < 180 {
+            timeRange = .sixMonths
+        } else if daysSinceLatest < 365 {
+            timeRange = .year
+        } else if daysSinceLatest < 365 * 5 {
+            timeRange = .fiveYears
+        } else {
+            timeRange = .tenYears
+        }
+    }
+    
+    private func hasEnoughDataForTimeRange() -> Bool {
+        let filteredTests = viewModel.bloodTests.filter { test in
+            let daysSince = Calendar.current.dateComponents([.day], from: test.date, to: Date()).day ?? 0
+            return daysSince <= timeRange.days
+        }
+        
+        // For longer time ranges, we want at least 3 data points to show meaningful trends
+        let minDataPoints = timeRange == .fiveYears || timeRange == .tenYears ? 3 : 2
+        return filteredTests.count >= minDataPoints
+    }
 }
 
 struct BloodTestChartView: View {
     let data: [BloodTestDataPoint]
     let testName: String
+    let timeRange: BloodTestTrendsView.TimeRange
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -206,13 +263,26 @@ struct BloodTestChartView: View {
                     .foregroundStyle(.green.opacity(0.1))
                 }
             }
+            .overlay {
+                // Add trend line for longer time periods with sufficient data
+                if (timeRange == .fiveYears || timeRange == .tenYears) && data.count >= 3 {
+                    Chart(data) { point in
+                        LineMark(
+                            x: .value("Date", point.date),
+                            y: .value("Trend", calculateTrendValue(for: point.date, in: data))
+                        )
+                        .foregroundStyle(.blue.opacity(0.6))
+                        .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 5]))
+                    }
+                }
+            }
             .chartYAxis {
                 AxisMarks(position: .leading)
             }
             .chartXAxis {
-                AxisMarks(values: .stride(by: .month)) { value in
+                AxisMarks(values: .stride(by: getChartStride())) { value in
                     AxisGridLine()
-                    AxisValueLabel(format: .dateTime.month())
+                    AxisValueLabel(format: getChartDateFormat())
                 }
             }
             .chartLegend(position: .bottom) {
@@ -231,6 +301,19 @@ struct BloodTestChartView: View {
                         .fill(.orange)
                         .frame(width: 10, height: 10)
                     Text("Low")
+                    
+                    // Add trend line legend for longer time periods
+                    if (timeRange == .fiveYears || timeRange == .tenYears) && data.count >= 3 {
+                        Rectangle()
+                            .fill(.blue.opacity(0.6))
+                            .frame(width: 20, height: 2)
+                            .overlay(
+                                Rectangle()
+                                    .stroke(.blue.opacity(0.6), style: StrokeStyle(lineWidth: 2, dash: [5, 5]))
+                            )
+                        Text("Trend")
+                            .foregroundColor(.blue)
+                    }
                 }
             }
         }
@@ -258,6 +341,57 @@ struct BloodTestChartView: View {
               let upper = Double(components[1]) else { return nil }
         return (lower, upper)
     }
+    
+    private func getChartStride() -> Calendar.Component {
+        switch timeRange {
+        case .month, .threeMonths:
+            return .day
+        case .sixMonths, .year:
+            return .month
+        case .fiveYears, .tenYears:
+            return .year
+        }
+    }
+    
+    private func getChartDateFormat() -> Date.FormatStyle {
+        switch timeRange {
+        case .month, .threeMonths:
+            return .dateTime.month().day()
+        case .sixMonths, .year:
+            return .dateTime.month()
+        case .fiveYears, .tenYears:
+            return .dateTime.year()
+        }
+    }
+    
+    private func calculateTrendValue(for date: Date, in data: [BloodTestDataPoint]) -> Double {
+        guard data.count >= 3 else { return 0 }
+        
+        // Convert dates to days since first data point for linear regression
+        let firstDate = data.first?.date ?? date
+        let daysSinceFirst = Calendar.current.dateComponents([.day], from: firstDate, to: date).day ?? 0
+        
+        // Simple linear regression calculation
+        let n = Double(data.count)
+        let sumX = data.enumerated().reduce(0) { sum, element in
+            let days = Calendar.current.dateComponents([.day], from: firstDate, to: element.element.date).day ?? 0
+            return sum + Double(days)
+        }
+        let sumY = data.reduce(0) { $0 + $1.value }
+        let sumXY = data.enumerated().reduce(0) { sum, element in
+            let days = Calendar.current.dateComponents([.day], from: firstDate, to: element.element.date).day ?? 0
+            return sum + Double(days) * element.element.value
+        }
+        let sumX2 = data.enumerated().reduce(0) { sum, element in
+            let days = Calendar.current.dateComponents([.day], from: firstDate, to: element.element.date).day ?? 0
+            return sum + Double(days * days)
+        }
+        
+        let slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX)
+        let intercept = (sumY - slope * sumX) / n
+        
+        return slope * Double(daysSinceFirst) + intercept
+    }
 }
 
 struct BloodTestStatisticsView: View {
@@ -278,6 +412,12 @@ struct BloodTestStatisticsView: View {
                 BloodTestStatCard(title: "Highest", value: maxValue, unit: data.first?.unit ?? "")
                 BloodTestStatCard(title: "Lowest", value: minValue, unit: data.first?.unit ?? "")
                 BloodTestStatCard(title: "Tests", value: "\(data.count)", unit: "")
+                
+                // Additional stats for longer time periods
+                if data.count >= 3 {
+                    BloodTestStatCard(title: "Trend Slope", value: trendSlope, unit: "per year")
+                    BloodTestStatCard(title: "Data Span", value: dataSpan, unit: "days")
+                }
             }
         }
         .padding()
@@ -298,6 +438,35 @@ struct BloodTestStatisticsView: View {
     private var minValue: String {
         let min = data.map { $0.value }.min() ?? 0
         return String(format: "%.1f", min)
+    }
+    
+    private var trendSlope: String {
+        guard data.count >= 3 else { return "N/A" }
+        
+        let sortedData = data.sorted { $0.date < $1.date }
+        let firstDate = sortedData.first?.date ?? Date()
+        let lastDate = sortedData.last?.date ?? Date()
+        
+        let daysSpan = Calendar.current.dateComponents([.day], from: firstDate, to: lastDate).day ?? 1
+        let yearsSpan = Double(daysSpan) / 365.0
+        
+        let firstValue = sortedData.first?.value ?? 0
+        let lastValue = sortedData.last?.value ?? 0
+        let valueChange = lastValue - firstValue
+        
+        let slopePerYear = valueChange / yearsSpan
+        return String(format: "%.2f", slopePerYear)
+    }
+    
+    private var dataSpan: String {
+        guard data.count >= 2 else { return "N/A" }
+        
+        let sortedData = data.sorted { $0.date < $1.date }
+        let firstDate = sortedData.first?.date ?? Date()
+        let lastDate = sortedData.last?.date ?? Date()
+        
+        let daysSpan = Calendar.current.dateComponents([.day], from: firstDate, to: lastDate).day ?? 0
+        return "\(daysSpan)"
     }
 }
 
