@@ -7,6 +7,7 @@ struct BloodTestTrendsView: View {
     @State private var selectedTest = "Glucose"
     @State private var timeRange: TimeRange = .threeMonths
     @State private var showingTestSelector = false
+    @State private var showingTestPanels = false
     var onClose: (() -> Void)? = nil
     
     enum TimeRange: String, CaseIterable {
@@ -87,6 +88,19 @@ struct BloodTestTrendsView: View {
                     }
                 }
                 .padding(.horizontal)
+                
+                // Add button to show test panels
+                Button(action: { showingTestPanels = true }) {
+                    HStack {
+                        Image(systemName: "list.bullet")
+                        Text("View Test Panels")
+                    }
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+                }
+                .padding(.horizontal)
             }
             .padding(.top)
             .background(Color(.systemBackground))
@@ -164,6 +178,11 @@ struct BloodTestTrendsView: View {
             
             // Auto-select appropriate time range based on available data
             autoSelectTimeRange()
+        }
+        .sheet(isPresented: $showingTestPanels) {
+            NavigationView {
+                BloodTestListView(viewModel: viewModel)
+            }
         }
     }
     
@@ -749,4 +768,147 @@ struct BloodTimeRangeButton: View {
 
 #Preview {
     BloodTestTrendsView(viewModel: BloodTestViewModel(context: PersistenceController.shared.container.viewContext))
+}
+
+// MARK: - Blood Test List View
+
+struct BloodTestListView: View {
+    @ObservedObject var viewModel: BloodTestViewModel
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Text("Blood Test Panels")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                Spacer()
+                Button("Done") { dismiss() }
+                    .buttonStyle(.bordered)
+            }
+            .padding()
+            .background(Color(.systemBackground))
+            
+            if viewModel.bloodTests.isEmpty {
+                VStack {
+                    Image(systemName: "drop.fill")
+                        .font(.system(size: 60))
+                        .foregroundColor(.gray)
+                        .padding()
+                    
+                    Text("No blood tests available")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                    
+                    Text("Import lab data or add tests manually to see your blood test panels")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                    
+                    Spacer()
+                }
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        ForEach(viewModel.bloodTests.sorted(by: { $0.date > $1.date })) { test in
+                            BloodTestPanelCard(test: test)
+                        }
+                    }
+                    .padding()
+                }
+            }
+        }
+        .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
+    }
+}
+
+struct BloodTestPanelCard: View {
+    let test: BloodTest
+    @State private var isExpanded = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header
+            Button(action: { isExpanded.toggle() }) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(test.testType)
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        Text(test.date, style: .date)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        Text("\(test.results.count) test results")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .foregroundColor(.blue)
+                }
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            // Expanded content
+            if isExpanded {
+                Divider()
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(test.results) { result in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(result.name)
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                
+                                Text("\(result.value, specifier: "%.1f") \(result.unit)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Spacer()
+                            
+                            VStack(alignment: .trailing, spacing: 2) {
+                                Text(result.referenceRange)
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                
+                                Text(result.status.rawValue.capitalized)
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(getStatusColor(result.status))
+                            }
+                        }
+                        .padding(.vertical, 4)
+                        
+                        if result.id != test.results.last?.id {
+                            Divider()
+                        }
+                    }
+                }
+                .padding(.top, 8)
+            }
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+    }
+    
+    private func getStatusColor(_ status: TestStatus) -> Color {
+        switch status {
+        case .normal:
+            return .green
+        case .high:
+            return .red
+        case .low:
+            return .orange
+        }
+    }
 }
