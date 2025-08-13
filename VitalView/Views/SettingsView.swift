@@ -146,7 +146,18 @@ struct SettingsView: View {
             }
         }
         
-        // First try to decode as standard BloodTest format
+        // First try to decode as enhanced lab results format (most comprehensive)
+        do {
+            let enhancedResults = try decoder.decode(EnhancedLabResults.self, from: data)
+            print("Successfully decoded as enhanced lab results format")
+            importEnhancedLabResults(enhancedResults)
+            alertMessage = "Enhanced lab results imported successfully"
+            return
+        } catch {
+            print("Failed to decode as enhanced lab results format: \(error)")
+        }
+        
+        // If that fails, try to decode as standard BloodTest format
         do {
             let tests = try decoder.decode([BloodTest].self, from: data)
             print("Successfully decoded as standard BloodTest format: \(tests.count) tests")
@@ -190,7 +201,7 @@ struct SettingsView: View {
         // If that fails, try to decode as VA lab format
         do {
             let vaLabData = try decoder.decode(VALabData.self, from: data)
-            print("Successfully decoded as VA lab format")
+            print("Successfully decoded as enhanced lab results format")
             importVALabData(vaLabData)
             alertMessage = "VA Lab data imported successfully"
             return
@@ -689,8 +700,8 @@ struct SettingsView: View {
         print("Facility: \(comprehensiveData.healthcare_facility.name)")
         print("Patient: \(comprehensiveData.patient.name)")
         print("Report date: \(comprehensiveData.report.date)")
-        print("Has CBC: \(comprehensiveData.lab_tests.cbc != nil)")
-        print("Has CMP: \(comprehensiveData.lab_tests.cmp != nil)")
+        // Removed lab_tests reference since it was deleted
+        print("Comprehensive lab data imported successfully")
         
         // Convert back to JSON string and use the viewModel's import method
         do {
@@ -724,6 +735,29 @@ struct SettingsView: View {
             }
         } catch {
             print("❌ Failed to encode simple results: \(error)")
+        }
+    }
+    
+    private func importEnhancedLabResults(_ enhancedResults: EnhancedLabResults) {
+        print("=== Starting Enhanced Lab Results Import ===")
+        print("Patient: \(enhancedResults.patient_info.name)")
+        print("Test Date: \(enhancedResults.patient_info.test_date)")
+        print("Facility: \(enhancedResults.patient_info.facility)")
+        
+        // Convert the enhanced results to JSON string and pass to viewModel
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .prettyPrinted
+            let jsonData = try encoder.encode(enhancedResults)
+            let jsonString = String(data: jsonData, encoding: .utf8) ?? ""
+            
+            // Call the viewModel method to import the enhanced lab results
+            viewModel.importEnhancedLabResults(jsonString)
+            
+            print("Enhanced lab results import completed successfully")
+        } catch {
+            print("Failed to encode enhanced lab results: \(error)")
+            alertMessage = "Failed to import enhanced lab results: \(error.localizedDescription)"
         }
     }
     

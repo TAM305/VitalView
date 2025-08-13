@@ -307,150 +307,12 @@ public struct TestResult: Identifiable, Codable {
 /// - Hematocrit (HCT): Percentage of blood volume occupied by red cells
 /// - Platelets (PLT): Blood clotting cells
 ///
-/// ## Reference Ranges
-/// The structure includes standard reference ranges for all CBC components
-/// based on typical laboratory values.
-public struct CBCResult: Codable {
-    /// White blood cell count
-    public let whiteBloodCells: TestResult
-    /// Red blood cell count
-    public let redBloodCells: TestResult
-    /// Hemoglobin level
-    public let hemoglobin: TestResult
-    /// Hematocrit percentage
-    public let hematocrit: TestResult
-    /// Platelet count
-    public let platelets: TestResult
-    
-    /// Standard reference ranges for CBC components.
-    ///
-    /// These ranges are based on typical laboratory values and may vary
-    /// slightly between different laboratories and patient populations.
-    public static let normalRanges: [String: ClosedRange<Double>] = [
-        "WBC": 4.5...11.0,  // 10^9/L
-        "RBC": 4.5...5.5,   // 10^12/L
-        "HGB": 13.5...17.5, // g/dL
-        "HCT": 38.8...50.0, // %
-        "PLT": 150...450    // 10^9/L
-    ]
-    
-    /// Creates a new CBC result with the specified components.
-    ///
-    /// - Parameters:
-    ///   - whiteBloodCells: WBC test result
-    ///   - redBloodCells: RBC test result
-    ///   - hemoglobin: Hemoglobin test result
-    ///   - hematocrit: Hematocrit test result
-    ///   - platelets: Platelet test result
-    public init(whiteBloodCells: TestResult,
-                redBloodCells: TestResult,
-                hemoglobin: TestResult,
-                hematocrit: TestResult,
-                platelets: TestResult) {
-        self.whiteBloodCells = whiteBloodCells
-        self.redBloodCells = redBloodCells
-        self.hemoglobin = hemoglobin
-        self.hematocrit = hematocrit
-        self.platelets = platelets
-    }
-}
+// Removed old CBCResult struct - using enhanced version below
 
-/// Comprehensive Metabolic Panel (CMP) test results.
-///
-/// This structure encapsulates all the components of a CMP test,
-/// which measures various metabolic functions including kidney function,
-/// liver function, and electrolyte balance.
-///
-/// ## Components
-/// - Glucose: Blood sugar level
-/// - BUN: Blood Urea Nitrogen (kidney function)
-/// - Creatinine: Kidney function marker
-/// - Sodium: Electrolyte balance
-/// - Potassium: Heart and muscle function
-/// - Chloride: Fluid balance
-/// - Carbon Dioxide: Acid-base balance
-/// - Calcium: Bone and muscle function
-///
-/// ## Explanations
-/// Each component includes detailed explanations of what it measures
-/// and what abnormal values might indicate.
-public struct CMPResult: Codable {
-    /// Blood glucose level
-    public let glucose: TestResult
-    /// Blood urea nitrogen level
-    public let bun: TestResult
-    /// Creatinine level
-    public let creatinine: TestResult
-    /// Sodium level
-    public let sodium: TestResult
-    /// Potassium level
-    public let potassium: TestResult
-    /// Chloride level
-    public let chloride: TestResult
-    /// Carbon dioxide level
-    public let carbonDioxide: TestResult
-    /// Calcium level
-    public let calcium: TestResult
-    
-    /// Standard reference ranges for CMP components.
-    ///
-    /// These ranges are based on typical laboratory values and may vary
-    /// between different laboratories and patient populations.
-    public static let normalRanges: [String: ClosedRange<Double>] = [
-        "GLU": 70...100,    // mg/dL
-        "BUN": 7...20,      // mg/dL
-        "CRE": 0.7...1.3,   // mg/dL
-        "NA": 135...145,    // mmol/L
-        "K": 3.5...5.0,     // mmol/L
-        "CL": 98...107,     // mmol/L
-        "CO2": 23...29,     // mmol/L
-        "CA": 8.5...10.2    // mg/dL
-    ]
+// Removed old CMPResult struct - using enhanced version below
     
     /// Detailed explanations for each CMP component.
-    ///
-    /// These explanations help users understand what each test measures
-    /// and what abnormal values might indicate for their health.
-    public static let explanations: [String: String] = [
-        "GLU": "Glucose measures your blood sugar level. High levels may indicate diabetes, while low levels may suggest hypoglycemia.",
-        "BUN": "Blood Urea Nitrogen measures kidney function. High levels may indicate kidney problems or dehydration.",
-        "CRE": "Creatinine is a waste product from muscle metabolism. High levels may indicate kidney problems.",
-        "NA": "Sodium helps maintain fluid balance. Abnormal levels may indicate dehydration or other electrolyte disorders.",
-        "K": "Potassium is important for heart and muscle function. Abnormal levels can affect heart rhythm.",
-        "CL": "Chloride helps maintain fluid balance and pH. Abnormal levels may indicate kidney or acid-base problems.",
-        "CO2": "Carbon dioxide levels indicate acid-base balance. Abnormal levels may suggest respiratory or metabolic problems.",
-        "CA": "Calcium is important for bones and muscle function. Abnormal levels may indicate bone, parathyroid, or kidney problems."
-    ]
-    
-    /// Creates a new CMP result with the specified components.
-    ///
-    /// - Parameters:
-    ///   - glucose: Glucose test result
-    ///   - bun: BUN test result
-    ///   - creatinine: Creatinine test result
-    ///   - sodium: Sodium test result
-    ///   - potassium: Potassium test result
-    ///   - chloride: Chloride test result
-    ///   - carbonDioxide: Carbon dioxide test result
-    ///   - calcium: Calcium test result
-    public init(glucose: TestResult,
-                bun: TestResult,
-                creatinine: TestResult,
-                sodium: TestResult,
-                potassium: TestResult,
-                chloride: TestResult,
-                carbonDioxide: TestResult,
-                calcium: TestResult) {
-        self.glucose = glucose
-        self.bun = bun
-        self.creatinine = creatinine
-        self.sodium = sodium
-        self.potassium = potassium
-        self.chloride = chloride
-        self.carbonDioxide = carbonDioxide
-        self.calcium = calcium
-    }
-}
+// Removed orphaned static properties and initializers
 
 // MARK: - Security Manager
 
@@ -508,6 +370,18 @@ class SecurityManager {
 }
 
 // MARK: - Parsing Helpers
+
+// Helper function to extract numeric values from strings like ">90", "<5", etc.
+private func extractNumericValueFromString(_ string: String) -> Double? {
+    // Remove common prefixes/suffixes and extract the number
+    let cleanedString = string.replacingOccurrences(of: ">", with: "")
+        .replacingOccurrences(of: "<", with: "")
+        .replacingOccurrences(of: "=", with: "")
+        .replacingOccurrences(of: " ", with: "")
+    
+    return Double(cleanedString)
+}
+
 private extension String {
     /// Extracts the leading numeric portion (including decimal) from a string, ignoring trailing units.
     func extractLeadingNumber() -> String {
@@ -747,12 +621,9 @@ public final class BloodTestViewModel: ObservableObject {
             let data = jsonData.data(using: .utf8)!
             let comprehensiveData = try JSONDecoder().decode(ComprehensiveLabData.self, from: data)
             
-            // Convert to internal format and save
-            let convertedTests = convertComprehensiveDataToBloodTests(comprehensiveData)
-            
-            for test in convertedTests {
-                addTest(test)
-            }
+            // The comprehensive format is no longer supported - use enhanced format instead
+            print("Comprehensive format is deprecated. Please use the enhanced JSON format.")
+            return (false, "Comprehensive format is deprecated. Please use the enhanced JSON format.")
             
             return (true, nil)
         } catch {
@@ -763,109 +634,88 @@ public final class BloodTestViewModel: ObservableObject {
     /// Converts comprehensive lab data to internal BloodTest format
     /// - Parameter comprehensiveData: The comprehensive lab data to convert
     /// - Returns: Array of converted BloodTest objects
+    /// NOTE: This method is deprecated since we removed the lab_tests structure
+    /// The enhanced JSON format is now handled by importEnhancedLabResults
     private func convertComprehensiveDataToBloodTests(_ comprehensiveData: ComprehensiveLabData) -> [BloodTest] {
-        var tests: [BloodTest] = []
-        
-        // Convert CBC data if available
-        if let cbc = comprehensiveData.lab_tests.cbc {
-            let cbcResults = convertCBCResultsToTestResults(cbc.results)
-            let cbcTest = BloodTest(
-                date: parseDate(cbc.test_date),
-                testType: "CBC",
-                results: cbcResults
-            )
-            tests.append(cbcTest)
-        }
-        
-        // Convert CMP data if available
-        if let cmp = comprehensiveData.lab_tests.cmp {
-            let cmpResults = convertCMPResultsToTestResults(cmp.results)
-            let cmpTest = BloodTest(
-                date: parseDate(cmp.test_date),
-                testType: "CMP",
-                results: cmpResults
-            )
-            tests.append(cmpTest)
-        }
-        
-        return tests
+        // This method is no longer used - enhanced format is handled separately
+        return []
     }
     
-    /// Converts CBC results to TestResult format
+    /// Converts CBC results from comprehensive data to TestResult objects
     /// - Parameter cbcResults: CBC results from comprehensive data
     /// - Returns: Array of TestResult objects
-    private func convertCBCResultsToTestResults(_ cbcResults: CBCResults) -> [TestResult] {
+    private func convertCBCResultsToTestResults(_ cbcResults: [String: CBCResult]) -> [TestResult] {
         var results: [TestResult] = []
         
         // Helper function to convert individual results
-        func addResult(_ labResult: LabTestResult?, name: String, referenceRange: String, explanation: String) {
+        func addResult(_ labResult: CBCResult?, name: String, referenceRange: String, explanation: String) {
             guard let labResult = labResult else { return }
             
-            let value = labResult.value?.numericValue ?? 0.0
             let testResult = TestResult(
                 name: labResult.name,
-                value: value,
+                value: labResult.value ?? 0.0,
                 unit: labResult.units,
                 referenceRange: referenceRange,
                 explanation: explanation
             )
+            
             results.append(testResult)
         }
         
         // Add CBC results with standard reference ranges
-        addResult(cbcResults.wbc, name: "White Blood Cell Count", referenceRange: "4.5-11.0", explanation: "Measures infection-fighting white blood cells")
-        addResult(cbcResults.rbc, name: "Red Blood Cell Count", referenceRange: "4.5-5.5", explanation: "Measures oxygen-carrying red blood cells")
-        addResult(cbcResults.hgb, name: "Hemoglobin", referenceRange: "13.5-17.5", explanation: "Measures oxygen-carrying protein in red blood cells")
-        addResult(cbcResults.hct, name: "Hematocrit", referenceRange: "38.8-50.0", explanation: "Percentage of blood volume occupied by red blood cells")
-        addResult(cbcResults.platelet_count, name: "Platelet Count", referenceRange: "150-450", explanation: "Measures blood clotting cells")
-        addResult(cbcResults.mcv, name: "Mean Corpuscular Volume", referenceRange: "80-100", explanation: "Average size of red blood cells")
-        addResult(cbcResults.mch, name: "Mean Corpuscular Hemoglobin", referenceRange: "27-32", explanation: "Average amount of hemoglobin per red blood cell")
-        addResult(cbcResults.mchc, name: "Mean Corpuscular Hemoglobin Concentration", referenceRange: "32-36", explanation: "Concentration of hemoglobin in red blood cells")
-        addResult(cbcResults.rdw, name: "Red Cell Distribution Width", referenceRange: "11.5-14.5", explanation: "Variation in red blood cell size")
-        addResult(cbcResults.mpv, name: "Mean Platelet Volume", referenceRange: "7.5-11.5", explanation: "Average size of platelets")
+        addResult(cbcResults["WBC"], name: "White Blood Cell Count", referenceRange: "4.5-11.0", explanation: "Measures infection-fighting white blood cells")
+        addResult(cbcResults["RBC"], name: "Red Blood Cell Count", referenceRange: "4.5-5.5", explanation: "Measures oxygen-carrying red blood cells")
+        addResult(cbcResults["HGB"], name: "Hemoglobin", referenceRange: "13.5-17.5", explanation: "Measures oxygen-carrying protein in red blood cells")
+        addResult(cbcResults["HCT"], name: "Hematocrit", referenceRange: "38.8-50.0", explanation: "Percentage of blood volume occupied by red blood cells")
+        addResult(cbcResults["PLATELET_COUNT"], name: "Platelet Count", referenceRange: "150-450", explanation: "Measures blood clotting cells")
+        addResult(cbcResults["MCV"], name: "Mean Corpuscular Volume", referenceRange: "80-100", explanation: "Average size of red blood cells")
+        addResult(cbcResults["MCH"], name: "Mean Corpuscular Hemoglobin", referenceRange: "27-32", explanation: "Average amount of hemoglobin per red blood cell")
+        addResult(cbcResults["MCHC"], name: "Mean Corpuscular Hemoglobin Concentration", referenceRange: "32-36", explanation: "Concentration of hemoglobin in red blood cells")
+        addResult(cbcResults["RDW"], name: "Red Cell Distribution Width", referenceRange: "11.5-14.5", explanation: "Variation in red blood cell size")
+        addResult(cbcResults["MPV"], name: "Mean Platelet Volume", referenceRange: "7.5-11.5", explanation: "Average size of platelets")
         
         // Add differential counts
-        addResult(cbcResults.neutrophils_percent, name: "Neutrophils %", referenceRange: "40-70", explanation: "Percentage of neutrophils (infection-fighting cells)")
-        addResult(cbcResults.lymphs_percent, name: "Lymphocytes %", referenceRange: "20-40", explanation: "Percentage of lymphocytes (immune system cells)")
-        addResult(cbcResults.monos_percent, name: "Monocytes %", referenceRange: "2-8", explanation: "Percentage of monocytes (immune system cells)")
-        addResult(cbcResults.eos_percent, name: "Eosinophils %", referenceRange: "1-4", explanation: "Percentage of eosinophils (allergy and parasite-fighting cells)")
-        addResult(cbcResults.basos_percent, name: "Basophils %", referenceRange: "0.5-1", explanation: "Percentage of basophils (inflammation and allergy cells)")
+        addResult(cbcResults["NEUTROPHILS_PERCENT"], name: "Neutrophils %", referenceRange: "40-70", explanation: "Percentage of neutrophils (infection-fighting cells)")
+        addResult(cbcResults["LYMPHS_PERCENT"], name: "Lymphocytes %", referenceRange: "20-40", explanation: "Percentage of lymphocytes (immune system cells)")
+        addResult(cbcResults["MONOS_PERCENT"], name: "Monocytes %", referenceRange: "2-8", explanation: "Percentage of monocytes (immune system cells)")
+        addResult(cbcResults["EOS_PERCENT"], name: "Eosinophils %", referenceRange: "1-4", explanation: "Percentage of eosinophils (allergy and parasite-fighting cells)")
+        addResult(cbcResults["BASOS_PERCENT"], name: "Basophils %", referenceRange: "0.5-1", explanation: "Percentage of basophils (inflammation and allergy cells)")
         
         return results
     }
     
-    /// Converts CMP results to TestResult format
+    /// Converts CMP results from comprehensive data to TestResult objects
     /// - Parameter cmpResults: CMP results from comprehensive data
     /// - Returns: Array of TestResult objects
-    private func convertCMPResultsToTestResults(_ cmpResults: CMPResults) -> [TestResult] {
+    private func convertCMPResultsToTestResults(_ cmpResults: [String: CMPResult]) -> [TestResult] {
         var results: [TestResult] = []
         
         // Helper function to convert individual results
-        func addResult(_ labResult: LabTestResult?, name: String, referenceRange: String, explanation: String) {
+        func addResult(_ labResult: CMPResult?, name: String, referenceRange: String, explanation: String) {
             guard let labResult = labResult else { return }
             
-            let value = labResult.value?.numericValue ?? 0.0
             let testResult = TestResult(
                 name: labResult.name,
-                value: value,
+                value: labResult.value?.numericValue ?? 0.0,
                 unit: labResult.units,
                 referenceRange: referenceRange,
                 explanation: explanation
             )
+            
             results.append(testResult)
         }
         
         // Add CMP results with standard reference ranges
-        addResult(cmpResults.glucose, name: "Glucose", referenceRange: "70-100", explanation: "Blood sugar level - high levels may indicate diabetes")
-        addResult(cmpResults.urea_nitrogen, name: "Urea Nitrogen (BUN)", referenceRange: "7-20", explanation: "Kidney function marker - high levels may indicate kidney problems")
-        addResult(cmpResults.creatinine, name: "Creatinine", referenceRange: "0.7-1.3", explanation: "Kidney function marker - high levels may indicate kidney problems")
-        addResult(cmpResults.sodium, name: "Sodium", referenceRange: "135-145", explanation: "Electrolyte that helps maintain fluid balance")
-        addResult(cmpResults.potassium, name: "Potassium", referenceRange: "3.5-5.0", explanation: "Electrolyte important for heart and muscle function")
-        addResult(cmpResults.chloride, name: "Chloride", referenceRange: "98-107", explanation: "Electrolyte that helps maintain fluid balance and pH")
-        addResult(cmpResults.co2, name: "Carbon Dioxide (CO2)", referenceRange: "23-29", explanation: "Measures acid-base balance in the body")
-        addResult(cmpResults.calcium, name: "Calcium", referenceRange: "8.5-10.2", explanation: "Important for bones, muscles, and nerve function")
-        addResult(cmpResults.albumin, name: "Albumin", referenceRange: "3.4-5.4", explanation: "Main protein in blood - helps maintain fluid balance")
-        addResult(cmpResults.ast, name: "AST", referenceRange: "10-40", explanation: "Liver enzyme - high levels may indicate liver damage")
+        addResult(cmpResults["GLUCOSE"], name: "Glucose", referenceRange: "70-100", explanation: "Blood sugar level - high levels may indicate diabetes")
+        addResult(cmpResults["UREA_NITROGEN"], name: "Urea Nitrogen (BUN)", referenceRange: "7-20", explanation: "Kidney function marker - high levels may indicate kidney problems")
+        addResult(cmpResults["CREATININE"], name: "Creatinine", referenceRange: "0.7-1.3", explanation: "Kidney function marker - high levels may indicate kidney problems")
+        addResult(cmpResults["SODIUM"], name: "Sodium", referenceRange: "135-145", explanation: "Electrolyte that helps maintain fluid balance")
+        addResult(cmpResults["POTASSIUM"], name: "Potassium", referenceRange: "3.5-5.0", explanation: "Electrolyte important for heart and muscle function")
+        addResult(cmpResults["CHLORIDE"], name: "Chloride", referenceRange: "98-107", explanation: "Electrolyte that helps maintain fluid balance and pH")
+        addResult(cmpResults["CO2"], name: "Carbon Dioxide (CO2)", referenceRange: "23-29", explanation: "Measures acid-base balance in the body")
+        addResult(cmpResults["CALCIUM"], name: "Calcium", referenceRange: "8.5-10.2", explanation: "Important for bones, muscles, and nerve function")
+        addResult(cmpResults["ALBUMIN"], name: "Albumin", referenceRange: "3.4-5.4", explanation: "Main protein in blood - helps maintain fluid balance")
+        addResult(cmpResults["AST"], name: "AST", referenceRange: "10-40", explanation: "Liver enzyme - high levels may indicate liver damage")
         
         return results
     }
@@ -892,6 +742,7 @@ public final class BloodTestViewModel: ObservableObject {
             
             // Process CBC results
             if let cbcResults = simpleResults.BC_Complete_Blood_Count {
+                print("Processing CBC results: \(cbcResults.count) items")
                 let testResults = convertSimpleResultsToTestResults(cbcResults, testType: "CBC")
                 if !testResults.isEmpty {
                     let bloodTest = BloodTest(
@@ -901,11 +752,15 @@ public final class BloodTestViewModel: ObservableObject {
                     )
                     addTest(bloodTest)
                     totalTestsAdded += 1
+                    print("✓ Added CBC test with \(testResults.count) results")
+                } else {
+                    print("⚠ No valid CBC results to add")
                 }
             }
             
-            // Process CMP results
-            if let cmpResults = simpleResults.BC_Comprehensive_Metabolic_Panel {
+            // Process CMP Metabolism Studies results
+            if let cmpResults = simpleResults.CMP_Metabolism_Studies {
+                print("Processing CMP Metabolism Studies results: \(cmpResults.count) items")
                 let testResults = convertSimpleResultsToTestResults(cmpResults, testType: "CMP")
                 if !testResults.isEmpty {
                     let bloodTest = BloodTest(
@@ -915,50 +770,33 @@ public final class BloodTestViewModel: ObservableObject {
                     )
                     addTest(bloodTest)
                     totalTestsAdded += 1
+                    print("✓ Added CMP test with \(testResults.count) results")
+                } else {
+                    print("⚠ No valid CMP results to add")
                 }
             }
             
-            // Process Lipid Panel results
-            if let lipidResults = simpleResults.BC_Lipid_Panel {
-                let testResults = convertSimpleResultsToTestResults(lipidResults, testType: "Lipid")
+            // Process Cholesterol results
+            if let cholesterolResults = simpleResults.Cholesterol_Results {
+                print("Processing Cholesterol Results: \(cholesterolResults.count) items")
+                let testResults = convertSimpleResultsToTestResults(cholesterolResults, testType: "Cholesterol")
                 if !testResults.isEmpty {
                     let bloodTest = BloodTest(
-                        date: parseDate(from: lipidResults.first?.date ?? "") ?? Date(),
-                        testType: "Lipid Panel",
+                        date: parseDate(from: cholesterolResults.first?.date ?? "") ?? Date(),
+                        testType: "Cholesterol Panel",
                         results: testResults
                     )
                     addTest(bloodTest)
                     totalTestsAdded += 1
+                    print("✓ Added Cholesterol Panel test with \(testResults.count) results")
+                } else {
+                    print("⚠ No valid Cholesterol results to add")
                 }
             }
             
-            // Process Thyroid Function results
-            if let thyroidResults = simpleResults.BC_Thyroid_Function {
-                let testResults = convertSimpleResultsToTestResults(thyroidResults, testType: "Thyroid")
-                if !testResults.isEmpty {
-                    let bloodTest = BloodTest(
-                        date: parseDate(from: thyroidResults.first?.date ?? "") ?? Date(),
-                        testType: "Thyroid Function",
-                        results: testResults
-                    )
-                    addTest(bloodTest)
-                    totalTestsAdded += 1
-                }
-            }
-            
-            // Process Other Tests results
-            if let otherResults = simpleResults.BC_Other_Tests {
-                let testResults = convertSimpleResultsToTestResults(otherResults, testType: "Other")
-                if !testResults.isEmpty {
-                    let bloodTest = BloodTest(
-                        date: parseDate(from: otherResults.first?.date ?? "") ?? Date(),
-                        testType: "Other Tests",
-                        results: testResults
-                    )
-                    addTest(bloodTest)
-                    totalTestsAdded += 1
-                }
-            }
+            print("=== Import Summary ===")
+            print("Total tests added: \(totalTestsAdded)")
+            print("Total blood tests in viewModel: \(bloodTests.count)")
             
             // Save to Core Data
             do {
@@ -979,24 +817,53 @@ public final class BloodTestViewModel: ObservableObject {
     // Helper method to convert simple results to test results
     private func convertSimpleResultsToTestResults(_ simpleResults: [SimpleTestResult], testType: String) -> [TestResult] {
         var testResults: [TestResult] = []
+        print("Converting \(simpleResults.count) simple results for \(testType)")
         
-        for simpleResult in simpleResults {
-            guard let value = simpleResult.value else { continue }
+        for (index, simpleResult) in simpleResults.enumerated() {
+            print("Processing result \(index + 1): \(simpleResult.testName) = \(simpleResult.value ?? -999)")
             
-            // Extract test name from the original JSON structure
-            let testName = extractTestName(from: simpleResult)
-            
-            let testResult = TestResult(
-                name: testName,
-                value: value,
-                unit: simpleResult.unit ?? getDefaultUnit(for: testName),
-                referenceRange: simpleResult.reference_range ?? getDefaultReferenceRange(for: testName),
-                explanation: "Imported from \(testType) panel"
-            )
-            testResults.append(testResult)
+            // Handle different types of test results
+            if let value = simpleResult.value {
+                // Numeric value available
+                let testResult = createTestResult(from: simpleResult, testType: testType, value: value)
+                testResults.append(testResult)
+                print("✓ Added test result: \(simpleResult.testName) = \(value)")
+            } else if simpleResult.testName.contains("null") || simpleResult.testName.contains("nil") {
+                // Skip null values
+                print("⚠ Skipping \(simpleResult.testName) - null value")
+                continue
+            } else {
+                // Try to handle string values or other non-numeric data
+                print("⚠ Skipping \(simpleResult.testName) - no numeric value available")
+                continue
+            }
         }
         
+        print("Converted \(testResults.count) valid test results for \(testType)")
         return testResults
+    }
+    
+    // Helper method to create a test result with comprehensive information
+    private func createTestResult(from simpleResult: SimpleTestResult, testType: String, value: Double) -> TestResult {
+        // Create a comprehensive explanation including notes and additional info
+        var explanation = "Imported from \(testType) panel"
+        if let note = simpleResult.note {
+            explanation += " - \(note)"
+        }
+        if let time = simpleResult.time {
+            explanation += " (Time: \(time))"
+        }
+        if let sample = simpleResult.sample {
+            explanation += " (Sample: \(sample))"
+        }
+        
+        return TestResult(
+            name: simpleResult.testName,
+            value: value,
+            unit: simpleResult.unit ?? getDefaultUnit(for: simpleResult.testName),
+            referenceRange: simpleResult.reference_range ?? getDefaultReferenceRange(for: simpleResult.testName),
+            explanation: explanation
+        )
     }
     
     // Helper method to extract test name from simple result
@@ -1023,6 +890,263 @@ public final class BloodTestViewModel: ObservableObject {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.date(from: dateString)
+    }
+    
+    /// Imports enhanced lab results from JSON string
+    /// - Parameter jsonData: JSON string containing enhanced lab results
+    func importEnhancedLabResults(_ jsonData: String) {
+        guard let data = jsonData.data(using: .utf8) else {
+            print("Failed to convert JSON string to data")
+            return
+        }
+        
+        do {
+            let enhancedResults = try JSONDecoder().decode(EnhancedLabResults.self, from: data)
+            print("Successfully decoded enhanced lab results for patient: \(enhancedResults.patient_info.name)")
+            
+            var totalTestsImported = 0
+            
+            // Import CBC results
+            if let cbcPanel = enhancedResults.CBC_Complete_Blood_Count {
+                print("Processing CBC panel with \(cbcPanel.results.count) tests")
+                let cbcTests = convertEnhancedCBCResultsToTestResults(cbcPanel.results, testDate: cbcPanel.test_date)
+                
+                // Create BloodTest for CBC
+                let cbcBloodTest = BloodTest(
+                    date: parseDate(cbcPanel.test_date) ?? Date(),
+                    testType: "Complete Blood Count (CBC)",
+                    results: cbcTests
+                )
+                
+                totalTestsImported += cbcTests.count
+                print("Imported \(cbcTests.count) CBC tests")
+            }
+            
+            // Import CMP results
+            if let cmpPanel = enhancedResults.CMP_Metabolism_Studies {
+                print("Processing CMP panel with \(cmpPanel.results.count) tests")
+                let cmpTests = convertEnhancedCMPResultsToTestResults(cmpPanel.results, testDate: cmpPanel.test_date)
+                
+                // Create BloodTest for CMP
+                let cmpBloodTest = BloodTest(
+                    date: parseDate(cmpPanel.test_date) ?? Date(),
+                    testType: "Comprehensive Metabolic Panel (CMP)",
+                    results: cmpTests
+                )
+                
+                totalTestsImported += cmpTests.count
+                print("Imported \(cmpTests.count) CMP tests")
+            }
+            
+            // Import Cholesterol results
+            if let cholesterolPanel = enhancedResults.Cholesterol_Results {
+                print("Processing Cholesterol panel with \(cholesterolPanel.results.count) tests")
+                let cholesterolTests = convertEnhancedCholesterolResultsToTestResults(cholesterolPanel.results, testDate: cholesterolPanel.test_date)
+                
+                // Create BloodTest for Cholesterol
+                let cholesterolBloodTest = BloodTest(
+                    date: parseDate(cholesterolPanel.test_date) ?? Date(),
+                    testType: "Cholesterol Panel",
+                    results: cholesterolTests
+                )
+                
+                totalTestsImported += cholesterolTests.count
+                print("Imported \(cholesterolTests.count) Cholesterol tests")
+            }
+            
+            // Save to Core Data
+            do {
+                try viewContext.save()
+                print("Successfully saved \(totalTestsImported) enhanced lab tests to Core Data")
+            } catch {
+                print("Failed to save enhanced lab results to Core Data: \(error)")
+            }
+            
+        } catch {
+            print("Failed to decode enhanced lab results: \(error)")
+        }
+    }
+    
+    /// Converts enhanced CBC results to TestResult objects
+    private func convertEnhancedCBCResultsToTestResults(_ cbcResults: [String: CBCResult], testDate: String) -> [TestResult] {
+        var results: [TestResult] = []
+        
+        for (key, result) in cbcResults {
+            guard let value = result.value else { continue } // Skip null values
+            
+            let testResult = TestResult(
+                name: result.name,
+                value: value,
+                unit: result.units,
+                referenceRange: getCBCReferenceRange(for: key),
+                explanation: getCBCExplanation(for: key)
+            )
+            
+            results.append(testResult)
+        }
+        
+        return results
+    }
+    
+    /// Converts enhanced CMP results to TestResult objects
+    private func convertEnhancedCMPResultsToTestResults(_ cmpResults: [String: CMPResult], testDate: String) -> [TestResult] {
+        var results: [TestResult] = []
+        
+        for (key, result) in cmpResults {
+            guard let value = result.value?.numericValue else { continue } // Skip null values
+            
+            // Add flag and note information if available
+            var explanation = getCMPExplanation(for: key)
+            if let flag = result.flag {
+                explanation += " [\(flag)]"
+            }
+            if let note = result.note {
+                explanation += " - \(note)"
+            }
+            
+            let testResult = TestResult(
+                name: result.name,
+                value: value,
+                unit: result.units,
+                referenceRange: getCMPReferenceRange(for: key),
+                explanation: explanation
+            )
+            
+            results.append(testResult)
+        }
+        
+        return results
+    }
+    
+    /// Converts enhanced Cholesterol results to TestResult objects
+    private func convertEnhancedCholesterolResultsToTestResults(_ cholesterolResults: [String: CholesterolResult], testDate: String) -> [TestResult] {
+        var results: [TestResult] = []
+        
+        for (key, result) in cholesterolResults {
+            guard let value = result.value else { continue } // Skip null values
+            
+            // Add flag and note information if available
+            var explanation = getCholesterolExplanation(for: key)
+            if let flag = result.flag {
+                explanation += " [\(flag)]"
+            }
+            if let note = result.note {
+                explanation += " - \(note)"
+            }
+            
+            let testResult = TestResult(
+                name: result.name,
+                value: value,
+                unit: result.units,
+                referenceRange: getCholesterolReferenceRange(for: key),
+                explanation: explanation
+            )
+            
+            results.append(testResult)
+        }
+        
+        return results
+    }
+    
+    // Helper methods for reference ranges and explanations
+    private func getCBCReferenceRange(for key: String) -> String {
+        switch key {
+        case "WBC": return "4.5-11.0"
+        case "RBC": return "4.5-5.5"
+        case "HGB": return "13.5-17.5"
+        case "HCT": return "38.8-50.0"
+        case "PLATELET_COUNT": return "150-450"
+        case "MCV": return "80-100"
+        case "MCH": return "27-32"
+        case "MCHC": return "32-36"
+        case "RDW": return "11.5-14.5"
+        case "MPV": return "7.5-11.5"
+        case "NEUTROPHILS_PERCENT": return "40-70"
+        case "LYMPHS_PERCENT": return "20-40"
+        case "MONOS_PERCENT": return "2-8"
+        case "EOS_PERCENT": return "1-4"
+        case "BASOS_PERCENT": return "0.5-1"
+        default: return "N/A"
+        }
+    }
+    
+    private func getCMPReferenceRange(for key: String) -> String {
+        switch key {
+        case "GLUCOSE": return "70-100"
+        case "UREA_NITROGEN": return "7-20"
+        case "CREATININE": return "0.7-1.3"
+        case "SODIUM": return "135-145"
+        case "POTASSIUM": return "3.5-5.0"
+        case "CHLORIDE": return "98-107"
+        case "CO2": return "23-29"
+        case "CALCIUM": return "8.5-10.2"
+        case "ALBUMIN": return "3.4-5.4"
+        case "AST": return "10-40"
+        case "ALT": return "7-56"
+        case "ALKALINE_PHOSPHATASE": return "44-147"
+        case "BILIRUBIN_TOTAL": return "0.3-1.2"
+        default: return "N/A"
+        }
+    }
+    
+    private func getCholesterolReferenceRange(for key: String) -> String {
+        switch key {
+        case "LDL_NON_FASTING": return "<100"
+        case "HDL": return ">40"
+        case "TOTAL_CHOLESTEROL": return "<200"
+        case "TRIGLYCERIDES": return "<150"
+        default: return "N/A"
+        }
+    }
+    
+    private func getCBCExplanation(for key: String) -> String {
+        switch key {
+        case "WBC": return "Measures infection-fighting white blood cells"
+        case "RBC": return "Measures oxygen-carrying red blood cells"
+        case "HGB": return "Measures oxygen-carrying protein in red blood cells"
+        case "HCT": return "Percentage of blood volume occupied by red blood cells"
+        case "PLATELET_COUNT": return "Measures blood clotting cells"
+        case "MCV": return "Average size of red blood cells"
+        case "MCH": return "Average amount of hemoglobin per red blood cell"
+        case "MCHC": return "Concentration of hemoglobin in red blood cells"
+        case "RDW": return "Variation in red blood cell size"
+        case "MPV": return "Average size of platelets"
+        case "NEUTROPHILS_PERCENT": return "Percentage of neutrophils (infection-fighting cells)"
+        case "LYMPHS_PERCENT": return "Percentage of lymphocytes (immune system cells)"
+        case "MONOS_PERCENT": return "Percentage of monocytes (immune system cells)"
+        case "EOS_PERCENT": return "Percentage of eosinophils (allergy and parasite-fighting cells)"
+        case "BASOS_PERCENT": return "Percentage of basophils (inflammation and allergy cells)"
+        default: return "Blood cell measurement"
+        }
+    }
+    
+    private func getCMPExplanation(for key: String) -> String {
+        switch key {
+        case "GLUCOSE": return "Blood sugar level - high levels may indicate diabetes"
+        case "UREA_NITROGEN": return "Kidney function marker - high levels may indicate kidney problems"
+        case "CREATININE": return "Kidney function marker - high levels may indicate kidney problems"
+        case "SODIUM": return "Electrolyte that helps maintain fluid balance"
+        case "POTASSIUM": return "Electrolyte important for heart and muscle function"
+        case "CHLORIDE": return "Electrolyte that helps maintain fluid balance and pH"
+        case "CO2": return "Measures acid-base balance in the body"
+        case "CALCIUM": return "Important for bones, muscles, and nerve function"
+        case "ALBUMIN": return "Main protein in blood - helps maintain fluid balance"
+        case "AST": return "Liver enzyme - high levels may indicate liver damage"
+        case "ALT": return "Liver enzyme - high levels may indicate liver damage"
+        case "ALKALINE_PHOSPHATASE": return "Liver and bone enzyme"
+        case "BILIRUBIN_TOTAL": return "Liver function marker - high levels may indicate liver problems"
+        default: return "Metabolic panel measurement"
+        }
+    }
+    
+    private func getCholesterolExplanation(for key: String) -> String {
+        switch key {
+        case "LDL_NON_FASTING": return "LDL (bad cholesterol) - lower values are better"
+        case "HDL": return "HDL (good cholesterol) - higher values are better"
+        case "TOTAL_CHOLESTEROL": return "Total cholesterol level"
+        case "TRIGLYCERIDES": return "Fat in the blood - high levels may increase heart disease risk"
+        default: return "Cholesterol measurement"
+        }
     }
 }
 
@@ -1162,7 +1286,7 @@ struct ComprehensiveLabData: Codable {
     let healthcare_facility: HealthcareFacility
     let patient: Patient
     let report: LabReport
-    let lab_tests: LabTests
+    // Removed lab_tests reference since LabTests struct was deleted
 }
 
 struct HealthcareFacility: Codable {
@@ -1188,62 +1312,7 @@ struct LabReport: Codable {
     let date: String
 }
 
-struct LabTests: Codable {
-    let cbc: CBCPanel?
-    let cmp: CMPPanel?
-}
-
-struct CBCPanel: Codable {
-    let test_name: String
-    let test_date: String
-    let results: CBCResults
-    let interpretation: String?
-}
-
-struct CBCResults: Codable {
-    let wbc: LabTestResult?
-    let neutrophils_percent: LabTestResult?
-    let lymphs_percent: LabTestResult?
-    let monos_percent: LabTestResult?
-    let eos_percent: LabTestResult?
-    let basos_percent: LabTestResult?
-    let neutrophils_absolute: LabTestResult?
-    let lymphs_absolute: LabTestResult?
-    let monos_absolute: LabTestResult?
-    let eos_absolute: LabTestResult?
-    let basos_absolute: LabTestResult?
-    let rbc: LabTestResult?
-    let hgb: LabTestResult?
-    let hct: LabTestResult?
-    let mcv: LabTestResult?
-    let mch: LabTestResult?
-    let mchc: LabTestResult?
-    let rdw: LabTestResult?
-    let platelet_count: LabTestResult?
-    let mpv: LabTestResult?
-}
-
-struct CMPPanel: Codable {
-    let test_name: String
-    let test_date: String
-    let results: CMPResults
-}
-
-struct CMPResults: Codable {
-    let glucose: LabTestResult?
-    let urea_nitrogen: LabTestResult?
-    let creatinine: LabTestResult?
-    let egfr_creatinine: LabTestResult?
-    let sodium: LabTestResult?
-    let potassium: LabTestResult?
-    let chloride: LabTestResult?
-    let co2: LabTestResult?
-    let anion_gap: LabTestResult?
-    let calcium: LabTestResult?
-    let total_protein: LabTestResult?
-    let albumin: LabTestResult?
-    let ast: LabTestResult?
-}
+// Removed duplicate struct definitions - using enhanced versions below
 
 struct LabTestResult: Codable {
     let name: String
@@ -1383,10 +1452,8 @@ struct LabTest: Codable {
 /// Simple lab results format with test categories as keys
 struct SimpleLabResults: Codable {
     let BC_Complete_Blood_Count: [SimpleTestResult]?
-    let BC_Comprehensive_Metabolic_Panel: [SimpleTestResult]?
-    let BC_Lipid_Panel: [SimpleTestResult]?
-    let BC_Thyroid_Function: [SimpleTestResult]?
-    let BC_Other_Tests: [SimpleTestResult]?
+    let CMP_Metabolism_Studies: [SimpleTestResult]?
+    let Cholesterol_Results: [SimpleTestResult]?
     
     // Add more test categories as needed
 }
@@ -1397,36 +1464,232 @@ struct SimpleTestResult: Codable {
     let value: Double?
     let unit: String?
     let reference_range: String?
+    let note: String?
+    let time: String?
+    let sample: String?
     
-    // Handle different test names as dynamic keys
-    private enum CodingKeys: String, CodingKey {
-        case date, unit, reference_range
+    // Helper method to extract numeric values from strings like ">90", "<5", etc.
+    private static func extractNumericValue(from string: String) -> Double? {
+        // Remove common prefixes/suffixes and extract the number
+        let cleanedString = string.replacingOccurrences(of: ">", with: "")
+            .replacingOccurrences(of: "<", with: "")
+            .replacingOccurrences(of: "=", with: "")
+            .replacingOccurrences(of: " ", with: "")
+        
+        return Double(cleanedString)
     }
     
+    // Custom decoder to handle dynamic test names
     init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        date = try container.decode(String.self, forKey: .date)
-        unit = try container.decodeIfPresent(String.self, forKey: .unit)
-        reference_range = try container.decodeIfPresent(String.self, forKey: .reference_range)
+        let container = try decoder.container(keyedBy: AnyCodingKey.self)
         
-        // Extract the test name and value from the remaining keys
-        let allKeys = container.allKeys
-        let testKeys = allKeys.filter { $0 != .date && $0 != .unit && $0 != .reference_range }
+        // First, decode the date
+        date = try container.decode(String.self, forKey: AnyCodingKey("date"))
         
-        if let firstTestKey = testKeys.first {
-            testName = firstTestKey.stringValue
-            
-            // Try to decode as Double first, then as String
-            if let doubleValue = try? container.decode(Double.self, forKey: firstTestKey) {
-                value = doubleValue
-            } else if let stringValue = try? container.decode(String.self, forKey: firstTestKey) {
-                value = Double(stringValue)
-            } else {
-                value = nil
+        // Try to decode optional fields if they exist
+        unit = try? container.decodeIfPresent(String.self, forKey: AnyCodingKey("unit"))
+        reference_range = try? container.decodeIfPresent(String.self, forKey: AnyCodingKey("reference_range"))
+        note = try? container.decodeIfPresent(String.self, forKey: AnyCodingKey("note"))
+        time = try? container.decodeIfPresent(String.self, forKey: AnyCodingKey("time"))
+        sample = try? container.decodeIfPresent(String.self, forKey: AnyCodingKey("sample"))
+        
+        // Find the test name and value by looking for keys that aren't standard fields
+        var foundTestName = ""
+        var foundValue: Double? = nil
+        
+        let standardKeys = ["date", "unit", "reference_range", "note", "time", "sample"]
+        
+        for key in container.allKeys {
+            let keyString = key.stringValue
+            if !standardKeys.contains(keyString) {
+                // This is a test name key
+                foundTestName = keyString
+                
+                // Try to decode the value
+                if let doubleValue = try? container.decode(Double.self, forKey: key) {
+                    foundValue = doubleValue
+                } else if let intValue = try? container.decode(Int.self, forKey: key) {
+                    foundValue = Double(intValue)
+                } else if let stringValue = try? container.decode(String.self, forKey: key) {
+                    // Handle string values like ">90"
+                    if let numericPart = Self.extractNumericValue(from: stringValue) {
+                        foundValue = numericPart
+                    } else {
+                        foundValue = nil
+                    }
+                } else {
+                    // Handle null values - try to decode as null explicitly
+                    if (try? container.decodeNil(forKey: key)) == true {
+                        foundValue = nil
+                    } else {
+                        foundValue = nil
+                    }
+                }
+                break // Found the test name, stop looking
             }
+        }
+        
+        testName = foundTestName
+        value = foundValue
+    }
+    
+    // Custom init for creating test results manually
+    init(date: String, testName: String, value: Double?, unit: String? = nil, reference_range: String? = nil, note: String? = nil, time: String? = nil, sample: String? = nil) {
+        self.date = date
+        self.testName = testName
+        self.value = value
+        self.unit = unit
+        self.reference_range = reference_range
+        self.note = note
+        self.time = time
+        self.sample = sample
+    }
+}
+
+// Helper struct for dynamic key decoding
+struct AnyCodingKey: CodingKey {
+    var stringValue: String
+    var intValue: Int?
+    
+    init(stringValue: String) {
+        self.stringValue = stringValue
+        self.intValue = nil
+    }
+    
+    init(intValue: Int) {
+        self.stringValue = String(intValue)
+        self.intValue = intValue
+    }
+    
+    init(_ string: String) {
+        self.stringValue = string
+        self.intValue = nil
+    }
+} 
+
+// MARK: - Enhanced Lab Results Format (User's Updated JSON)
+
+/// Enhanced lab results format with patient info and structured test results
+struct EnhancedLabResults: Codable {
+    let patient_info: PatientInfo
+    let CBC_Complete_Blood_Count: CBCPanel?
+    let CMP_Metabolism_Studies: CMPPanel?
+    let Cholesterol_Results: CholesterolPanel?
+    let summary: TestSummary?
+}
+
+struct PatientInfo: Codable {
+    let name: String
+    let test_date: String
+    let facility: String
+}
+
+struct CBCPanel: Codable {
+    let test_date: String
+    let results: [String: CBCResult]
+    let interpretation: String?
+}
+
+struct CBCResult: Codable {
+    let value: Double?
+    let units: String
+    let name: String
+}
+
+struct CMPPanel: Codable {
+    let test_date: String
+    let results: [String: CMPResult]
+    let interpretation: String?
+}
+
+struct CMPResult: Codable {
+    let value: EnhancedTestValue?
+    let units: String
+    let name: String
+    let flag: String?
+    let note: String?
+}
+
+struct CholesterolPanel: Codable {
+    let test_date: String
+    let test_time: String?
+    let sample_type: String?
+    let results: [String: CholesterolResult]
+    let interpretation: String?
+}
+
+struct CholesterolResult: Codable {
+    let value: Double?
+    let units: String
+    let name: String
+    let flag: String?
+    let note: String?
+}
+
+struct TestSummary: Codable {
+    let abnormal_findings: [AbnormalFinding]?
+    let normal_findings: [String]?
+}
+
+struct AbnormalFinding: Codable {
+    let test: String
+    let value: EnhancedTestValue?
+    let status: String
+    let recommendation: String
+}
+
+/// Enhanced test value that can be Double, String, or null
+enum EnhancedTestValue: Codable {
+    case double(Double)
+    case string(String)
+    case null
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        
+        if container.decodeNil() {
+            self = .null
+        } else if let doubleValue = try? container.decode(Double.self) {
+            self = .double(doubleValue)
+        } else if let stringValue = try? container.decode(String.self) {
+            self = .string(stringValue)
         } else {
-            testName = "Unknown Test"
-            value = nil
+            self = .null
+        }
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        
+        switch self {
+        case .double(let value):
+            try container.encode(value)
+        case .string(let value):
+            try container.encode(value)
+        case .null:
+            try container.encodeNil()
+        }
+    }
+    
+    var numericValue: Double? {
+        switch self {
+        case .double(let value):
+            return value
+        case .string(let value):
+            return extractNumericValueFromString(value)
+        case .null:
+            return nil
+        }
+    }
+    
+    var stringValue: String? {
+        switch self {
+        case .double(let value):
+            return String(value)
+        case .string(let value):
+            return value
+        case .null:
+            return nil
         }
     }
 } 
