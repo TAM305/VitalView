@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreData
 
 struct BloodTestInputView: View {
     @Environment(\.dismiss) private var dismiss
@@ -7,8 +8,12 @@ struct BloodTestInputView: View {
     @State private var testValues: [String: String] = [:]
     @State private var showingAlert = false
     @State private var alertMessage = ""
+    @State private var showingPDFImport = false
     
     let onSave: (BloodTest) -> Void
+    
+    // Create view model for PDF import
+    @StateObject private var viewModel = BloodTestViewModel(context: PersistenceController.shared.container.viewContext)
     
     // Test categories and their components
     let testCategories = [
@@ -56,6 +61,30 @@ struct BloodTestInputView: View {
                 .padding(.top)
                 .background(Color(.systemBackground))
                 
+                // PDF Import Option
+                VStack(spacing: 12) {
+                    Divider()
+                    
+                    HStack {
+                        Image(systemName: "doc.text.magnifyingglass")
+                            .foregroundColor(.blue)
+                        Text("Import from PDF")
+                            .font(.headline)
+                        Spacer()
+                        Button("Import") {
+                            showingPDFImport = true
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    .padding(.horizontal)
+                    
+                    Text("Upload a lab report PDF to automatically extract your test results")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal)
+                }
+                .padding(.vertical, 8)
+                
                 // Test values input
                 ScrollView {
                     LazyVStack(spacing: 16) {
@@ -93,6 +122,10 @@ struct BloodTestInputView: View {
             Button("OK") { }
         } message: {
             Text(alertMessage)
+        }
+        .sheet(isPresented: $showingPDFImport) {
+            PDFImportView()
+                .environmentObject(viewModel)
         }
     }
     

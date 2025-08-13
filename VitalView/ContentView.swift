@@ -15,6 +15,7 @@ struct ContentView: View {
     @State private var showBloodTests = false
     @State private var showingSettings = false
     @State private var showingImport = false
+    @State private var showingPDFImport = false
     
     init() {
         let context = PersistenceController.shared.container.viewContext
@@ -73,6 +74,10 @@ struct ContentView: View {
                         Button(action: { showingImport = true }) {
                             Label("Import Lab Data", systemImage: "square.and.arrow.down")
                         }
+                        
+                        Button(action: { showingPDFImport = true }) {
+                            Label("Import from PDF", systemImage: "doc.text.magnifyingglass")
+                        }
                     } label: {
                         Image(systemName: "plus")
                             .font(.system(size: 20, weight: .bold))
@@ -94,6 +99,10 @@ struct ContentView: View {
                 }
                 .sheet(isPresented: $showingImport) {
                     ImportLabDataView(viewModel: viewModel)
+                }
+                .sheet(isPresented: $showingPDFImport) {
+                    PDFImportView()
+                        .environmentObject(viewModel)
                 }
             }
             .navigationViewStyle(StackNavigationViewStyle())
