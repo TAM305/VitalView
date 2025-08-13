@@ -200,8 +200,12 @@ class PDFLabImporter: ObservableObject {
         while index < lines.count {
             let line = lines[index]
             
-            // Try to parse as a single line first
-            if let result = parseLabLine(line) {
+            // Try to parse as clean PDF format first (Date + TestName + Value on same line)
+            if let result = parseCleanDateTestNameValue(from: line) {
+                print("Line \(index + 1): Found clean PDF format result - \(result.name): \(result.value) \(result.unit)")
+                results.append(result)
+                index += 1
+            } else if let result = parseLabLine(line) {
                 print("Line \(index + 1): Found single-line result - \(result.name): \(result.value) \(result.unit)")
                 results.append(result)
                 index += 1
@@ -1244,6 +1248,103 @@ class PDFLabImporter: ObservableObject {
                 
                 print("      Successfully created date + test name + value result: \(cleanedName) = \(extractedValue) \(unit)")
                 return result
+            }
+        }
+        
+        return nil
+    }
+    
+    /// Parses the clean PDF format: Date + TestName + Value on the same line
+    /// This handles the actual PDF format like "05/01/2025 WBC 6.30"
+    /// - Parameter line: Single line of text from the PDF
+    /// - Returns: TestResult if found, nil otherwise
+    private func parseCleanDateTestNameValue(from line: String) -> TestResult? {
+        print("    Trying to parse clean date + test name + value format")
+        
+        // Pattern: Date + Space + TestName + Space + Value + Optional Unit + Optional Flag
+        let cleanPatterns = [
+            // Pattern 1: Date + TestName + Value + Unit + Flag (e.g., "05/01/2025 GLUCOSE 116.00 H")
+            "(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})\\s+([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)\\s*([a-zA-Z/%]+)?\\s*([HL#\\$])?",
+            // Pattern 2: Date + TestName + Value + Unit (e.g., "05/01/2025 NEUTROPHILS % 57.10")
+            "(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})\\s+([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)\\s*([a-zA-Z/%]+)?",
+            // Pattern 3: Date + TestName + Value (e.g., "05/01/2025 WBC 6.30")
+            "(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})\\s+([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)",
+            // Pattern 4: Alternative date format (YYYY/MM/DD)
+            "(\\d{4}[/-]\\d{1,2}[/-]\\d{1,2})\\s+([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)\\s*([a-zA-Z/%]+)?\\s*([HL#\\$])?",
+            "(\\d{4}[/-]\\d{1,2}[/-]\\d{1,2})\\s+([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)\\s*([a-zA-Z/%]+)?",
+            "(\\d{4}[/-]\\d{1,2}[/-]\\d{1,2})\\s+([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)"
+        ]
+        
+        for (patternIndex, pattern) in cleanPatterns.enumerated() {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
+                if let match = regex.firstMatch(in: line, options: [], range: NSRange(line.startIndex..., in: line)) {
+                    print("      Clean pattern \(patternIndex) matched: '\(pattern)'")
+                    
+                    // Extract date (always first capture group)
+                    guard let dateRange = Range(match.range(at: 1), in: line) else { continue }
+                    let dateString = String(line[dateRange])
+                    
+                    // Extract test name (always second capture group)
+                    guard let testNameRange = Range(match.range(at: 2), in: line) else { continue }
+                    let testName = String(line[testNameRange]).trimmingCharacters(in: .whitespaces)
+                    
+                    // Extract value (always third capture group)
+                    guard let valueRange = Range(match.range(at: 3), in: line) else { continue }
+                    let valueString = String(line[valueRange])
+                    
+                    guard let value = Double(valueString) else {
+                        print("      Could not convert value to number: '\(valueString)'")
+                        continue
+                    }
+                    
+                    // Extract unit if available (fourth capture group)
+                    var unit = "N/A"
+                    if match.numberOfRanges >= 5 {
+                        if let unitRange = Range(match.range(at: 4), in: line) {
+                            let extractedUnit = String(line[unitRange]).trimmingCharacters(in: .whitespaces)
+                            if !extractedUnit.isEmpty {
+                                unit = extractedUnit
+                            }
+                        }
+                    }
+                    
+                    // Extract flag if available (fifth capture group)
+                    var flag = ""
+                    if match.numberOfRanges >= 6 {
+                        if let flagRange = Range(match.range(at: 5), in: line) {
+                            let extractedFlag = String(line[flagRange]).trimmingCharacters(in: .whitespaces)
+                            if !extractedFlag.isEmpty {
+                                flag = extractedFlag
+                            }
+                        }
+                    }
+                    
+                    print("      Extracted - Date: '\(dateString)', Name: '\(testName)', Value: '\(valueString)', Unit: '\(unit)', Flag: '\(flag)'")
+                    
+                    // Clean and validate the test name
+                    let cleanedName = cleanTestName(testName)
+                    guard isValidTestName(cleanedName) else {
+                        print("      Invalid test name: '\(cleanedName)'")
+                        continue
+                    }
+                    
+                    // Create explanation with flag if present
+                    var explanation = "Imported from PDF lab report - Date: \(dateString) (clean format)"
+                    if !flag.isEmpty {
+                        explanation += " - Flag: \(flag)"
+                    }
+                    
+                    let result = TestResult(
+                        name: cleanedName,
+                        value: value,
+                        unit: unit,
+                        referenceRange: "N/A",
+                        explanation: explanation
+                    )
+                    
+                    print("      Successfully created clean format result: \(cleanedName) = \(value) \(unit)")
+                    return result
+                }
             }
         }
         
