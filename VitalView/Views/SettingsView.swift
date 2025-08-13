@@ -135,30 +135,67 @@ struct SettingsView: View {
         print("=== Import Debug ===")
         print("Attempting to decode data of size: \(data.count)")
         
+        // Try to get a preview of the JSON content
+        if let jsonString = String(data: data, encoding: .utf8) {
+            let previewLength = min(500, jsonString.count)
+            let preview = String(jsonString.prefix(previewLength))
+            print("JSON preview (first \(previewLength) characters):")
+            print(preview)
+            if jsonString.count > previewLength {
+                print("... (truncated)")
+            }
+        }
+        
         // First try to decode as standard BloodTest format
-        if let tests = try? decoder.decode([BloodTest].self, from: data) {
+        do {
+            let tests = try decoder.decode([BloodTest].self, from: data)
             print("Successfully decoded as standard BloodTest format: \(tests.count) tests")
             for test in tests {
                 viewModel.addTest(test)
             }
             alertMessage = "Data imported successfully"
             return
+        } catch {
+            print("Failed to decode as standard BloodTest format: \(error)")
         }
         
         // If that fails, try to decode as comprehensive health data format
-        if let healthData = try? decoder.decode(ComprehensiveHealthData.self, from: data) {
+        do {
+            let healthData = try decoder.decode(ComprehensiveHealthData.self, from: data)
             print("Successfully decoded as comprehensive health data format")
             importComprehensiveHealthData(healthData)
             alertMessage = "Comprehensive health data imported successfully"
             return
+        } catch {
+            print("Failed to decode as comprehensive health data format: \(error)")
+            print("Error details: \(error.localizedDescription)")
+            
+            // Try to get more specific error information
+            if let decodingError = error as? DecodingError {
+                switch decodingError {
+                case .keyNotFound(let key, let context):
+                    print("Missing key: \(key.stringValue) at path: \(context.codingPath)")
+                case .typeMismatch(let type, let context):
+                    print("Type mismatch: expected \(type) at path: \(context.codingPath)")
+                case .valueNotFound(let type, let context):
+                    print("Value not found: expected \(type) at path: \(context.codingPath)")
+                case .dataCorrupted(let context):
+                    print("Data corrupted at path: \(context.codingPath)")
+                @unknown default:
+                    print("Unknown decoding error")
+                }
+            }
         }
         
         // If that fails, try to decode as VA lab format
-        if let vaLabData = try? decoder.decode(VALabData.self, from: data) {
+        do {
+            let vaLabData = try decoder.decode(VALabData.self, from: data)
             print("Successfully decoded as VA lab format")
             importVALabData(vaLabData)
             alertMessage = "VA Lab data imported successfully"
             return
+        } catch {
+            print("Failed to decode as VA lab format: \(error)")
         }
         
         // If all fail, show error
