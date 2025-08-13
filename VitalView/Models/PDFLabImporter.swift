@@ -2,6 +2,7 @@ import Foundation
 import PDFKit
 import Vision
 import SwiftUI
+import VisionKit
 
 /// PDF Lab Results Importer
 /// Extracts lab data from PDF reports and converts them to TestResult objects
@@ -52,27 +53,99 @@ class PDFLabImporter: ObservableObject {
                             }
                         }
                         
-                        // Method 3: Try different page content extraction
+                        // Method 3: Try OCR for scanned pages
                         if fullText.isEmpty {
-                            print("Page \(i+1): Attempting alternative content extraction...")
-                            // Try to get content as data and convert
-                            if let pageData = page.dataRepresentation {
-                                print("Page \(i+1): Page data representation available (\(pageData.count) bytes)")
+                            print("Page \(i+1): Attempting OCR extraction...")
+                            let pageImage = page.thumbnail(of: CGSize(width: 1000, height: 1000), for: .mediaBox)
+                            print("Page \(i+1): Page image generated for OCR (\(pageImage.size.width) x \(pageImage.size.height))")
+                            
+                            // Perform OCR on the page image
+                            self.performOCR(on: pageImage) { ocrText in
+                                if !ocrText.isEmpty {
+                                    print("Page \(i+1): OCR successful - extracted \(ocrText.count) characters")
+                                    DispatchQueue.main.async {
+                                        self.extractedText += ocrText + "\n"
+                                        print("Updated extractedText length: \(self.extractedText.count)")
+                                        self.parseLabResults(from: self.extractedText)
+                                        self.isProcessing = false
+                                    }
+                                } else {
+                                    print("Page \(i+1): OCR failed - no text found")
+                                    DispatchQueue.main.async {
+                                        self.isProcessing = false
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
             
-            print("Total extracted text length: \(fullText.count)")
-            print("First 200 characters: \(String(fullText.prefix(200)))")
+            // Check if we need to wait for OCR
+            let needsOCR = fullText.isEmpty
             
-            DispatchQueue.main.async {
-                self.extractedText = fullText
-                self.parseLabResults(from: fullText)
-                print("Parsed \(self.parsedResults.count) test results")
-                self.isProcessing = false
+            if !needsOCR {
+                // We have direct text, parse immediately
+                print("Total extracted text length: \(fullText.count)")
+                print("First 200 characters: \(String(fullText.prefix(200)))")
+                
+                DispatchQueue.main.async {
+                    self.extractedText = fullText
+                    self.parseLabResults(from: fullText)
+                    print("Parsed \(self.parsedResults.count) test results")
+                    self.isProcessing = false
+                }
+            } else {
+                // We're using OCR, wait for completion handlers
+                print("Using OCR extraction - waiting for completion...")
+                // The OCR completion handlers will handle parsing and setting isProcessing = false
             }
+        }
+    }
+    
+    /// Performs OCR on a UIImage to extract text
+    /// - Parameters:
+    ///   - image: UIImage to perform OCR on
+    ///   - completion: Callback with extracted text
+    private func performOCR(on image: UIImage, completion: @escaping (String) -> Void) {
+        guard let cgImage = image.cgImage else {
+            print("OCR: Failed to get CGImage from UIImage")
+            completion("")
+            return
+        }
+        
+        let request = VNRecognizeTextRequest { request, error in
+            if let error = error {
+                print("OCR: Error during text recognition: \(error)")
+                completion("")
+                return
+            }
+            
+            guard let observations = request.results as? [VNRecognizedTextObservation] else {
+                print("OCR: No text observations found")
+                completion("")
+                return
+            }
+            
+            let extractedText = observations.compactMap { observation in
+                observation.topCandidates(1).first?.string
+            }.joined(separator: "\n")
+            
+            print("OCR: Extracted \(extractedText.count) characters from image")
+            completion(extractedText)
+        }
+        
+        // Configure OCR request for better accuracy
+        request.recognitionLevel = .accurate
+        request.usesLanguageCorrection = true
+        
+        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+        
+        do {
+            try handler.perform([request])
+        } catch {
+            print("OCR: Failed to perform OCR request: \(error)")
+            completion("")
         }
     }
     
