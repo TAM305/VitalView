@@ -155,6 +155,14 @@ class PDFLabImporter: ObservableObject {
         print("=== Parsing Lab Results ===")
         let lines = text.components(separatedBy: .newlines)
         print("Total lines to parse: \(lines.count)")
+        
+        // Debug: Show first few lines to understand the format
+        print("=== Sample Text Lines ===")
+        for (index, line) in lines.prefix(10).enumerated() {
+            print("Line \(index + 1): '\(line)'")
+        }
+        print("=== End Sample Lines ===")
+        
         var results: [TestResult] = []
         
         for (index, line) in lines.enumerated() {
