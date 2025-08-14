@@ -109,44 +109,70 @@ class PDFLabImporter: ObservableObject {
     ///   - completion: Callback with extracted text
     private func performOCR(on image: UIImage, completion: @escaping (String) -> Void) {
         guard let cgImage = image.cgImage else {
-            print("OCR: Failed to get CGImage from UIImage")
             completion("")
             return
         }
         
         let request = VNRecognizeTextRequest { request, error in
-            if let error = error {
-                print("OCR: Error during text recognition: \(error)")
-                completion("")
-                return
-            }
-            
             guard let observations = request.results as? [VNRecognizedTextObservation] else {
-                print("OCR: No text observations found")
                 completion("")
                 return
             }
             
-            let extractedText = observations.compactMap { observation in
-                observation.topCandidates(1).first?.string
-            }.joined(separator: "\n")
+            // Extract text with bounding boxes for better spatial reconstruction
+            let textElements = observations.compactMap { observation -> (String, CGRect)? in
+                guard let candidate = observation.topCandidates(1).first else { return nil }
+                return (candidate.string, observation.boundingBox)
+            }
             
+            // Sort by vertical position first, then horizontal for same-line elements
+            let sortedElements = textElements.sorted { first, second in
+                if abs(first.1.minY - second.1.minY) < 0.15 { // Increased tolerance for Y positions
+                    return first.1.minX < second.1.minX
+                }
+                return first.1.minY > second.1.minY // Sort top to bottom
+            }
+            
+            // Reconstruct lines by grouping elements that are horizontally aligned
+            var reconstructedLines: [String] = []
+            var currentLine: [String] = []
+            var lastY: CGFloat = -1
+            
+            for (text, boundingBox) in sortedElements {
+                if lastY == -1 { // First element
+                    currentLine.append(text)
+                    lastY = boundingBox.minY
+                } else if abs(boundingBox.minY - lastY) < 0.08 { // Increased tolerance for line grouping
+                    currentLine.append(text)
+                } else { // New line
+                    if !currentLine.isEmpty {
+                        reconstructedLines.append(currentLine.joined(separator: " "))
+                    }
+                    currentLine = [text]
+                    lastY = boundingBox.minY
+                }
+            }
+            if !currentLine.isEmpty { // Add the last line
+                reconstructedLines.append(currentLine.joined(separator: " "))
+            }
+            
+            let extractedText = reconstructedLines.joined(separator: "\n")
             print("OCR: Extracted \(extractedText.count) characters from image")
+            print("OCR: Reconstructed \(reconstructedLines.count) lines")
+            
+            // Debug: Print first few reconstructed lines
+            for (i, line) in reconstructedLines.prefix(5).enumerated() {
+                print("OCR Line \(i + 1): '\(line)'")
+            }
+            
             completion(extractedText)
         }
         
-        // Configure OCR request for better accuracy
         request.recognitionLevel = .accurate
         request.usesLanguageCorrection = true
         
         let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-        
-        do {
-            try handler.perform([request])
-        } catch {
-            print("OCR: Failed to perform OCR request: \(error)")
-            completion("")
-        }
+        try? handler.perform([request])
     }
     
     /// Parses extracted text to find lab results
@@ -163,9 +189,18 @@ class PDFLabImporter: ObservableObject {
         }
         print("=== End Sample Lines ===")
         
+        // First, try to reconstruct fragmented lines that might contain complete lab results
+        let reconstructedLines = reconstructFragmentedLines(lines)
+        print("=== After Reconstruction ===")
+        print("Total reconstructed lines: \(reconstructedLines.count)")
+        for (index, line) in reconstructedLines.prefix(10).enumerated() {
+            print("Reconstructed Line \(index + 1): '\(line)'")
+        }
+        print("=== End Reconstructed Lines ===")
+        
         // Look for lab results section markers
         var labResultsStartIndex = -1
-        for (index, line) in lines.enumerated() {
+        for (index, line) in reconstructedLines.enumerated() {
             let lowerLine = line.lowercased()
             if lowerLine.contains("test results") || 
                lowerLine.contains("laboratory results") || 
@@ -180,16 +215,16 @@ class PDFLabImporter: ObservableObject {
         
         // If no specific section found, start from middle of document
         if labResultsStartIndex == -1 {
-            labResultsStartIndex = max(0, lines.count / 3)
+            labResultsStartIndex = max(0, reconstructedLines.count / 3)
             print("=== No specific section found, starting from line \(labResultsStartIndex + 1) ===")
         }
         
         // Show lines around the lab results section
         let startIndex = max(0, labResultsStartIndex - 2)
-        let endIndex = min(lines.count, labResultsStartIndex + 8)
+        let endIndex = min(reconstructedLines.count, labResultsStartIndex + 8)
         print("=== Lab Results Section Preview ===")
         for index in startIndex..<endIndex {
-            print("Line \(index + 1): '\(lines[index])'")
+            print("Line \(index + 1): '\(reconstructedLines[index])'")
         }
         print("=== End Lab Results Preview ===")
         
@@ -197,8 +232,8 @@ class PDFLabImporter: ObservableObject {
         
         // Parse from the lab results section onwards
         var index = labResultsStartIndex
-        while index < lines.count {
-            let line = lines[index]
+        while index < reconstructedLines.count {
+            let line = reconstructedLines[index]
             
             // Try to parse as clean PDF format first (Date + TestName + Value on same line)
             if let result = parseCleanDateTestNameValue(from: line) {
@@ -211,35 +246,42 @@ class PDFLabImporter: ObservableObject {
                 index += 1
             } else {
                 // Try to parse as multi-line format (Date, Test Name, Results)
-                if let multiLineResult = parseMultiLineLabResult(lines: lines, startIndex: index) {
+                if let multiLineResult = parseMultiLineLabResult(lines: reconstructedLines, startIndex: index) {
                     print("Lines \(index + 1)-\(index + multiLineResult.lineCount): Found multi-line result - \(multiLineResult.result.name): \(multiLineResult.result.value) \(multiLineResult.result.unit)")
                     results.append(multiLineResult.result)
                     index += multiLineResult.lineCount
                 } else {
-                                    // Try to parse date + test name + value (common OCR pattern)
-                if let dateTestValueResult = parseDateTestNameValue(lines: lines, currentIndex: index) {
-                    print("Lines \(index + 1)-\(index + 2): Found date + test name + value - \(dateTestValueResult.name): \(dateTestValueResult.value) \(dateTestValueResult.unit)")
-                    results.append(dateTestValueResult)
-                    index += 2 // Skip both lines since we used them
-                } else if let testValueResult = parseTestNameValuePair(lines: lines, currentIndex: index) {
-                    print("Lines \(index + 1)-\(index + 2): Found test name + value pair - \(testValueResult.name): \(testValueResult.value) \(testValueResult.unit)")
-                    results.append(testValueResult)
-                    index += 2 // Skip both lines since we used them
-                } else {
+                    // Try to parse date + test name + value (common OCR pattern)
+                    if let dateTestValueResult = parseDateTestNameValue(lines: reconstructedLines, currentIndex: index) {
+                        print("Lines \(index + 1)-\(index + 2): Found date + test name + value - \(dateTestValueResult.name): \(dateTestValueResult.value) \(dateTestValueResult.unit)")
+                        results.append(dateTestValueResult)
+                        index += 2 // Skip both lines since we used them
+                    } else if let testValueResult = parseTestNameValuePair(lines: reconstructedLines, currentIndex: index) {
+                        print("Lines \(index + 1)-\(index + 2): Found test name + value pair - \(testValueResult.name): \(testValueResult.value) \(testValueResult.unit)")
+                        results.append(testValueResult)
+                        index += 2 // Skip both lines since we used them
+                    } else {
                         // Try to combine fragmented lines (especially useful for OCR output)
-                        if let fragmentedResult = combineFragmentedLines(lines: lines, currentIndex: index) {
+                        if let fragmentedResult = combineFragmentedLines(lines: reconstructedLines, currentIndex: index) {
                             print("Lines \(index + 1)-\(index + 3): Found fragmented result - \(fragmentedResult.name): \(fragmentedResult.value) \(fragmentedResult.unit)")
                             results.append(fragmentedResult)
                             index += 3 // Skip all three lines since we used them
                         } else {
                             // Try to combine with adjacent lines (legacy method)
-                            if let combinedResult = tryCombineAdjacentLines(lines: lines, currentIndex: index) {
+                            if let combinedResult = tryCombineAdjacentLines(lines: reconstructedLines, currentIndex: index) {
                                 print("Lines \(index + 1)-\(index + 2): Found combined result - \(combinedResult.name): \(combinedResult.value) \(combinedResult.unit)")
                                 results.append(combinedResult)
                                 index += 2 // Skip both lines since we used them
                             } else {
-                                // No result found, move to next line
-                                index += 1
+                                // Try complex line parsing for lines with multiple components
+                                if let complexResult = parseComplexLine(line) {
+                                    print("Line \(index + 1): Found complex line result - \(complexResult.name): \(complexResult.value) \(complexResult.unit)")
+                                    results.append(complexResult)
+                                    index += 1
+                                } else {
+                                    // No result found, move to next line
+                                    index += 1
+                                }
                             }
                         }
                     }
@@ -491,91 +533,100 @@ class PDFLabImporter: ObservableObject {
         return nil
     }
     
-    /// Fallback extraction method for lines that don't match standard patterns
+    /// Extracts a fallback result when no specific pattern matches
+    /// This is a last resort method that tries to extract any meaningful information
+    /// - Parameter line: Line of text to extract from
+    /// - Returns: TestResult if extraction was successful, nil otherwise
     private func extractFallbackResult(from line: String) -> TestResult? {
-        print("    Using fallback extraction for line: '\(line)'")
+        print("    Extracting fallback result from: '\(line)'")
         
-        // Look for any number in the line
-        let numberPattern = "([\\d\\.]+)"
-        guard let regex = try? NSRegularExpression(pattern: numberPattern, options: []) else { return nil }
-        
-        let matches = regex.matches(in: line, options: [], range: NSRange(line.startIndex..., in: line))
-        guard let firstMatch = matches.first else { return nil }
-        
-        // Extract the number
-        guard let valueRange = Range(firstMatch.range(at: 1), in: line) else { return nil }
-        let valueString = String(line[valueRange])
-        guard let value = Double(valueString) else { return nil }
-        
-        // Check if this looks like a date component before accepting it as a lab value
-        if isDateComponent(value, "N/A") {
-            print("    Fallback: Rejected as date component: \(value)")
+        // Skip lines that are clearly not lab results
+        let lowerLine = line.lowercased()
+        if lowerLine.contains("date") || lowerLine.contains("test") || lowerLine.contains("result") ||
+           lowerLine.contains("reference") || lowerLine.contains("range") || lowerLine.contains("normal") {
+            print("      Line appears to be a header or label, skipping")
             return nil
         }
         
-        print("    Fallback: Found value \(value) at position \(valueRange)")
-        
-        // Try to extract test name from before the number
-        let beforeNumber = String(line[..<valueRange.lowerBound]).trimmingCharacters(in: .whitespaces)
-        let afterNumber = String(line[valueRange.upperBound...]).trimmingCharacters(in: .whitespaces)
-        
-        print("    Fallback: Text before number: '\(beforeNumber)'")
-        print("    Fallback: Text after number: '\(afterNumber)'")
-        
-        // Determine test name and unit
-        var testName = beforeNumber
-        var unit = "N/A"
-        
-        // If we have text after the number, it might be the unit
-        if !afterNumber.isEmpty {
-            // Check if afterNumber looks like a unit
-            let unitPattern = "^([a-zA-Z/%]+)$"
-            if let unitRegex = try? NSRegularExpression(pattern: unitPattern, options: []) {
-                if unitRegex.firstMatch(in: afterNumber, options: [], range: NSRange(afterNumber.startIndex..., in: afterNumber)) != nil {
-                    unit = afterNumber
-                    print("    Fallback: Extracted unit: '\(unit)'")
-                } else {
-                    // If it's not a unit, it might be part of the test name
-                    testName = beforeNumber + " " + afterNumber
-                    print("    Fallback: Combined text as test name: '\(testName)'")
-                }
-            }
+        // Try to extract any number from the line
+        guard let numberMatch = line.range(of: #"\d+\.?\d*"#, options: .regularExpression) else {
+            print("      No number found in line")
+            return nil
         }
         
-        // Clean up test name
-        testName = testName.trimmingCharacters(in: .whitespaces)
+        let numberString = String(line[numberMatch])
+        guard let value = Double(numberString) else {
+            print("      Could not convert '\(numberString)' to number")
+            return nil
+        }
         
-        // Only use "Unknown Test" if we really have no text at all
-        if testName.isEmpty {
-            // Check if the line contains any letters that might be a test name
-            let letterPattern = "[A-Za-z]+"
-            if let letterRegex = try? NSRegularExpression(pattern: letterPattern, options: []) {
-                if let letterMatch = letterRegex.firstMatch(in: line, options: [], range: NSRange(line.startIndex..., in: line)) {
-                    if let letterRange = Range(letterMatch.range(at: 0), in: line) {
-                        testName = String(line[letterRange])
-                        print("    Fallback: Extracted test name from letters: '\(testName)'")
-                    }
-                }
-            }
+        // Check if this looks like a date component
+        let unit = extractUnit(from: line, after: numberMatch)
+        if isDateComponent(value, unit) {
+            print("      Rejected as date component: \(value) '\(unit)'")
+            return nil
+        }
+        
+        // Try to extract a meaningful test name
+        var testName = "Lab Test"
+        
+        // First, try to extract letters that might be a test name
+        let letters = line.components(separatedBy: CharacterSet.letters.inverted)
+            .filter { $0.count >= 3 && $0.range(of: #"[A-Za-z]{3,}"#, options: .regularExpression) != nil }
+            .first ?? ""
+        
+        if !letters.isEmpty {
+            testName = letters.trimmingCharacters(in: .whitespacesAndNewlines)
+        } else {
+            // Try to find common lab test keywords in the line
+            let labTestKeywords = [
+                "GLUCOSE", "CHOLESTEROL", "WBC", "RBC", "HEMOGLOBIN", "HEMATOCRIT",
+                "PLATELET", "SODIUM", "POTASSIUM", "CHLORIDE", "CO2", "BUN", "CREATININE",
+                "CALCIUM", "MAGNESIUM", "PHOSPHORUS", "ALBUMIN", "TOTAL_PROTEIN",
+                "BILIRUBIN", "AST", "ALT", "ALKALINE_PHOSPHATASE", "GGT", "LDH",
+                "TROPONIN", "CK", "CK_MB", "BNP", "CRP", "ESR", "FERRITIN",
+                "VITAMIN_D", "VITAMIN_B12", "FOLATE", "IRON", "TIBC", "TRANSFERRIN",
+                "NEUTROPHIL", "LYMPHOCYTE", "MONOCYTE", "EOSINOPHIL", "BASOPHIL",
+                "INR", "PTT", "FIBRINOGEN", "D_DIMER", "FOLIC_ACID", "VITAMIN_B6"
+            ]
             
-            // If still no test name, use a more descriptive placeholder
-            if testName.isEmpty {
-                testName = "Lab Test"
-                print("    Fallback: Using generic test name: '\(testName)'")
+            let upperLine = line.uppercased()
+            for keyword in labTestKeywords {
+                if upperLine.contains(keyword) {
+                    testName = keyword.replacingOccurrences(of: "_", with: " ")
+                    break
+                }
             }
         }
         
-        // Clean and validate the test name
-        let cleanedName = cleanTestName(testName)
-        guard isValidTestName(cleanedName) else {
-            print("    Fallback: Invalid test name: '\(cleanedName)'")
+        // Clean the test name
+        testName = cleanTestName(testName)
+        if !isValidTestName(testName) {
+            testName = "Lab Test"
+        }
+        
+        // Additional validation: check if the value is reasonable for a lab test
+        if value < 0.01 || value > 10000 {
+            print("      Value \(value) is outside reasonable lab test range, skipping")
             return nil
         }
         
-        print("    Fallback: Successfully created result: \(cleanedName) = \(value) \(unit)")
+        // Check if the unit looks like a real lab unit
+        let realLabUnits = ["mg/dL", "g/dL", "mEq/L", "mmol/L", "ng/mL", "pg/mL", "U/L", "IU/L", "K/uL", "M/uL", "%", "ratio"]
+        let hasRealUnit = realLabUnits.contains { realLabUnits.contains($0) } || unit.isEmpty
+        
+        if !hasRealUnit && unit.count > 10 {
+            print("      Unit '\(unit)' looks like garbage text, skipping")
+            return nil
+        }
+        
+        print("      Fallback extraction successful:")
+        print("        Test: \(testName)")
+        print("        Value: \(value)")
+        print("        Unit: \(unit)")
         
         return TestResult(
-            name: cleanedName,
+            name: testName,
             value: value,
             unit: unit,
             referenceRange: "N/A",
@@ -1298,100 +1349,131 @@ class PDFLabImporter: ObservableObject {
         return nil
     }
     
-    /// Parses the clean PDF format: Date + TestName + Value on the same line
-    /// This handles the actual PDF format like "05/01/2025 WBC 6.30"
-    /// - Parameter line: Single line of text from the PDF
+    /// Parses clean PDF format where Date + TestName + Value are on the same line
+    /// This is the primary method for the clean PDF format shown in the screenshot
+    /// - Parameter line: Single line containing date, test name, and value
     /// - Returns: TestResult if found, nil otherwise
     private func parseCleanDateTestNameValue(from line: String) -> TestResult? {
-        print("    Trying to parse clean date + test name + value format")
+        print("    Trying clean date-testname-value pattern on: '\(line)'")
         
-        // Pattern: Date + Space + TestName + Space + Value + Optional Unit + Optional Flag
+        // More flexible patterns that handle OCR noise and variations
         let cleanPatterns = [
-            // Pattern 1: Date + TestName + Value + Unit + Flag (e.g., "05/01/2025 GLUCOSE 116.00 H")
-            "(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})\\s+([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)\\s*([a-zA-Z/%]+)?\\s*([HL#\\$])?",
-            // Pattern 2: Date + TestName + Value + Unit (e.g., "05/01/2025 NEUTROPHILS % 57.10")
-            "(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})\\s+([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)\\s*([a-zA-Z/%]+)?",
-            // Pattern 3: Date + TestName + Value (e.g., "05/01/2025 WBC 6.30")
+            // Pattern 0: Date + Test Name + Value with flexible spacing (most common)
             "(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})\\s+([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)",
-            // Pattern 4: Alternative date format (YYYY/MM/DD)
-            "(\\d{4}[/-]\\d{1,2}[/-]\\d{1,2})\\s+([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)\\s*([a-zA-Z/%]+)?\\s*([HL#\\$])?",
-            "(\\d{4}[/-]\\d{1,2}[/-]\\d{1,2})\\s+([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)\\s*([a-zA-Z/%]+)?",
-            "(\\d{4}[/-]\\d{1,2}[/-]\\d{1,2})\\s+([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)"
+            // Pattern 1: Date + Test Name + Value + Unit
+            "(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})\\s+([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)\\s+([a-zA-Z/%]+)",
+            // Pattern 2: Date + Test Name + Value + Unit + Flag
+            "(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})\\s+([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)\\s+([a-zA-Z/%]+)\\s*([HL#\\$])?",
+            // Pattern 3: Very flexible - any date format with test name and value
+            "(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})\\s*([A-Za-z\\s\\-]+)\\s*([\\d\\.]+)",
+            // Pattern 4: Handle OCR noise with extra characters
+            "(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})\\s*([A-Za-z\\s\\-]+)\\s*([\\d\\.]+)\\s*([a-zA-Z/%]+)?",
+            // Pattern 5: Alternative date separators: dots, dashes
+            "(\\d{1,2}[.-]\\d{1,2}[.-]\\d{2,4})\\s+([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)",
+            // Pattern 6: Handle dates with year first format
+            "(\\d{4}[/-]\\d{1,2}[/-]\\d{1,2})\\s+([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)",
+            // Pattern 7: Handle potential OCR artifacts in dates
+            "(\\d{1,2}[./\\-]\\d{1,2}[./\\-]\\d{2,4})\\s+([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)",
+            // Pattern 8: Handle cases where OCR might have inserted extra characters
+            "(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})\\s*([^\\d]*[A-Za-z][A-Za-z\\s\\-]*)\\s*([\\d\\.]+)",
+            // Pattern 9: Handle very noisy OCR with flexible spacing
+            "(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})\\s*([A-Za-z\\s\\-]+)\\s*([\\d\\.]+)\\s*([^\\d\\s]*)",
+            // Pattern 10: Handle dates with single digits and flexible spacing
+            "(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})\\s*([A-Za-z\\s\\-]+)\\s*([\\d\\.]+)",
+            // Pattern 11: Handle dates with potential OCR artifacts
+            "(\\d{1,2}[./\\-]\\d{1,2}[./\\-]\\d{2,4})\\s*([A-Za-z\\s\\-]+)\\s*([\\d\\.]+)",
+            // Pattern 12: Handle dates with year first and flexible spacing
+            "(\\d{4}[/-]\\d{1,2}[/-]\\d{1,2})\\s*([A-Za-z\\s\\-]+)\\s*([\\d\\.]+)",
+            // Pattern 13: Handle very flexible spacing for noisy OCR
+            "(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})\\s*([A-Za-z\\s\\-]+)\\s*([\\d\\.]+)",
+            // Pattern 14: Handle dates with alternative separators and flexible spacing
+            "(\\d{1,2}[.-]\\d{1,2}[.-]\\d{2,4})\\s*([A-Za-z\\s\\-]+)\\s*([\\d\\.]+)"
         ]
         
-        for (patternIndex, pattern) in cleanPatterns.enumerated() {
-            if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
-                if let match = regex.firstMatch(in: line, options: [], range: NSRange(line.startIndex..., in: line)) {
-                    print("      Clean pattern \(patternIndex) matched: '\(pattern)'")
-                    
-                    // Extract date (always first capture group)
-                    guard let dateRange = Range(match.range(at: 1), in: line) else { continue }
-                    let dateString = String(line[dateRange])
-                    
-                    // Extract test name (always second capture group)
-                    guard let testNameRange = Range(match.range(at: 2), in: line) else { continue }
-                    let testName = String(line[testNameRange]).trimmingCharacters(in: .whitespaces)
-                    
-                    // Extract value (always third capture group)
-                    guard let valueRange = Range(match.range(at: 3), in: line) else { continue }
-                    let valueString = String(line[valueRange])
-                    
-                    guard let value = Double(valueString) else {
-                        print("      Could not convert value to number: '\(valueString)'")
-                        continue
-                    }
-                    
-                    // Extract unit if available (fourth capture group)
-                    var unit = "N/A"
-                    if match.numberOfRanges >= 5 {
-                        if let unitRange = Range(match.range(at: 4), in: line) {
-                            let extractedUnit = String(line[unitRange]).trimmingCharacters(in: .whitespaces)
-                            if !extractedUnit.isEmpty {
-                                unit = extractedUnit
-                            }
-                        }
-                    }
-                    
-                    // Extract flag if available (fifth capture group)
-                    var flag = ""
-                    if match.numberOfRanges >= 6 {
-                        if let flagRange = Range(match.range(at: 5), in: line) {
-                            let extractedFlag = String(line[flagRange]).trimmingCharacters(in: .whitespaces)
-                            if !extractedFlag.isEmpty {
-                                flag = extractedFlag
-                            }
-                        }
-                    }
-                    
-                    print("      Extracted - Date: '\(dateString)', Name: '\(testName)', Value: '\(valueString)', Unit: '\(unit)', Flag: '\(flag)'")
-                    
-                    // Clean and validate the test name
-                    let cleanedName = cleanTestName(testName)
-                    guard isValidTestName(cleanedName) else {
-                        print("      Invalid test name: '\(cleanedName)'")
-                        continue
-                    }
-                    
-                    // Create explanation with flag if present
-                    var explanation = "Imported from PDF lab report - Date: \(dateString) (clean format)"
-                    if !flag.isEmpty {
-                        explanation += " - Flag: \(flag)"
-                    }
-                    
-                    let result = TestResult(
-                        name: cleanedName,
-                        value: value,
-                        unit: unit,
-                        referenceRange: "N/A",
-                        explanation: explanation
-                    )
-                    
-                    print("      Successfully created clean format result: \(cleanedName) = \(value) \(unit)")
-                    return result
+        for (index, pattern) in cleanPatterns.enumerated() {
+            if let regex = try? NSRegularExpression(pattern: pattern),
+               let regexMatch = regex.firstMatch(in: line, range: NSRange(location: 0, length: line.count)) {
+                
+                // Ensure we have at least 3 capture groups
+                guard regexMatch.numberOfRanges >= 3 else { continue }
+                
+                let nsString = line as NSString
+                let dateRange = regexMatch.range(at: 1)
+                let testNameRange = regexMatch.range(at: 2)
+                let valueRange = regexMatch.range(at: 3)
+                
+                let dateString = nsString.substring(with: dateRange).trimmingCharacters(in: .whitespacesAndNewlines)
+                let testName = nsString.substring(with: testNameRange).trimmingCharacters(in: .whitespacesAndNewlines)
+                let valueString = nsString.substring(with: valueRange).trimmingCharacters(in: .whitespacesAndNewlines)
+                
+                // Extract unit if available (patterns 1, 2, 4, 9)
+                var unit = ""
+                if [1, 2, 4, 9].contains(index) && regexMatch.numberOfRanges > 4 {
+                    let unitRange = regexMatch.range(at: 4)
+                    unit = nsString.substring(with: unitRange).trimmingCharacters(in: .whitespacesAndNewlines)
                 }
+                
+                // Extract flag if available (pattern 2)
+                var flag = ""
+                if index == 2 && regexMatch.numberOfRanges > 5 {
+                    let flagRange = regexMatch.range(at: 5)
+                    flag = nsString.substring(with: flagRange).trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+                
+                // Validate the extracted data
+                guard let value = Double(valueString),
+                      !testName.isEmpty,
+                      testName.count >= 3 else {
+                    print("      Pattern \(index) matched but validation failed")
+                    continue
+                }
+                
+                // Check if this looks like a date component being misinterpreted
+                if isDateComponent(value, unit) {
+                    print("      Rejected as date component: \(value) '\(unit)'")
+                    continue
+                }
+                
+                // Clean the test name
+                let cleanedTestName = cleanTestName(testName)
+                if !isValidTestName(cleanedTestName) {
+                    print("      Test name validation failed: '\(cleanedTestName)'")
+                    continue
+                }
+                
+                // Additional validation: check if the test name looks like a real lab test
+                let hasLabTestKeywords = ["GLUCOSE", "CHOLESTEROL", "WBC", "RBC", "HEMOGLOBIN", "HEMATOCRIT", 
+                     "PLATELET", "SODIUM", "POTASSIUM", "CHLORIDE", "CO2", "BUN", "CREATININE",
+                     "CALCIUM", "MAGNESIUM", "PHOSPHORUS", "ALBUMIN", "TOTAL_PROTEIN",
+                     "BILIRUBIN", "AST", "ALT", "ALKALINE_PHOSPHATASE", "GGT", "LDH",
+                     "TROPONIN", "CK", "CK_MB", "BNP", "CRP", "ESR", "FERRITIN",
+                     "VITAMIN_D", "VITAMIN_B12", "FOLATE", "IRON", "TIBC", "TRANSFERRIN",
+                     "NEUTROPHIL", "LYMPHOCYTE", "MONOCYTE", "EOSINOPHIL", "BASOPHIL",
+                     "INR", "PTT", "FIBRINOGEN", "D_DIMER", "FOLIC_ACID", "VITAMIN_B6"].contains { keyword in
+                    cleanedTestName.uppercased().contains(keyword)
+                }
+                
+                if !hasLabTestKeywords && cleanedTestName.count < 4 {
+                    print("      Test name too short or doesn't contain lab test keywords: '\(cleanedTestName)'")
+                    continue
+                }
+                
+                print("      Pattern \(index) matched successfully:")
+                print("        Date: \(dateString)")
+                print("        Test: \(cleanedTestName)")
+                print("        Value: \(value) \(unit) \(flag)")
+                
+                return TestResult(
+                    name: cleanedTestName,
+                    value: value,
+                    unit: unit,
+                    referenceRange: "N/A",
+                    explanation: "Imported from PDF lab report - Date: \(dateString) (clean format)"
+                )
             }
         }
         
+        print("      No clean pattern matched")
         return nil
     }
     
@@ -1601,15 +1683,14 @@ class PDFLabImporter: ObservableObject {
         return !matches.isEmpty
     }
     
-    /// Checks if extracted value and unit are likely date components
-    /// This prevents misinterpretation of dates like "05/01/2025" as lab values "5.0 /"
+    /// Checks if a value/unit pair likely represents a date component rather than a lab result
     /// - Parameters:
-    ///   - value: The extracted numeric value
-    ///   - unit: The extracted unit
+    ///   - value: The numeric value extracted
+    ///   - unit: The unit string extracted
     /// - Returns: true if the value/unit pair likely represents a date component
     private func isDateComponent(_ value: Double, _ unit: String) -> Bool {
         // Check if the unit looks like a date separator
-        let dateSeparators = ["/", "-", "."]
+        let dateSeparators = ["/", "-", ".", "\\", "|"]
         let isDateSeparator = dateSeparators.contains(unit)
         
         // Check if the value is in a typical date range
@@ -1621,9 +1702,21 @@ class PDFLabImporter: ObservableObject {
         // Additional check: if the unit is just a single character that's a date separator
         let isSingleCharDateSeparator = unit.count == 1 && dateSeparators.contains(unit)
         
-        // If we have a date separator or typical date value with short unit, it's likely a date component
-        if isDateSeparator || isSingleCharDateSeparator || (isTypicalDateValue && isShortUnit && unit.isEmpty) {
-            print("      Detected likely date component: \(value) \(unit)")
+        // Check for specific date patterns in the unit
+        let hasDatePattern = unit.range(of: #"^[/\-\.\\|]$"#, options: .regularExpression) != nil ||
+                            unit.range(of: #"^\d{1,2}[/\-\.\\|]\d{1,2}[/\-\.\\|]\d{2,4}$"#, options: .regularExpression) != nil
+        
+        // Check if the value looks like a month (1-12) or day (1-31) with date-like unit
+        let isMonthOrDay = (value >= 1 && value <= 31) && (isDateSeparator || hasDatePattern)
+        
+        // Check if the unit contains only date-related characters
+        let isDateOnlyUnit = unit.range(of: #"^[/\-\.\\|\d]+$"#, options: .regularExpression) != nil && 
+                            unit.range(of: #"[a-zA-Z]"#, options: .regularExpression) == nil
+        
+        // If we have a date separator, typical date value with short unit, or date-only unit, it's likely a date component
+        if isDateSeparator || isSingleCharDateSeparator || hasDatePattern || isMonthOrDay || 
+           (isTypicalDateValue && isShortUnit && (unit.isEmpty || isDateOnlyUnit)) {
+            print("      Detected likely date component: \(value) '\(unit)'")
             return true
         }
         
@@ -1648,5 +1741,323 @@ class PDFLabImporter: ObservableObject {
         case 12: return "Value Unit Only (no test name)"
         default: return "Unknown Pattern"
         }
+    }
+    
+    /// Reconstructs fragmented OCR lines that might contain complete lab results
+    /// This is especially useful when OCR breaks up what should be single lines
+    /// - Parameter lines: Original lines from OCR
+    /// - Returns: Reconstructed lines with better formatting
+    private func reconstructFragmentedLines(_ lines: [String]) -> [String] {
+        print("=== Reconstructing Fragmented Lines ===")
+        var reconstructedLines: [String] = []
+        var i = 0
+        
+        while i < lines.count {
+            let currentLine = lines[i].trimmingCharacters(in: .whitespacesAndNewlines)
+            if currentLine.isEmpty { i += 1; continue }
+            
+            let hasDate = currentLine.range(of: #"^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}"#, options: .regularExpression) != nil ||
+                          currentLine.range(of: #"^\d{4}[/-]\d{1,2}[/-]\d{1,2}"#, options: .regularExpression) != nil ||
+                          currentLine.range(of: #"^\d{1,2}[.-]\d{1,2}[.-]\d{2,4}"#, options: .regularExpression) != nil ||
+                          currentLine.range(of: #"^\d{4}[.-]\d{1,2}[.-]\d{1,2}"#, options: .regularExpression) != nil
+            let hasTestName = currentLine.range(of: #"[A-Za-z]{3,}"#, options: .regularExpression) != nil
+            let hasValue = currentLine.range(of: #"\d+\.?\d*"#, options: .regularExpression) != nil
+            
+            // Check if this line is just a date fragment (e.g., "05/01/2025" split into parts)
+            let isDateFragment = currentLine.range(of: #"^\d{1,2}[/-]?$"#, options: .regularExpression) != nil ||
+                                currentLine.range(of: #"^\d{1,2}[.-]?$"#, options: .regularExpression) != nil ||
+                                currentLine.range(of: #"^[/-]\d{1,2}[/-]?$"#, options: .regularExpression) != nil ||
+                                currentLine.range(of: #"^[.-]\d{1,2}[.-]?$"#, options: .regularExpression) != nil ||
+                                currentLine.range(of: #"^\d{4}$"#, options: .regularExpression) != nil
+            
+            if hasDate && hasTestName && hasValue { // If line already looks complete
+                print("  Line \(i + 1): Complete lab result detected")
+                reconstructedLines.append(currentLine)
+                i += 1
+                continue
+            }
+            
+            if isDateFragment { // If this is just a date fragment, try to combine with next lines
+                var combinedLine = currentLine
+                var nextIndex = i + 1
+                var linesUsed = 1
+                
+                while nextIndex < lines.count && linesUsed < 5 { // Try up to 4 more lines
+                    let nextLine = lines[nextIndex].trimmingCharacters(in: .whitespacesAndNewlines)
+                    if nextLine.isEmpty { nextIndex += 1; continue }
+                    
+                    let testCombined = combinedLine + nextLine
+                    let combinedHasDate = testCombined.range(of: #"^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}"#, options: .regularExpression) != nil ||
+                                          testCombined.range(of: #"^\d{4}[/-]\d{1,2}[/-]\d{1,2}"#, options: .regularExpression) != nil ||
+                                          testCombined.range(of: #"^\d{1,2}[.-]\d{1,2}[.-]\d{2,4}"#, options: .regularExpression) != nil ||
+                                          testCombined.range(of: #"^\d{4}[.-]\d{1,2}[.-]\d{1,2}"#, options: .regularExpression) != nil
+                    let combinedHasTestName = testCombined.range(of: #"[A-Za-z]{3,}"#, options: .regularExpression) != nil
+                    let combinedHasValue = testCombined.range(of: #"\d+\.?\d*"#, options: .regularExpression) != nil
+                    
+                    if combinedHasDate && combinedHasTestName && combinedHasValue {
+                        combinedLine = testCombined
+                        linesUsed += 1
+                        nextIndex += 1
+                        print("  Lines \(i + 1)-\(i + linesUsed): Combined date fragments into complete result")
+                        break
+                    } else if combinedHasDate && (combinedHasTestName || combinedHasValue) {
+                        combinedLine = testCombined
+                        linesUsed += 1
+                        nextIndex += 1
+                    } else { break }
+                }
+                
+                if linesUsed > 1 {
+                    reconstructedLines.append(combinedLine)
+                    i += linesUsed
+                    continue
+                }
+            }
+            
+            if hasDate && (hasTestName || hasValue) { // If line has date but is incomplete, try combining forward
+                var combinedLine = currentLine
+                var nextIndex = i + 1
+                var linesUsed = 1
+                
+                while nextIndex < lines.count && linesUsed < 4 { // Try up to 3 more lines
+                    let nextLine = lines[nextIndex].trimmingCharacters(in: .whitespacesAndNewlines)
+                    if nextLine.isEmpty { nextIndex += 1; continue }
+                    
+                    // Check if next line is just a unit or flag
+                    let isUnitOrFlag = nextLine.range(of: #"^[a-zA-Z/%]+$"#, options: .regularExpression) != nil ||
+                                      nextLine.range(of: #"^[HL#\\$]$"#, options: .regularExpression) != nil
+                    
+                    let testCombined = combinedLine + " " + nextLine
+                    let combinedHasDate = testCombined.range(of: #"^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}"#, options: .regularExpression) != nil ||
+                                          testCombined.range(of: #"^\d{4}[/-]\d{1,2}[/-]\d{1,2}"#, options: .regularExpression) != nil ||
+                                          testCombined.range(of: #"^\d{1,2}[.-]\d{1,2}[.-]\d{2,4}"#, options: .regularExpression) != nil ||
+                                          testCombined.range(of: #"^\d{4}[.-]\d{1,2}[.-]\d{1,2}"#, options: .regularExpression) != nil
+                    let combinedHasTestName = testCombined.range(of: #"[A-Za-z]{3,}"#, options: .regularExpression) != nil
+                    let combinedHasValue = testCombined.range(of: #"\d+\.?\d*"#, options: .regularExpression) != nil
+                    
+                    if combinedHasDate && combinedHasTestName && combinedHasValue {
+                        combinedLine = testCombined
+                        linesUsed += 1
+                        nextIndex += 1
+                        print("  Lines \(i + 1)-\(i + linesUsed): Combined into complete result")
+                        break
+                    } else if combinedHasDate && (combinedHasTestName || combinedHasValue) {
+                        combinedLine = testCombined
+                        linesUsed += 1
+                        nextIndex += 1
+                    } else if isUnitOrFlag { // Always combine units and flags
+                        combinedLine = testCombined
+                        linesUsed += 1
+                        nextIndex += 1
+                    } else { break }
+                }
+                
+                reconstructedLines.append(combinedLine)
+                i += linesUsed
+                continue
+            }
+            
+            if hasTestName && !hasDate && i > 0 { // If line has test name but no date, try combining backward
+                let previousLine = reconstructedLines.last ?? ""
+                let testCombined = previousLine + " " + currentLine
+                let combinedHasDate = testCombined.range(of: #"^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}"#, options: .regularExpression) != nil ||
+                                      testCombined.range(of: #"^\d{4}[/-]\d{1,2}[/-]\d{1,2}"#, options: .regularExpression) != nil ||
+                                      testCombined.range(of: #"^\d{1,2}[.-]\d{1,2}[.-]\d{2,4}"#, options: .regularExpression) != nil ||
+                                      testCombined.range(of: #"^\d{4}[.-]\d{1,2}[.-]\d{1,2}"#, options: .regularExpression) != nil
+                let combinedHasTestName = testCombined.range(of: #"[A-Za-z]{3,}"#, options: .regularExpression) != nil
+                let combinedHasValue = testCombined.range(of: #"\d+\.?\d*"#, options: .regularExpression) != nil
+                
+                if combinedHasDate && combinedHasTestName && combinedHasValue {
+                    reconstructedLines[reconstructedLines.count - 1] = testCombined
+                    print("  Combined with previous line: '\(testCombined)'")
+                } else {
+                    reconstructedLines.append(currentLine)
+                }
+            } else { // Keep the line as is
+                reconstructedLines.append(currentLine)
+            }
+            i += 1
+        }
+        
+        print("=== Reconstruction Complete ===")
+        print("Original lines: \(lines.count)")
+        print("Reconstructed lines: \(reconstructedLines.count)")
+        
+        // Debug: Show first few reconstructed lines
+        for (i, line) in reconstructedLines.prefix(10).enumerated() {
+            print("  Reconstructed \(i + 1): '\(line)'")
+        }
+        
+        return reconstructedLines
+    }
+
+    /// Helper method to extract unit from text after a number
+    private func extractUnit(from line: String, after numberMatch: Range<String.Index>) -> String {
+        let afterNumber = String(line[numberMatch.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if afterNumber.isEmpty {
+            return ""
+        }
+        
+        // Look for common unit patterns
+        let unitPatterns = [
+            #"^([a-zA-Z/%]+)"#,           // Basic units like "mg/dL", "%"
+            #"^([a-zA-Z/%]+)\s*[HL#\$]"#, // Units with flags like "mg/dL H", "% L"
+            #"^([a-zA-Z/%]+)\s*$"#        // Units at end of line
+        ]
+        
+        for pattern in unitPatterns {
+            if let unitMatch = afterNumber.range(of: pattern, options: .regularExpression) {
+                let unit = String(afterNumber[unitMatch])
+                // Clean up the unit (remove flags, extra spaces)
+                let cleanedUnit = unit.replacingOccurrences(of: #"[HL#\$]"#, with: "", options: .regularExpression)
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                if !cleanedUnit.isEmpty {
+                    return cleanedUnit
+                }
+            }
+        }
+        
+        return ""
+    }
+
+    /// Helper method to parse date strings into Date objects
+    private func parseDate(from dateString: String) -> Date? {
+        let dateFormatters = [
+            DateFormatter(), // MM/dd/yyyy
+            DateFormatter(), // MM-dd-yyyy
+            DateFormatter(), // yyyy/MM/dd
+            DateFormatter(), // yyyy-MM-dd
+            DateFormatter()  // MM.dd.yyyy
+        ]
+        
+        dateFormatters[0].dateFormat = "MM/dd/yyyy"
+        dateFormatters[1].dateFormat = "MM-dd-yyyy"
+        dateFormatters[2].dateFormat = "yyyy/MM/dd"
+        dateFormatters[3].dateFormat = "yyyy-MM-dd"
+        dateFormatters[4].dateFormat = "MM.dd.yyyy"
+        
+        for formatter in dateFormatters {
+            if let date = formatter.date(from: dateString) {
+                return date
+            }
+        }
+        
+        return nil
+    }
+
+    /// Parses complex lines that may contain multiple values or are highly fragmented
+    /// This method tries to intelligently extract the most likely lab result from complex text
+    /// - Parameter line: Complex line that may contain multiple values
+    /// - Returns: TestResult if extraction was successful, nil otherwise
+    private func parseComplexLine(_ line: String) -> TestResult? {
+        print("    Trying complex line parsing on: '\(line)'")
+        
+        // Split the line into potential components
+        let components = line.components(separatedBy: .whitespaces)
+            .filter { !$0.isEmpty }
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        
+        print("      Line has \(components.count) components: \(components)")
+        
+        // Look for patterns like: [Date] [TestName] [Value] [Unit] [Flag]
+        if components.count >= 3 {
+            // Try to identify which component is which
+            var dateComponent: String?
+            var testNameComponent: String?
+            var valueComponent: String?
+            var unitComponent: String?
+            
+            for component in components {
+                // Check if it's a date
+                if dateComponent == nil && component.range(of: #"^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}$"#, options: .regularExpression) != nil {
+                    dateComponent = component
+                    print("      Identified date component: \(component)")
+                    continue
+                }
+                
+                // Check if it's a value
+                if valueComponent == nil && component.range(of: #"^\d+\.?\d*$"#, options: .regularExpression) != nil {
+                    valueComponent = component
+                    print("      Identified value component: \(component)")
+                    continue
+                }
+                
+                // Check if it's a unit
+                if unitComponent == nil && component.range(of: #"^[a-zA-Z/%]+$"#, options: .regularExpression) != nil {
+                    unitComponent = component
+                    print("      Identified unit component: \(component)")
+                    continue
+                }
+                
+                // Check if it's a flag
+                if component.range(of: #"^[HL#\\$]$"#, options: .regularExpression) != nil {
+                    print("      Identified flag component: \(component)")
+                    continue
+                }
+                
+                // If it's not a date, value, unit, or flag, it's likely the test name
+                if testNameComponent == nil && component.count >= 3 {
+                    testNameComponent = component
+                    print("      Identified test name component: \(component)")
+                }
+            }
+            
+            // Validate that we have the essential components
+            guard let valueStr = valueComponent,
+                  let value = Double(valueStr),
+                  let testName = testNameComponent,
+                  !testName.isEmpty else {
+                print("      Missing essential components for lab result")
+                return nil
+            }
+            
+            // Check if this looks like a date component being misinterpreted
+            if isDateComponent(value, unitComponent ?? "") {
+                print("      Rejected as date component: \(value) '\(unitComponent ?? "")'")
+                return nil
+            }
+            
+            // Clean the test name
+            let cleanedTestName = cleanTestName(testName)
+            if !isValidTestName(cleanedTestName) {
+                print("      Test name validation failed: '\(cleanedTestName)'")
+                return nil
+            }
+            
+            // Additional validation: check if the test name looks like a real lab test
+            let hasLabTestKeywords = ["GLUCOSE", "CHOLESTEROL", "WBC", "RBC", "HEMOGLOBIN", "HEMATOCRIT", 
+                     "PLATELET", "SODIUM", "POTASSIUM", "CHLORIDE", "CO2", "BUN", "CREATININE",
+                     "CALCIUM", "MAGNESIUM", "PHOSPHORUS", "ALBUMIN", "TOTAL_PROTEIN",
+                     "BILIRUBIN", "AST", "ALT", "ALKALINE_PHOSPHATASE", "GGT", "LDH",
+                     "TROPONIN", "CK", "CK_MB", "BNP", "CRP", "ESR", "FERRITIN",
+                     "VITAMIN_D", "VITAMIN_B12", "FOLATE", "IRON", "TIBC", "TRANSFERRIN",
+                     "NEUTROPHIL", "LYMPHOCYTE", "MONOCYTE", "EOSINOPHIL", "BASOPHIL",
+                     "INR", "PTT", "FIBRINOGEN", "D_DIMER", "FOLIC_ACID", "VITAMIN_B6"].contains { keyword in
+                    cleanedTestName.uppercased().contains(keyword)
+                }
+            
+            if !hasLabTestKeywords && cleanedTestName.count < 4 {
+                print("      Test name too short or doesn't contain lab test keywords: '\(cleanedTestName)'")
+                return nil
+            }
+            
+            print("      Complex line parsing successful:")
+            print("        Date: \(dateComponent ?? "N/A")")
+            print("        Test: \(cleanedTestName)")
+            print("        Value: \(value)")
+            print("        Unit: \(unitComponent ?? "")")
+            
+            return TestResult(
+                name: cleanedTestName,
+                value: value,
+                unit: unitComponent ?? "",
+                referenceRange: "N/A",
+                explanation: "Imported from PDF lab report (complex line parsing)"
+            )
+        }
+        
+        print("      Complex line parsing failed - insufficient components")
+        return nil
     }
 }
