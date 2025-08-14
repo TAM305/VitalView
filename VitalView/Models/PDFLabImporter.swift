@@ -338,20 +338,34 @@ class PDFLabImporter: ObservableObject {
                         if let valueRange = Range(match.range(at: 1), in: line3) {
                             let valueString = String(line3[valueRange])
                             print("        Found number: '\(valueString)'")
-                            value = Double(valueString)
                             
                             // Try to extract unit from after the number
                             let afterNumber = String(line3[valueRange.upperBound...]).trimmingCharacters(in: .whitespaces)
+                            var extractedUnit = "N/A"
                             if !afterNumber.isEmpty {
                                 let unitPattern = "^([a-zA-Z/%]+)"
                                 if let unitRegex = try? NSRegularExpression(pattern: unitPattern, options: []) {
                                     if let unitMatch = unitRegex.firstMatch(in: afterNumber, options: [], range: NSRange(afterNumber.startIndex..., in: afterNumber)) {
                                         if let unitRange = Range(unitMatch.range(at: 1), in: afterNumber) {
-                                            unit = String(afterNumber[unitRange])
-                                            print("        Extracted unit from after number: '\(unit)'")
+                                            extractedUnit = String(afterNumber[unitRange])
+                                            print("        Extracted unit from after number: '\(extractedUnit)'")
                                         }
                                     }
                                 }
+                            }
+                            
+                            // Check if this looks like a date component before accepting it as a lab value
+                            if let extractedValue = Double(valueString) {
+                                if isDateComponent(extractedValue, extractedUnit) {
+                                    print("        Rejected as date component: \(extractedValue) \(extractedUnit)")
+                                    return nil
+                                }
+                                
+                                value = extractedValue
+                                unit = extractedUnit
+                                print("        Successfully extracted: \(extractedValue) \(extractedValue)")
+                            } else {
+                                print("        Could not convert '\(valueString)' to number")
                             }
                         }
                     }
@@ -492,6 +506,12 @@ class PDFLabImporter: ObservableObject {
         guard let valueRange = Range(firstMatch.range(at: 1), in: line) else { return nil }
         let valueString = String(line[valueRange])
         guard let value = Double(valueString) else { return nil }
+        
+        // Check if this looks like a date component before accepting it as a lab value
+        if isDateComponent(value, "N/A") {
+            print("    Fallback: Rejected as date component: \(value)")
+            return nil
+        }
         
         print("    Fallback: Found value \(value) at position \(valueRange)")
         
@@ -976,6 +996,12 @@ class PDFLabImporter: ObservableObject {
             
             guard let value = Double(valueString) else { return nil }
             
+            // Check if this looks like a date component before accepting it as a lab value
+            if isDateComponent(value, unit) {
+                print("      Rejected as date component: \(value) \(unit)")
+                return nil
+            }
+            
             // Clean and validate the test name
             let cleanedName = cleanTestName(testName)
             guard isValidTestName(cleanedName) else {
@@ -1080,8 +1106,17 @@ class PDFLabImporter: ObservableObject {
                     if let match = regex.firstMatch(in: valueLine, options: [], range: NSRange(valueLine.startIndex..., in: valueLine)) {
                         if let valueRange = Range(match.range(at: 1), in: valueLine) {
                             let valueString = String(valueLine[valueRange])
-                            value = Double(valueString)
-                            print("      Extracted just value: \(valueString)")
+                            
+                            // Check if this looks like a date component before accepting it as a lab value
+                            if let extractedValue = Double(valueString) {
+                                if isDateComponent(extractedValue, "N/A") {
+                                    print("      Rejected as date component: \(extractedValue)")
+                                    return nil
+                                }
+                                
+                                value = extractedValue
+                                print("      Extracted just value: \(valueString)")
+                            }
                         }
                     }
                 }
@@ -1213,8 +1248,17 @@ class PDFLabImporter: ObservableObject {
                         if let match = regex.firstMatch(in: valueLine, options: [], range: NSRange(valueLine.startIndex..., in: valueLine)) {
                             if let valueRange = Range(match.range(at: 1), in: valueLine) {
                                 let valueString = String(valueLine[valueRange])
-                                value = Double(valueString)
-                                print("      Extracted just value: \(valueString)")
+                                
+                                // Check if this looks like a date component before accepting it as a lab value
+                                if let extractedValue = Double(valueString) {
+                                    if isDateComponent(extractedValue, "N/A") {
+                                        print("      Rejected as date component: \(extractedValue)")
+                                        return nil
+                                    }
+                                    
+                                    value = extractedValue
+                                    print("      Extracted just value: \(valueString)")
+                                }
                             }
                         }
                     }
@@ -1555,6 +1599,35 @@ class PDFLabImporter: ObservableObject {
         let matches = regex.matches(in: cleanedName, options: [], range: NSRange(cleanedName.startIndex..., in: cleanedName))
         
         return !matches.isEmpty
+    }
+    
+    /// Checks if extracted value and unit are likely date components
+    /// This prevents misinterpretation of dates like "05/01/2025" as lab values "5.0 /"
+    /// - Parameters:
+    ///   - value: The extracted numeric value
+    ///   - unit: The extracted unit
+    /// - Returns: true if the value/unit pair likely represents a date component
+    private func isDateComponent(_ value: Double, _ unit: String) -> Bool {
+        // Check if the unit looks like a date separator
+        let dateSeparators = ["/", "-", "."]
+        let isDateSeparator = dateSeparators.contains(unit)
+        
+        // Check if the value is in a typical date range
+        let isTypicalDateValue = (value >= 1 && value <= 31) || (value >= 1900 && value <= 2030)
+        
+        // Check if the unit is empty or very short (common in date fragments)
+        let isShortUnit = unit.count <= 2
+        
+        // Additional check: if the unit is just a single character that's a date separator
+        let isSingleCharDateSeparator = unit.count == 1 && dateSeparators.contains(unit)
+        
+        // If we have a date separator or typical date value with short unit, it's likely a date component
+        if isDateSeparator || isSingleCharDateSeparator || (isTypicalDateValue && isShortUnit && unit.isEmpty) {
+            print("      Detected likely date component: \(value) \(unit)")
+            return true
+        }
+        
+        return false
     }
     
     /// Returns a description of the regex pattern for debugging
