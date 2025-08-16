@@ -291,6 +291,72 @@ class PDFLabImporter: ObservableObject {
     /// Parses extracted text to find lab results
     /// - Parameter text: Raw text extracted from PDF
     private func parseLabResults(from text: String) {
+        // First try enhanced parsing for reconstructed lines
+        if let enhancedResults = parseEnhancedLabResults(from: text) {
+            self.parsedResults = enhancedResults
+            return
+        }
+        
+        // Fall back to original parsing method
+        parseLabResultsOriginal(from: text)
+    }
+    
+    /// Enhanced parsing for geometrically reconstructed lab result lines
+    /// - Parameter text: Raw text extracted from PDF
+    /// - Returns: Array of parsed test results, or nil if parsing fails
+    private func parseEnhancedLabResults(from text: String) -> [TestResult]? {
+        let lines = text.components(separatedBy: .newlines)
+        var results: [TestResult] = []
+        
+        // Enhanced regex pattern for lab results
+        let rowRegex = try? NSRegularExpression(
+            pattern: #"^(\d{2}/\d{2}/\d{4})\s+([A-Z0-9 #%/\-]+?)\s+([<>]?\d+(?:\.\d+)?)\s*([A-Za-z/%]+)?\s*(H|L)?"#,
+            options: [.anchorsMatchLines]
+        )
+        
+        guard let regex = rowRegex else { return nil }
+        
+        let df = DateFormatter()
+        df.dateFormat = "MM/dd/yyyy"
+        
+        for line in lines {
+            let ns = line as NSString
+            guard let match = regex.firstMatch(in: line, range: NSRange(location: 0, length: ns.length)) else { continue }
+            
+            // Extract date
+            guard let date = df.date(from: ns.substring(with: match.range(at: 1))) else { continue }
+            
+            // Extract test name
+            let testName = ns.substring(with: match.range(at: 2)).trimmingCharacters(in: .whitespaces)
+            
+            // Extract value
+            let valueString = ns.substring(with: match.range(at: 3))
+            guard let value = Double(valueString) else { continue }
+            
+            // Extract unit (optional)
+            let unit = match.range(at: 4).location != NSNotFound ? ns.substring(with: match.range(at: 4)) : ""
+            
+            // Extract flag (optional)
+            let flag = match.range(at: 5).location != NSNotFound ? ns.substring(with: match.range(at: 5)) : ""
+            
+            let result = TestResult(
+                name: testName,
+                value: value,
+                unit: unit.isEmpty ? "N/A" : unit,
+                referenceRange: "N/A",
+                explanation: "Enhanced OCR parsing - Date: \(df.string(from: date)), Flag: \(flag.isEmpty ? "None" : flag)"
+            )
+            
+            results.append(result)
+            print("Enhanced parsing found: \(testName) = \(value) \(unit) \(flag)")
+        }
+        
+        return results.isEmpty ? nil : results
+    }
+    
+    /// Original parsing method (fallback)
+    /// - Parameter text: Raw text extracted from PDF
+    private func parseLabResultsOriginal(from text: String) {
         print("=== Parsing Lab Results ===")
         let lines = text.components(separatedBy: .newlines)
         print("Total lines to parse: \(lines.count)")
