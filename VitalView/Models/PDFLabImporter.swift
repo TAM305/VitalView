@@ -66,8 +66,12 @@ class PDFLabImporter: ObservableObject {
                             let pageImage = self.renderPageImage(page, dpi: 320)
                             print("Page \(i+1): Page image generated for OCR (\(pageImage.size.width) x \(pageImage.size.height))")
                             
+                            // Optionally enhance image for better OCR (uncomment if needed)
+                            // let enhancedImage = self.enhance(pageImage)
+                            let imageForOCR = pageImage // or enhancedImage if enhancement is enabled
+                            
                             // Perform OCR on the page image
-                            self.performOCR(on: pageImage) { ocrText in
+                            self.performOCR(on: imageForOCR) { ocrText in
                                 if !ocrText.isEmpty {
                                     print("Page \(i+1): OCR successful - extracted \(ocrText.count) characters")
                                     DispatchQueue.main.async {
@@ -240,6 +244,24 @@ class PDFLabImporter: ObservableObject {
             page.draw(with: .mediaBox, to: ctx.cgContext)
             ctx.cgContext.restoreGState()
         }
+    }
+    
+    /// Enhances image quality for better OCR accuracy (optional pre-processing)
+    /// - Parameter image: Input image
+    /// - Returns: Enhanced image
+    private func enhance(_ image: UIImage) -> UIImage {
+        guard let ci = CIImage(image: image) else { return image }
+        
+        let contrasted = ci.applyingFilter("CIColorControls", parameters: [
+            "inputContrast": 1.2,
+            "inputBrightness": 0.0
+        ]).applyingFilter("CISharpenLuminance", parameters: [
+            "inputSharpness": 0.6
+        ])
+        
+        let ctx = CIContext()
+        guard let out = ctx.createCGImage(contrasted, from: contrasted.extent) else { return image }
+        return UIImage(cgImage: out)
     }
     
     /// Post-processes OCR lines to fix common OCR confusions
