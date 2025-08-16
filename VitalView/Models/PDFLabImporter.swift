@@ -63,7 +63,7 @@ class PDFLabImporter: ObservableObject {
                         // Method 3: Try OCR for scanned pages
                         if fullText.isEmpty {
                             print("Page \(i+1): Attempting OCR extraction...")
-                            let pageImage = page.thumbnail(of: CGSize(width: 1000, height: 1000), for: .mediaBox)
+                            let pageImage = self.renderPageImage(page, dpi: 320)
                             print("Page \(i+1): Page image generated for OCR (\(pageImage.size.width) x \(pageImage.size.height))")
                             
                             // Perform OCR on the page image
