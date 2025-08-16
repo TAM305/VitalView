@@ -511,6 +511,13 @@ class PDFLabImporter: ObservableObject {
                         }
                     }
                     
+                    // Validate that we have enough capture groups before proceeding
+                    let expectedGroups = getExpectedCaptureGroups(for: index)
+                    if match.numberOfRanges < expectedGroups {
+                        print("    Pattern \(index) needs \(expectedGroups) groups but only has \(match.numberOfRanges), skipping")
+                        continue
+                    }
+                    
                     if let result = createTestResult(from: match, in: trimmedLine, pattern: pattern, patternIndex: index) {
                         print("    Successfully created TestResult: \(result.name)")
                         return result
@@ -634,18 +641,25 @@ class PDFLabImporter: ObservableObject {
         )
     }
     
-    /// Creates a TestResult from regex match
+    /// Creates a TestResult from a regex match
     /// - Parameters:
-    ///   - match: Regex match result
-    ///   - line: Original line text
-    ///   - pattern: Pattern that matched
-    ///   - patternIndex: Index of the pattern in the patterns array
+    ///   - match: The regex match result
+    ///   - line: The original line of text
+    ///   - pattern: The regex pattern used
+    ///   - patternIndex: Index of the pattern for context
     /// - Returns: TestResult object
     private func createTestResult(from match: NSTextCheckingResult, in line: String, pattern: String, patternIndex: Int) -> TestResult? {
         print("    Creating TestResult from pattern: \(pattern)")
         print("    Match ranges: \(match.numberOfRanges)")
         
         print("    Pattern index: \(patternIndex) - \(getPatternDescription(for: patternIndex))")
+        
+        // Validate that we have enough capture groups before proceeding
+        let expectedGroups = getExpectedCaptureGroups(for: patternIndex)
+        guard match.numberOfRanges >= expectedGroups else {
+            print("    Pattern \(patternIndex) needs \(expectedGroups) groups but only has \(match.numberOfRanges)")
+            return nil
+        }
         
         // Handle different pattern types based on their index and expected capture groups
         switch patternIndex {
@@ -850,10 +864,16 @@ class PDFLabImporter: ObservableObject {
                 let valueString = String(line[valueRange])
                 let unit = String(line[unitRange]).trimmingCharacters(in: .whitespaces)
                 
-                guard let value = Double(valueString) else { return nil }
+                guard let value = Double(valueString) else {
+                    print("    Could not convert value to number: '\(valueString)'")
+                    return nil
+                }
                 
                 let cleanedName = cleanTestName(name)
-                guard isValidTestName(cleanedName) else { return nil }
+                guard isValidTestName(cleanedName) else {
+                    print("    Invalid test name in generic fallback: '\(cleanedName)'")
+                    return nil
+                }
                 
                 return TestResult(
                     name: cleanedName,
@@ -863,26 +883,26 @@ class PDFLabImporter: ObservableObject {
                     explanation: "Imported from PDF lab report (generic fallback)"
                 )
             } else {
-                // We only have 3 groups, assume it's name and value
-                guard let nameRange = Range(match.range(at: 1), in: line),
-                      let valueRange = Range(match.range(at: 2), in: line) else {
+                // We only have value and unit
+                guard let valueRange = Range(match.range(at: 1), in: line),
+                      let unitRange = Range(match.range(at: 2), in: line) else {
                     return nil
                 }
                 
-                let name = String(line[nameRange]).trimmingCharacters(in: .whitespaces)
                 let valueString = String(line[valueRange])
+                let unit = String(line[unitRange]).trimmingCharacters(in: .whitespaces)
                 
-                guard let value = Double(valueString) else { return nil }
-                
-                let cleanedName = cleanTestName(name)
-                guard isValidTestName(cleanedName) else { return nil }
+                guard let value = Double(valueString) else {
+                    print("    Could not convert value to number: '\(valueString)'")
+                    return nil
+                }
                 
                 return TestResult(
-                    name: cleanedName,
+                    name: "Unknown Test",
                     value: value,
-                    unit: "N/A",
+                    unit: unit,
                     referenceRange: "N/A",
-                    explanation: "Imported from PDF lab report (generic fallback - no unit)"
+                    explanation: "Imported from PDF lab report (generic fallback - value/unit only)"
                 )
             }
         }
@@ -1394,13 +1414,21 @@ class PDFLabImporter: ObservableObject {
             if let regex = try? NSRegularExpression(pattern: pattern),
                let regexMatch = regex.firstMatch(in: line, range: NSRange(location: 0, length: line.count)) {
                 
-                // Ensure we have at least 3 capture groups
-                guard regexMatch.numberOfRanges >= 3 else { continue }
+                // Ensure we have at least 3 capture groups and the line is not empty
+                guard regexMatch.numberOfRanges >= 3, !line.isEmpty else { continue }
                 
                 let nsString = line as NSString
                 let dateRange = regexMatch.range(at: 1)
                 let testNameRange = regexMatch.range(at: 2)
                 let valueRange = regexMatch.range(at: 3)
+                
+                // Validate ranges before using them
+                guard dateRange.location != NSNotFound && dateRange.location >= 0 && dateRange.length >= 0 && dateRange.location + dateRange.length <= nsString.length,
+                      testNameRange.location != NSNotFound && testNameRange.location >= 0 && testNameRange.length >= 0 && testNameRange.location + testNameRange.length <= nsString.length,
+                      valueRange.location != NSNotFound && valueRange.location >= 0 && valueRange.length >= 0 && valueRange.location + valueRange.length <= nsString.length else {
+                    print("      Pattern \(index) matched but ranges are invalid - dateRange: \(dateRange), testNameRange: \(testNameRange), valueRange: \(valueRange), stringLength: \(nsString.length)")
+                    continue
+                }
                 
                 let dateString = nsString.substring(with: dateRange).trimmingCharacters(in: .whitespacesAndNewlines)
                 let testName = nsString.substring(with: testNameRange).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1410,14 +1438,18 @@ class PDFLabImporter: ObservableObject {
                 var unit = ""
                 if [1, 2, 4, 9].contains(index) && regexMatch.numberOfRanges > 4 {
                     let unitRange = regexMatch.range(at: 4)
-                    unit = nsString.substring(with: unitRange).trimmingCharacters(in: .whitespacesAndNewlines)
+                    if unitRange.location != NSNotFound && unitRange.location >= 0 && unitRange.length >= 0 && unitRange.location + unitRange.length <= nsString.length {
+                        unit = nsString.substring(with: unitRange).trimmingCharacters(in: .whitespacesAndNewlines)
+                    }
                 }
                 
                 // Extract flag if available (pattern 2)
                 var flag = ""
                 if index == 2 && regexMatch.numberOfRanges > 5 {
                     let flagRange = regexMatch.range(at: 5)
-                    flag = nsString.substring(with: flagRange).trimmingCharacters(in: .whitespacesAndNewlines)
+                    if flagRange.location != NSNotFound && flagRange.location >= 0 && flagRange.length >= 0 && flagRange.location + flagRange.length <= nsString.length {
+                        flag = nsString.substring(with: flagRange).trimmingCharacters(in: .whitespacesAndNewlines)
+                    }
                 }
                 
                 // Validate the extracted data
@@ -2059,5 +2091,29 @@ class PDFLabImporter: ObservableObject {
         
         print("      Complex line parsing failed - insufficient components")
         return nil
+    }
+
+    /// Returns the expected number of capture groups for each pattern
+    /// - Parameter patternIndex: Index of the pattern
+    /// - Returns: Expected number of capture groups (including the full match as group 0)
+    private func getExpectedCaptureGroups(for patternIndex: Int) -> Int {
+        switch patternIndex {
+        case 0, 1: // Date Name LongSpace Data patterns
+            return 5 // Full match + date + name + value + unit
+        case 2, 3: // Date Name Data patterns
+            return 5 // Full match + date + name + value + unit
+        case 4: // Test Name: Value Unit (Reference Range)
+            return 5 // Full match + name + value + unit + reference range
+        case 5, 6, 7: // Test Name: Value Unit patterns
+            return 4 // Full match + name + value + unit
+        case 8, 9, 10: // TestName Value Unit patterns
+            return 4 // Full match + name + value + unit
+        case 11: // Test name only
+            return 2 // Full match + name
+        case 12: // Value and unit only
+            return 3 // Full match + value + unit
+        default:
+            return 4 // Generic fallback: full match + name + value + unit
+        }
     }
 }
