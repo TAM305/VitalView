@@ -217,6 +217,31 @@ class PDFLabImporter: ObservableObject {
         return lines
     }
     
+    /// Renders PDF page at high DPI for better OCR accuracy
+    /// - Parameters:
+    ///   - page: PDF page to render
+    ///   - dpi: DPI for rendering (default 320)
+    /// - Returns: High-quality UIImage
+    private func renderPageImage(_ page: PDFPage, dpi: CGFloat = 320) -> UIImage {
+        let pageRect = page.bounds(for: .mediaBox)
+        let scale = dpi / 72.0
+        let size = CGSize(width: pageRect.width * scale, height: pageRect.height * scale)
+        
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1 // true pixel size
+        let renderer = UIGraphicsImageRenderer(size: size, format: format)
+        
+        return renderer.image { ctx in
+            UIColor.white.set()
+            ctx.fill(CGRect(origin: .zero, size: size))
+            ctx.cgContext.saveGState()
+            ctx.cgContext.translateBy(x: 0, y: size.height)
+            ctx.cgContext.scaleBy(x: scale, y: -scale)
+            page.draw(with: .mediaBox, to: ctx.cgContext)
+            ctx.cgContext.restoreGState()
+        }
+    }
+    
     /// Post-processes OCR lines to fix common OCR confusions
     /// - Parameter lines: Raw OCR lines
     /// - Returns: Cleaned lines
