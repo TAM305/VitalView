@@ -52,9 +52,14 @@ struct MetricDetailView: View {
                         Text("Last Updated")
                             .font(.headline)
                         Spacer()
-                        Text(date, style: .time)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text(date, style: .date)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            Text(date, style: .time)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
                     }
                     .padding()
                     .background(Color(.systemGray6))

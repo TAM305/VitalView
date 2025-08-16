@@ -114,7 +114,7 @@ struct DashboardContentView: View {
                     Spacer().frame(height: 32)
                     
                     let minCardWidth: CGFloat = (horizontalSizeClass == .regular) ? 220 : 160
-                    let cardHeight: CGFloat = (horizontalSizeClass == .regular) ? 130 : 120
+                    let cardHeight: CGFloat = (horizontalSizeClass == .regular) ? 140 : 130
                     let columns = [GridItem(.adaptive(minimum: minCardWidth), spacing: 12)]
 
                     LazyVGrid(columns: columns, spacing: 12) {
@@ -155,9 +155,14 @@ struct DashboardContentView: View {
                                         .lineLimit(1)
                                         .minimumScaleFactor(0.8)
                                     if let date = metric.date {
-                                        Text(date, style: .time)
-                                            .font(.caption2)
-                                            .foregroundColor(.secondary)
+                                        VStack(spacing: 2) {
+                                            Text(date, style: .date)
+                                                .font(.caption2)
+                                                .foregroundColor(.secondary)
+                                            Text(date, style: .time)
+                                                .font(.caption2)
+                                                .foregroundColor(.secondary)
+                                        }
                                     }
                                 }
                                 .padding()

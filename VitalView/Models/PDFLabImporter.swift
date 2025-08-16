@@ -151,7 +151,7 @@ class PDFLabImporter: ObservableObject {
             
             // Filter low-confidence tokens (except for numbers)
             let filteredTokens = tokens.filter { token in
-                if token.confidence.rawValue >= 0.35 { return true }
+                if token.confidence >= 0.35 { return true }
                 // Keep numbers even with low confidence
                 return token.text.range(of: #"^\d+\.?\d*$"#, options: .regularExpression) != nil
             }
@@ -174,7 +174,7 @@ class PDFLabImporter: ObservableObject {
             completion(extractedText)
         }
         
-        request.recognitionLevel = .accurate
+        request.recognitionLevel = VNRequestTextRecognitionLevel.accurate
         request.usesLanguageCorrection = true
         request.customWords = ["NEUTROPHILS", "LYMPHS", "PLATELET", "ALKALINE", "PHOSPHATASE", "eGFR", "CREATININE", "GLUCOSE", "CHOLESTEROL", "WBC", "RBC", "HEMOGLOBIN", "HEMATOCRIT", "SODIUM", "POTASSIUM", "CHLORIDE", "CALCIUM", "BILIRUBIN", "AST", "ALT", "UREA", "NITROGEN", "ALBUMIN", "TOTAL", "PROTEIN", "BASOS", "EOS", "MONOS", "MCV", "MCH", "MCHC", "RDW", "MPV", "EGFR", "ANION", "GAP", "COLLECTION", "SPEC", "LDL", "NF", "PLASM", "MD", "SINGHAL"]
         request.recognitionLanguages = ["en-US"]
@@ -1767,22 +1767,6 @@ class PDFLabImporter: ObservableObject {
         // UNIQUE_MARKER: parseTestNameValueOnly_validation_section
         
         // UNIQUE_MARKER: parseTestNameValueOnly_validation_section_start
-        
-        // Enhanced validation: check if the test name looks like a real lab test
-        let enhancedLabTestKeywords = ["GLUCOSE", "CHOLESTEROL", "WBC", "RBC", "HEMOGLOBIN", "HEMATOCRIT", 
-             "PLATELET", "SODIUM", "POTASSIUM", "CHLORIDE", "CO2", "BUN", "CREATININE",
-             "CALCIUM", "MAGNESIUM", "PHOSPHORUS", "ALBUMIN", "TOTAL_PROTEIN",
-             "BILIRUBIN", "AST", "ALT", "ALKALINE_PHOSPHATASE", "GGT", "LDH",
-             "TROPONIN", "CK", "CK_MB", "BNP", "CRP", "ESR", "FERRITIN",
-             "VITAMIN_D", "VITAMIN_B12", "FOLATE", "IRON", "TIBC", "TRANSFERRIN",
-             "NEUTROPHIL", "LYMPHOCYTE", "MONOCYTE", "EOSINOPHIL", "BASOPHIL",
-             "INR", "PTT", "FIBRINOGEN", "D_DIMER", "FOLIC_ACID", "VITAMIN_B6",
-             "MCV", "MCH", "MCHC", "RDW", "MPV", "EGFR", "ANION", "GAP",
-             "UREA", "NITROGEN", "ALKALINE", "PHOSPHATAS", "PHOSPHATASE",
-             "COLLECTION", "SPEC", "LDL", "NF", "PLASM", "MD", "SINGHAL"]
-        
-        // Skip if test name is just numbers or common non-test words
-        let skipWords = ["results", "help", "understand", "normal", "abnormal", "cholesterol", "electrolytes", "sugar", "sincerely", "questions", "concerns", "contact", "miami", "va", "healthcare", "system", "letter", "printed", "provider", "online", "registering", "assistance", "paperless", "receive", "information", "communicate", "metabolism", "count", "your", "blood", "needs", "lower", "copy", "pathology", "records", "requested", "release"]
         
         // UNIQUE_MARKER: parseTestNameValueOnly_validation_section_complete
         
