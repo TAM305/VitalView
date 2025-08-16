@@ -4,6 +4,13 @@ import Vision
 import SwiftUI
 import VisionKit
 
+/// Token structure for Vision OCR with bounding boxes and confidence
+struct Token {
+    let text: String
+    let rect: CGRect   // in image coordinates (0..1 from Vision)
+    let confidence: VNConfidence
+}
+
 /// PDF Lab Results Importer
 /// Extracts lab data from PDF reports and converts them to TestResult objects
 class PDFLabImporter: ObservableObject {
@@ -103,11 +110,20 @@ class PDFLabImporter: ObservableObject {
         }
     }
     
-    /// Performs OCR on a UIImage to extract text
+    /// Enhanced OCR with Vision framework and geometric reconstruction
     /// - Parameters:
     ///   - image: UIImage to perform OCR on
     ///   - completion: Callback with extracted text
     private func performOCR(on image: UIImage, completion: @escaping (String) -> Void) {
+        // Use the enhanced Vision-based OCR for better accuracy
+        performEnhancedOCR(on: image, completion: completion)
+    }
+    
+    /// Enhanced OCR using Vision framework with bounding boxes and geometric reconstruction
+    /// - Parameters:
+    ///   - image: UIImage to perform OCR on
+    ///   - completion: Callback with extracted text
+    private func performEnhancedOCR(on image: UIImage, completion: @escaping (String) -> Void) {
         guard let cgImage = image.cgImage else {
             completion("")
             return
@@ -119,50 +135,36 @@ class PDFLabImporter: ObservableObject {
                 return
             }
             
-            // Extract text with bounding boxes for better spatial reconstruction
-            let textElements = observations.compactMap { observation -> (String, CGRect)? in
-                guard let candidate = observation.topCandidates(1).first else { return nil }
-                return (candidate.string, observation.boundingBox)
+            // Extract tokens with bounding boxes and confidence
+            let tokens = observations.compactMap { observation -> Token? in
+                guard let candidate = observation.topCandidates(3).first else { return nil }
+                return Token(
+                    text: candidate.string,
+                    rect: observation.boundingBox,
+                    confidence: candidate.confidence
+                )
             }
             
-            // Sort by vertical position first, then horizontal for same-line elements
-            let sortedElements = textElements.sorted { first, second in
-                if abs(first.1.minY - second.1.minY) < 0.15 { // Increased tolerance for Y positions
-                    return first.1.minX < second.1.minX
-                }
-                return first.1.minY > second.1.minY // Sort top to bottom
+            // Filter low-confidence tokens (except for numbers)
+            let filteredTokens = tokens.filter { token in
+                if token.confidence.rawValue >= 0.35 { return true }
+                // Keep numbers even with low confidence
+                return token.text.range(of: #"^\d+\.?\d*$"#, options: .regularExpression) != nil
             }
             
-            // Reconstruct lines by grouping elements that are horizontally aligned
-            var reconstructedLines: [String] = []
-            var currentLine: [String] = []
-            var lastY: CGFloat = -1
+            // Rebuild lines using geometric reconstruction
+            let reconstructedLines = self.rebuildLines(tokens: filteredTokens)
             
-            for (text, boundingBox) in sortedElements {
-                if lastY == -1 { // First element
-                    currentLine.append(text)
-                    lastY = boundingBox.minY
-                } else if abs(boundingBox.minY - lastY) < 0.08 { // Increased tolerance for line grouping
-                    currentLine.append(text)
-                } else { // New line
-                    if !currentLine.isEmpty {
-                        reconstructedLines.append(currentLine.joined(separator: " "))
-                    }
-                    currentLine = [text]
-                    lastY = boundingBox.minY
-                }
-            }
-            if !currentLine.isEmpty { // Add the last line
-                reconstructedLines.append(currentLine.joined(separator: " "))
-            }
+            // Apply post-processing fixes
+            let cleanedLines = self.postFix(reconstructedLines)
             
-            let extractedText = reconstructedLines.joined(separator: "\n")
-            print("OCR: Extracted \(extractedText.count) characters from image")
-            print("OCR: Reconstructed \(reconstructedLines.count) lines")
+            let extractedText = cleanedLines.joined(separator: "\n")
+            print("Enhanced OCR: Extracted \(extractedText.count) characters from image")
+            print("Enhanced OCR: Reconstructed \(cleanedLines.count) lines")
             
             // Debug: Print first few reconstructed lines
-            for (i, line) in reconstructedLines.prefix(5).enumerated() {
-                print("OCR Line \(i + 1): '\(line)'")
+            for (i, line) in cleanedLines.prefix(5).enumerated() {
+                print("Enhanced OCR Line \(i + 1): '\(line)'")
             }
             
             completion(extractedText)
@@ -170,9 +172,73 @@ class PDFLabImporter: ObservableObject {
         
         request.recognitionLevel = .accurate
         request.usesLanguageCorrection = true
+        request.customWords = ["NEUTROPHILS", "LYMPHS", "PLATELET", "ALKALINE", "PHOSPHATASE", "eGFR", "CREATININE", "GLUCOSE", "CHOLESTEROL", "WBC", "RBC", "HEMOGLOBIN", "HEMATOCRIT", "SODIUM", "POTASSIUM", "CHLORIDE", "CALCIUM", "BILIRUBIN", "AST", "ALT", "UREA", "NITROGEN", "ALBUMIN", "TOTAL", "PROTEIN", "BASOS", "EOS", "MONOS", "MCV", "MCH", "MCHC", "RDW", "MPV", "EGFR", "ANION", "GAP", "COLLECTION", "SPEC", "LDL", "NF", "PLASM", "MD", "SINGHAL"]
+        request.recognitionLanguages = ["en-US"]
         
         let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
         try? handler.perform([request])
+    }
+    
+    /// Rebuilds table rows from geometric token positions
+    /// Groups tokens that sit on the same horizontal band, then sorts each row left→right
+    /// - Parameter tokens: Array of tokens with bounding boxes
+    /// - Returns: Array of reconstructed lines
+    private func rebuildLines(tokens: [Token]) -> [String] {
+        // Convert to image pixel space to stabilize the threshold
+        let toPixels: (CGRect) -> CGRect = { box in
+            // Vision uses (0,0)->(1,1). Use height=1 trick to stay normalized but easier math.
+            CGRect(x: box.minX, y: box.minY, width: box.width, height: box.height)
+        }
+        
+        struct Row { var y: CGFloat; var items: [Token] }
+        var rows: [Row] = []
+        
+        let yThresh: CGFloat = 0.01 // tune if needed; 0.01 ~ 1% of height
+        
+        for t in tokens {
+            let r = toPixels(t.rect)
+            let yMid = r.midY
+            if let idx = rows.firstIndex(where: { abs($0.y - yMid) < yThresh }) {
+                rows[idx].items.append(t)
+            } else {
+                rows.append(Row(y: yMid, items: [t]))
+            }
+        }
+        
+        // Higher y is upper image; sort rows from top to bottom
+        rows.sort { $0.y > $1.y }
+        
+        // Sort each row left→right and join tokens
+        let lines = rows.map { row -> String in
+            let sorted = row.items.sorted { $0.rect.minX < $1.rect.minX }
+            return sorted.map(\.text).joined(separator: " ")
+        }
+        
+        return lines
+    }
+    
+    /// Post-processes OCR lines to fix common OCR confusions
+    /// - Parameter lines: Raw OCR lines
+    /// - Returns: Cleaned lines
+    private func postFix(_ lines: [String]) -> [String] {
+        return lines.map { line in
+            var t = line
+            // Replace token-ending " S" or " $" with " %"
+            t = t.replacingOccurrences(of: #"(?<=\b[A-Z]+)\s[ S$]\b"#, with: " %", options: .regularExpression)
+            // 2-00 → 2.00  (dash inside numeric)
+            t = t.replacingOccurrences(of: #"(?<=\d)-(?=\d{2}\b)"#, with: ".", options: .regularExpression)
+            // PHOSPHATAS → PHOSPHATASE
+            t = t.replacingOccurrences(of: "PHOSPHATAS", with: "PHOSPHATASE")
+            // Normalize weird egfr
+            t = t.replacingOccurrences(of: "EGFR-CREATININE", with: "eGFR-CREATININE")
+            // Fix common OCR errors
+            t = t.replacingOccurrences(of: "BASOS", with: "BASOS")
+            t = t.replacingOccurrences(of: "EOS", with: "EOS")
+            t = t.replacingOccurrences(of: "MONOS", with: "MONOS")
+            t = t.replacingOccurrences(of: "LYMPHS", with: "LYMPHS")
+            t = t.replacingOccurrences(of: "NEUTROPHILS", with: "NEUTROPHILS")
+            return t
+        }
     }
     
     /// Parses extracted text to find lab results
@@ -454,6 +520,12 @@ class PDFLabImporter: ObservableObject {
         if let specializedResult = parseDateNameLongSpaceData(from: trimmedLine) {
             print("    Created specialized result: \(specializedResult.name)")
             return specializedResult
+        }
+        
+        // NEW: Try test name + value parsing first (ignoring dates completely)
+        if let testNameValueResult = parseTestNameValueOnly(from: trimmedLine) {
+            print("    Created test name + value result: \(testNameValueResult.name)")
+            return testNameValueResult
         }
 
         // Improved lab result patterns - ordered from most specific to most general
@@ -1376,6 +1448,11 @@ class PDFLabImporter: ObservableObject {
     private func parseCleanDateTestNameValue(from line: String) -> TestResult? {
         print("    Trying clean date-testname-value pattern on: '\(line)'")
         
+        // NEW: Try test name + value patterns first (ignoring dates completely)
+        if let result = parseTestNameValueOnly(from: line) {
+            return result
+        }
+        
         // More flexible patterns that handle OCR noise and variations
         let cleanPatterns = [
             // Pattern 0: Date + Test Name + Value with flexible spacing (most common)
@@ -1506,6 +1583,184 @@ class PDFLabImporter: ObservableObject {
         }
         
         print("      No clean pattern matched")
+        return nil
+    }
+    
+    /// NEW: Parses test name and value only, ignoring dates completely
+    /// This method focuses on extracting just the essential lab test information
+    /// - Parameter line: Single line containing test name and value
+    /// - Returns: TestResult if found, nil otherwise
+    /// UNIQUE_IDENTIFIER: parseTestNameValueOnly_method
+    private func parseTestNameValueOnly(from line: String) -> TestResult? {
+        print("    Trying test name + value only pattern (ignoring dates)")
+        
+        // UNIQUE_MARKER: parseTestNameValueOnly_method_start
+        // Enhanced patterns that focus on test name + value, ignoring dates
+        
+        // UNIQUE_MARKER: parseTestNameValueOnly_method_definition_complete
+        let testNameValuePatterns = [
+            
+                    // UNIQUE_MARKER: parseTestNameValueOnly_method_patterns_start
+        // Pattern 1: Test Name + Value (most common)
+        "^([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)\\s*([a-zA-Z/%]*)$",
+        
+                // UNIQUE_MARKER: parseTestNameValueOnly_method_patterns_defined
+        // Pattern 2: Test Name + Value + Unit
+        "^([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)\\s+([a-zA-Z/%]+)$",
+        
+                // UNIQUE_MARKER: parseTestNameValueOnly_method_patterns_complete
+        // Pattern 3: Test Name + Value with flexible spacing
+        "^([A-Za-z\\s\\-]+)\\s*([\\d\\.]+)\\s*([a-zA-Z/%]*)$",
+        
+                // UNIQUE_MARKER: parseTestNameValueOnly_method_patterns_final
+        // Pattern 4: Test Name + Value + Flag (H, L, etc.)
+        "^([A-Za-z\\s\\-]+)\\s+([\\d\\.]+)\\s*([\\d\\.]+)\\s*([a-zA-Z/%]*)\\s*([HL#\\$])$",
+        
+                // UNIQUE_MARKER: parseTestNameValueOnly_method_patterns_complete_final
+        // Pattern 5: Test Name + Value with potential OCR noise
+        "^([A-Za-z\\s\\-]+)\\s*([\\d\\.]+)\\s*([a-zA-Z/%]*)\\s*([^\\d\\s]*)$",
+        
+                // UNIQUE_MARKER: parseTestNameValueOnly_method_patterns_end
+        // Pattern 6: Handle cases where test name might be abbreviated
+        "^([A-Z]{2,})\\s+([\\d\\.]+)\\s*([a-zA-Z/%]*)$",
+        
+                // UNIQUE_MARKER: parseTestNameValueOnly_method_patterns_final_end
+        // Pattern 7: Handle test names with numbers (like "RBC 4.93")
+        "^([A-Za-z\\s\\-]+\\d*)\\s+([\\d\\.]+)\\s*([a-zA-Z/%]*)$",
+        
+                // UNIQUE_MARKER: parseTestNameValueOnly_method_patterns_complete_final_end
+        // Pattern 8: Handle test names with special characters
+        "^([A-Za-z\\s\\-\\#\\$]+)\\s+([\\d\\.]+)\\s*([a-zA-Z/%]*)$",
+        
+                // UNIQUE_MARKER: parseTestNameValueOnly_method_patterns_final_complete_end
+        // Pattern 9: Handle very short test names
+        "^([A-Za-z]{2,4})\\s+([\\d\\.]+)\\s*([a-zA-Z/%]*)$",
+        
+                // UNIQUE_MARKER: parseTestNameValueOnly_method_patterns_complete_final_complete_end
+        // Pattern 10: Handle test names with parentheses
+        "^([A-Za-z\\s\\-\\(\\)]+)\\s+([\\d\\.]+)\\s*([a-zA-Z/%]*)$",
+        
+                // UNIQUE_MARKER: parseTestNameValueOnly_method_patterns_final_complete_final_complete_end
+        // Pattern 11: Handle test names that might be split by OCR
+        "^([A-Za-z]+)\\s+([A-Za-z]+)\\s+([\\d\\.]+)\\s*([a-zA-Z/%]*)$",
+        
+                // UNIQUE_MARKER: parseTestNameValueOnly_method_patterns_complete_final_complete_final_complete_end
+        // Pattern 12: Handle test names with dots or periods
+        "^([A-Za-z\\s\\-\\.]+)\\s+([\\d\\.]+)\\s*([a-zA-Z/%]*)$"
+        
+        // UNIQUE_MARKER: parseTestNameValueOnly_method_patterns_final_complete_final_complete_final_complete_end
+        ]
+        
+        // UNIQUE_MARKER: parseTestNameValueOnly_validation_section
+        
+        // UNIQUE_MARKER: parseTestNameValueOnly_validation_section_start
+        
+        // Enhanced validation: check if the test name looks like a real lab test
+        let enhancedLabTestKeywords = ["GLUCOSE", "CHOLESTEROL", "WBC", "RBC", "HEMOGLOBIN", "HEMATOCRIT", 
+             "PLATELET", "SODIUM", "POTASSIUM", "CHLORIDE", "CO2", "BUN", "CREATININE",
+             "CALCIUM", "MAGNESIUM", "PHOSPHORUS", "ALBUMIN", "TOTAL_PROTEIN",
+             "BILIRUBIN", "AST", "ALT", "ALKALINE_PHOSPHATASE", "GGT", "LDH",
+             "TROPONIN", "CK", "CK_MB", "BNP", "CRP", "ESR", "FERRITIN",
+             "VITAMIN_D", "VITAMIN_B12", "FOLATE", "IRON", "TIBC", "TRANSFERRIN",
+             "NEUTROPHIL", "LYMPHOCYTE", "MONOCYTE", "EOSINOPHIL", "BASOPHIL",
+             "INR", "PTT", "FIBRINOGEN", "D_DIMER", "FOLIC_ACID", "VITAMIN_B6",
+             "MCV", "MCH", "MCHC", "RDW", "MPV", "EGFR", "ANION", "GAP",
+             "UREA", "NITROGEN", "ALKALINE", "PHOSPHATAS", "PHOSPHATASE",
+             "COLLECTION", "SPEC", "LDL", "NF", "PLASM", "MD", "SINGHAL"]
+        
+        // Skip if test name is just numbers or common non-test words
+        let skipWords = ["results", "help", "understand", "normal", "abnormal", "cholesterol", "electrolytes", "sugar", "sincerely", "questions", "concerns", "contact", "miami", "va", "healthcare", "system", "letter", "printed", "provider", "online", "registering", "assistance", "paperless", "receive", "information", "communicate", "metabolism", "count", "your", "blood", "needs", "lower", "copy", "pathology", "records", "requested", "release"]
+        
+        // UNIQUE_MARKER: parseTestNameValueOnly_validation_section_complete
+        
+        for (index, pattern) in testNameValuePatterns.enumerated() {
+            
+            // UNIQUE_MARKER: parseTestNameValueOnly_method_loop_start
+            if let regex = try? NSRegularExpression(pattern: pattern),
+               let regexMatch = regex.firstMatch(in: line, range: NSRange(location: 0, length: line.count)) {
+                
+                // Ensure we have at least 2 capture groups (test name + value)
+                guard regexMatch.numberOfRanges >= 2, !line.isEmpty else { continue }
+                
+                let nsString = line as NSString
+                let testNameRange = regexMatch.range(at: 1)
+                let valueRange = regexMatch.range(at: 2)
+                
+                // Validate ranges before using them
+                guard testNameRange.location != NSNotFound && testNameRange.location >= 0 && testNameRange.length >= 0 && testNameRange.location + testNameRange.length <= nsString.length,
+                      valueRange.location != NSNotFound && valueRange.location >= 0 && valueRange.length >= 0 && valueRange.location + valueRange.length <= nsString.length else {
+                    print("      Pattern \(index) matched but ranges are invalid")
+                    continue
+                }
+                
+                let testName = nsString.substring(with: testNameRange).trimmingCharacters(in: .whitespacesAndNewlines)
+                let valueString = nsString.substring(with: valueRange).trimmingCharacters(in: .whitespacesAndNewlines)
+                
+                // Extract unit if available
+                var unit = ""
+                if regexMatch.numberOfRanges > 3 {
+                    let unitRange = regexMatch.range(at: 3)
+                    if unitRange.location != NSNotFound && unitRange.location >= 0 && unitRange.length >= 0 && unitRange.location + unitRange.length <= nsString.length {
+                        unit = nsString.substring(with: unitRange).trimmingCharacters(in: .whitespacesAndNewlines)
+                    }
+                }
+                
+                // Extract flag if available
+                var flag = ""
+                if regexMatch.numberOfRanges > 4 {
+                    let flagRange = regexMatch.range(at: 4)
+                    if flagRange.location != NSNotFound && flagRange.location >= 0 && flagRange.length >= 0 && flagRange.location + flagRange.length <= nsString.length {
+                        flag = nsString.substring(with: flagRange).trimmingCharacters(in: .whitespacesAndNewlines)
+                    }
+                }
+                
+                // Validate the extracted data
+                guard let value = Double(valueString),
+                      !testName.isEmpty,
+                      testName.count >= 3 else {
+                    print("      Pattern \(index) matched but validation failed")
+                    continue
+                }
+                
+                // Clean the test name
+                let cleanedTestName = cleanTestName(testName)
+                if !isValidTestName(cleanedTestName) {
+                    print("      Test name validation failed: '\(cleanedTestName)'")
+                    continue
+                }
+                
+                // Additional validation: check if the test name looks like a real lab test
+                let hasLabTestKeywords = ["GLUCOSE", "CHOLESTEROL", "WBC", "RBC", "HEMOGLOBIN", "HEMATOCRIT", 
+                     "PLATELET", "SODIUM", "POTASSIUM", "CHLORIDE", "CO2", "BUN", "CREATININE",
+                     "CALCIUM", "MAGNESIUM", "PHOSPHORUS", "ALBUMIN", "TOTAL_PROTEIN",
+                     "BILIRUBIN", "AST", "ALT", "ALKALINE_PHOSPHATASE", "GGT", "LDH",
+                     "TROPONIN", "CK", "CK_MB", "BNP", "CRP", "ESR", "FERRITIN",
+                     "VITAMIN_D", "VITAMIN_B12", "FOLATE", "IRON", "TIBC", "TRANSFERRIN",
+                     "NEUTROPHIL", "LYMPHOCYTE", "MONOCYTE", "EOSINOPHIL", "BASOPHIL",
+                     "INR", "PTT", "FIBRINOGEN", "D_DIMER", "FOLIC_ACID", "VITAMIN_B6"].contains { keyword in
+                    cleanedTestName.uppercased().contains(keyword)
+                }
+                
+                if !hasLabTestKeywords && cleanedTestName.count < 4 {
+                    print("      Test name too short or doesn't contain lab test keywords: '\(cleanedTestName)'")
+                    continue
+                }
+                
+                print("      Test name + value pattern \(index) matched successfully:")
+                print("        Test: \(cleanedTestName)")
+                print("        Value: \(value) \(unit) \(flag)")
+                
+                return TestResult(
+                    name: cleanedTestName,
+                    value: value,
+                    unit: unit,
+                    referenceRange: "N/A",
+                    explanation: "Imported from PDF lab report - Test name + value only (ignoring dates)"
+                )
+            }
+        }
+        
+        print("      No test name + value pattern matched")
         return nil
     }
     
