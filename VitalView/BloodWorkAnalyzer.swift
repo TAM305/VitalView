@@ -45,6 +45,7 @@ struct VitalVuApp: App {
     @StateObject private var persistenceController = PersistenceController.shared
     @StateObject private var healthKitManager = HealthKitManager()
     @State private var showingSplash = true
+    @State private var splashOpacity: Double = 1.0
     
     var body: some Scene {
         WindowGroup {
@@ -52,21 +53,47 @@ struct VitalVuApp: App {
                 ContentView()
                     .environment(\.managedObjectContext, persistenceController.container.viewContext)
                     .environmentObject(healthKitManager)
+                    .preferredColorScheme(.none) // Let system decide
                 
                 if showingSplash {
                     AnimatedSplashView()
+                        .opacity(splashOpacity)
                         .transition(.opacity)
                         .zIndex(1)
+                        .onAppear {
+                            // Optimized splash timing with smooth fade
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                                withAnimation(.easeInOut(duration: 0.8)) {
+                                    splashOpacity = 0.0
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                                    showingSplash = false
+                                }
+                            }
+                        }
                 }
             }
             .onAppear {
-                // Show splash for 2.5 seconds then fade out
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-                    withAnimation(.easeOut(duration: 0.5)) {
-                        showingSplash = false
-                    }
+                // Pre-warm Core Data and HealthKit
+                Task {
+                    await prewarmServices()
                 }
             }
+        }
+    }
+    
+    // MARK: - Performance Optimization
+    
+    /// Pre-warms essential services for better app performance
+    private func prewarmServices() async {
+        // Pre-warm Core Data context
+        await MainActor.run {
+            _ = persistenceController.container.viewContext
+        }
+        
+        // Pre-warm HealthKit if available
+        if healthKitManager.isHealthKitAvailable() {
+            await healthKitManager.prewarmHealthKit()
         }
     }
 }

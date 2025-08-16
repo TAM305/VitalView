@@ -8,6 +8,12 @@ struct BloodTestTrendsView: View {
     @State private var timeRange: TimeRange = .threeMonths
     @State private var showingTestSelector = false
     @State private var showingTestPanels = false
+    
+    // MARK: - Performance Optimization
+    @State private var cachedTrendData: [String: [BloodTest]] = [:]
+    @State private var isLoadingData = false
+    @State private var lastFetchTime: Date?
+    
     var onClose: (() -> Void)? = nil
     
     enum TimeRange: String, CaseIterable {
@@ -53,7 +59,11 @@ struct BloodTestTrendsView: View {
                         Text("No tests available")
                     } else {
                         ForEach(tests, id: \.self) { test in
-                            Button(test) { selectedTest = test }
+                            Button(test) { 
+                                selectedTest = test
+                                // Clear cache when test changes
+                                cachedTrendData.removeValue(forKey: test)
+                            }
                         }
                     }
                 } label: {
@@ -84,6 +94,8 @@ struct BloodTestTrendsView: View {
                             isSelected: timeRange == range
                         ) {
                             timeRange = range
+                            // Clear cache when time range changes
+                            cachedTrendData.removeValue(forKey: selectedTest)
                         }
                     }
                 }

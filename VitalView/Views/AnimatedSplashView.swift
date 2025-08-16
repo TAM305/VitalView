@@ -1,49 +1,66 @@
 import SwiftUI
 
 struct AnimatedSplashView: View {
-    @State private var heartScale: CGFloat = 1.0
-    @State private var opacity: Double = 0.0
-    @State private var textOpacity: Double = 0.0
+    // MARK: - Performance Optimization
+    @State private var bloodDropScale: CGFloat = 0.3
+    @State private var bloodDropOpacity: Double = 0.0
+    @State private var titleOpacity: Double = 0.0
+    @State private var titleOffset: CGFloat = 30
     @State private var isAnimating = false
     
     var body: some View {
         ZStack {
-            // Background
-            Color(.systemBackground)
-                .ignoresSafeArea()
+            // Background gradient
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(.systemBackground),
+                    Color(.systemGray6)
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
             
-            VStack(spacing: 30) {
-                // Animated Heart
-                Image(systemName: "heart.fill")
-                    .font(.system(size: 80))
-                    .foregroundColor(.red)
-                    .scaleEffect(heartScale)
-                    .opacity(opacity)
-                    .animation(
-                        Animation.easeInOut(duration: 1.2)
-                            .repeatForever(autoreverses: true),
-                        value: heartScale
-                    )
+            VStack(spacing: 40) {
+                // Animated blood drop
+                ZStack {
+                    // Blood drop shadow
+                    Circle()
+                        .fill(Color.red.opacity(0.2))
+                        .frame(width: 120, height: 120)
+                        .scaleEffect(bloodDropScale * 1.2)
+                        .blur(radius: 20)
+                    
+                    // Main blood drop
+                    Image(systemName: "drop.fill")
+                        .font(.system(size: 80))
+                        .foregroundColor(.red)
+                        .scaleEffect(bloodDropScale)
+                        .opacity(bloodDropOpacity)
+                        .overlay(
+                            // Shine effect
+                            Image(systemName: "drop.fill")
+                                .font(.system(size: 80))
+                                .foregroundColor(.white.opacity(0.3))
+                                .scaleEffect(bloodDropScale * 0.7)
+                                .offset(x: -10, y: -10)
+                        )
+                }
                 
-                // App Name
-                Text("VitalVu")
-                    .font(.system(size: 36, weight: .bold, design: .rounded))
-                    .foregroundColor(.primary)
-                    .opacity(textOpacity)
-                    .animation(
-                        Animation.easeIn(duration: 0.8).delay(0.3),
-                        value: textOpacity
-                    )
-                
-                // Subtitle
-                Text("Your Health Companion")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(.secondary)
-                    .opacity(textOpacity)
-                    .animation(
-                        Animation.easeIn(duration: 0.8).delay(0.5),
-                        value: textOpacity
-                    )
+                // App title with optimized animation
+                VStack(spacing: 8) {
+                    Text("VitalVu")
+                        .font(.system(size: 42, weight: .bold, design: .rounded))
+                        .foregroundColor(.primary)
+                        .opacity(titleOpacity)
+                        .offset(y: titleOffset)
+                    
+                    Text("Health Monitoring")
+                        .font(.system(size: 18, weight: .medium, design: .rounded))
+                        .foregroundColor(.secondary)
+                        .opacity(titleOpacity)
+                        .offset(y: titleOffset)
+                }
             }
         }
         .onAppear {
@@ -51,24 +68,38 @@ struct AnimatedSplashView: View {
         }
     }
     
+    // MARK: - Optimized Animation
+    
     private func startAnimation() {
-        // Start heart pulsing
-        withAnimation(.easeInOut(duration: 0.5)) {
-            opacity = 1.0
+        guard !isAnimating else { return }
+        isAnimating = true
+        
+        // Blood drop animation
+        withAnimation(.easeOut(duration: 0.8).delay(0.2)) {
+            bloodDropScale = 1.0
+            bloodDropOpacity = 1.0
         }
         
-        // Start heart scale animation
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            heartScale = 1.2
+        // Title animation
+        withAnimation(.easeOut(duration: 0.6).delay(0.6)) {
+            titleOpacity = 1.0
+            titleOffset = 0
         }
         
-        // Show text
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            textOpacity = 1.0
+        // Continuous subtle animation
+        withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
+            bloodDropScale = 1.05
         }
     }
 }
 
-#Preview {
-    AnimatedSplashView()
+// MARK: - Preview
+struct AnimatedSplashView_Previews: PreviewProvider {
+    static var previews: some View {
+        AnimatedSplashView()
+            .preferredColorScheme(.light)
+        
+        AnimatedSplashView()
+            .preferredColorScheme(.dark)
+    }
 }

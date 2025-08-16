@@ -41,12 +41,39 @@ import HealthKit
 /// health data types and handle authorization requests properly.
 class HealthKitManager: ObservableObject {
     private let healthStore = HKHealthStore()
+    private var isPrewarmed = false
     
     /// Checks if HealthKit is available on the current device.
     ///
     /// - Returns: `true` if HealthKit is available, `false` otherwise
     func isHealthKitAvailable() -> Bool {
         return HKHealthStore.isHealthDataAvailable()
+    }
+    
+    /// Pre-warms HealthKit for better performance
+    ///
+    /// This method initializes HealthKit services in the background
+    /// to reduce latency when actually requesting data.
+    func prewarmHealthKit() async {
+        guard !isPrewarmed else { return }
+        
+        // Pre-warm common health data types
+        let commonTypes: Set<HKObjectType> = [
+            HKObjectType.quantityType(forIdentifier: .heartRate)!,
+            HKObjectType.quantityType(forIdentifier: .bloodPressureSystolic)!,
+            HKObjectType.quantityType(forIdentifier: .bloodPressureDiastolic)!,
+            HKObjectType.quantityType(forIdentifier: .oxygenSaturation)!,
+            HKObjectType.quantityType(forIdentifier: .bodyTemperature)!,
+            HKObjectType.quantityType(forIdentifier: .respiratoryRate)!,
+            HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!
+        ]
+        
+        // Check authorization status for all types
+        for type in commonTypes {
+            _ = healthStore.authorizationStatus(for: type)
+        }
+        
+        isPrewarmed = true
     }
     
     /// Checks the authorization status for a specific health data type.
@@ -57,7 +84,7 @@ class HealthKitManager: ObservableObject {
         return healthStore.authorizationStatus(for: type)
     }
     
-    /// Requests authorization for multiple health data types.
+    /// Requests authorization for multiple health data types with optimized flow.
     ///
     /// - Parameters:
     ///   - typesToRead: Set of health data types to request read access for
@@ -66,6 +93,13 @@ class HealthKitManager: ObservableObject {
         guard isHealthKitAvailable() else {
             completion(false, NSError(domain: "HealthKit", code: 1, userInfo: [NSLocalizedDescriptionKey: "HealthKit is not available on this device"]))
             return
+        }
+        
+        // Pre-warm if not already done
+        if !isPrewarmed {
+            Task {
+                await prewarmHealthKit()
+            }
         }
         
         healthStore.requestAuthorization(toShare: nil, read: typesToRead) { success, error in

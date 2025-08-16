@@ -71,63 +71,110 @@ struct BloodDropView: View {
 /// - Author: VitalVu Development Team
 /// - Version: 1.0
 struct AnimatedBloodDropView: View {
-    /// The size of the blood drop in points.
     let size: CGFloat
-    
-    /// The color to tint the blood drop.
     let color: Color
-    
-    /// Whether the pulsing animation should be active.
     let isAnimating: Bool
     
-    /// The animation state for the pulsing effect.
-    @State private var isPulsing = false
-    
-    /// Initializes a new animated blood drop view.
-    /// - Parameters:
-    ///   - size: The size of the blood drop in points. Defaults to 40.
-    ///   - color: The color to tint the blood drop. Defaults to red.
-    ///   - isAnimating: Whether the pulsing animation should be active. Defaults to true.
-    init(size: CGFloat = 40, color: Color = Color(red: 0.8, green: 0.1, blue: 0.1), isAnimating: Bool = true) {
-        self.size = size
-        self.color = color
-        self.isAnimating = isAnimating
-    }
+    // MARK: - Performance Optimization
+    @State private var scale: CGFloat = 1.0
+    @State private var opacity: Double = 0.8
+    @State private var rotation: Double = 0.0
+    @State private var glowIntensity: Double = 0.0
     
     var body: some View {
-        BloodDropView(size: size, color: color, showShadow: true)
-            .scaleEffect(isAnimating && isPulsing ? 1.1 : 1.0)
-            .animation(
-                isAnimating ? 
-                    Animation.easeInOut(duration: 1.5)
-                        .repeatForever(autoreverses: true) : 
-                    .default,
-                value: isPulsing
-            )
-            .onAppear {
-                if isAnimating {
-                    isPulsing = true
-                }
+        ZStack {
+            // Glow effect
+            Circle()
+                .fill(color.opacity(0.3))
+                .frame(width: size * 1.5, height: size * 1.5)
+                .scaleEffect(glowIntensity)
+                .blur(radius: 8)
+            
+            // Main blood drop
+            Image(systemName: "drop.fill")
+                .font(.system(size: size))
+                .foregroundColor(color)
+                .scaleEffect(scale)
+                .opacity(opacity)
+                .rotationEffect(.degrees(rotation))
+                .overlay(
+                    // Shine effect
+                    Image(systemName: "drop.fill")
+                        .font(.system(size: size * 0.7))
+                        .foregroundColor(.white.opacity(0.4))
+                        .offset(x: -size * 0.1, y: -size * 0.1)
+                )
+        }
+        .onAppear {
+            if isAnimating {
+                startAnimation()
             }
+        }
+        .onChange(of: isAnimating) { newValue in
+            if newValue {
+                startAnimation()
+            } else {
+                stopAnimation()
+            }
+        }
+    }
+    
+    // MARK: - Optimized Animation
+    
+    private func startAnimation() {
+        // Continuous pulsing animation
+        withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+            scale = 1.1
+            opacity = 1.0
+        }
+        
+        // Subtle rotation
+        withAnimation(.linear(duration: 3.0).repeatForever(autoreverses: false)) {
+            rotation = 5.0
+        }
+        
+        // Glow effect
+        withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
+            glowIntensity = 1.2
+        }
+    }
+    
+    private func stopAnimation() {
+        withAnimation(.easeOut(duration: 0.3)) {
+            scale = 1.0
+            opacity = 0.8
+            rotation = 0.0
+            glowIntensity = 0.0
+        }
+    }
+}
+
+// MARK: - Static Blood Drop View
+struct StaticBloodDropView: View {
+    let size: CGFloat
+    let color: Color
+    
+    var body: some View {
+        Image(systemName: "drop.fill")
+            .font(.system(size: size))
+            .foregroundColor(color)
+            .overlay(
+                Image(systemName: "drop.fill")
+                    .font(.system(size: size * 0.7))
+                    .foregroundColor(.white.opacity(0.3))
+                    .offset(x: -size * 0.1, y: -size * 0.1)
+            )
     }
 }
 
 // MARK: - Preview
 struct BloodDropView_Previews: PreviewProvider {
     static var previews: some View {
-        VStack(spacing: 20) {
-            HStack(spacing: 20) {
-                BloodDropView(size: 30, color: .red)
-                BloodDropView(size: 40, color: .blue)
-                BloodDropView(size: 50, color: .green)
-            }
-            
-            HStack(spacing: 20) {
-                AnimatedBloodDropView(size: 40, color: .red, isAnimating: true)
-                AnimatedBloodDropView(size: 40, color: .blue, isAnimating: false)
-            }
+        VStack(spacing: 30) {
+            AnimatedBloodDropView(size: 50, color: .red, isAnimating: true)
+            AnimatedBloodDropView(size: 40, color: .blue, isAnimating: false)
+            StaticBloodDropView(size: 30, color: .green)
         }
         .padding()
-        .previewLayout(.sizeThatFits)
     }
 } 

@@ -17,6 +17,10 @@ struct ContentView: View {
     @State private var showingImport = false
     @State private var showingPDFImport = false
     
+    // MARK: - Performance Optimization
+    @State private var isFloatingButtonVisible = false
+    @State private var floatingButtonScale: CGFloat = 0.8
+    
     init() {
         let context = PersistenceController.shared.container.viewContext
         _viewModel = StateObject(wrappedValue: BloodTestViewModel(context: context))
@@ -43,8 +47,11 @@ struct ContentView: View {
                         .padding(.top)
                         .frame(maxWidth: .infinity)
 
-                        HealthMetricsView()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        // Lazy load HealthMetricsView for better performance
+                        LazyView {
+                            HealthMetricsView()
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .navigationTitle("Dashboard")
@@ -65,29 +72,17 @@ struct ContentView: View {
                         }
                     }
 
-                    // Floating add button with menu
-                    Menu {
-                        Button(action: { showBloodTests = true }) {
-                            Label("Add Test Manually", systemImage: "plus.circle")
-                        }
-                        
-                        Button(action: { showingImport = true }) {
-                            Label("Import Lab Data", systemImage: "square.and.arrow.down")
-                        }
-                        
-                        Button(action: { showingPDFImport = true }) {
-                            Label("Import from PDF", systemImage: "doc.text.magnifyingglass")
-                        }
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(width: 56, height: 56)
-                            .background(Color.accentColor)
-                            .clipShape(Circle())
-                            .shadow(radius: 6)
+                    // Optimized floating add button with menu
+                    if isFloatingButtonVisible {
+                        FloatingActionButton(
+                            showBloodTests: $showBloodTests,
+                            showingImport: $showingImport,
+                            showingPDFImport: $showingPDFImport
+                        )
+                        .scaleEffect(floatingButtonScale)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: floatingButtonScale)
+                        .transition(.scale.combined(with: .opacity))
                     }
-                    .padding()
                 }
                 .sheet(isPresented: $showBloodTests) {
                     AddTestSheetView(isPresented: $showBloodTests)
@@ -113,9 +108,11 @@ struct ContentView: View {
 
             // Trends tab
             NavigationView {
-                TrendsTabView()
-                    .navigationTitle("Trends")
-                    .navigationBarTitleDisplayMode(.inline)
+                LazyView {
+                    TrendsTabView()
+                        .navigationTitle("Trends")
+                        .navigationBarTitleDisplayMode(.inline)
+                }
             }
             .navigationViewStyle(StackNavigationViewStyle())
             .tabItem {
@@ -123,6 +120,58 @@ struct ContentView: View {
                 Text("Trends")
             }
         }
+        .onAppear {
+            // Animate floating button appearance
+            withAnimation(.easeOut(duration: 0.5).delay(0.3)) {
+                isFloatingButtonVisible = true
+                floatingButtonScale = 1.0
+            }
+        }
+    }
+}
+
+// MARK: - LazyView for Performance
+struct LazyView<Content: View>: View {
+    let build: () -> Content
+    
+    init(_ build: @escaping () -> Content) {
+        self.build = build
+    }
+    
+    var body: Content {
+        build()
+    }
+}
+
+// MARK: - Optimized Floating Action Button
+struct FloatingActionButton: View {
+    @Binding var showBloodTests: Bool
+    @Binding var showingImport: Bool
+    @Binding var showingPDFImport: Bool
+    
+    var body: some View {
+        Menu {
+            Button(action: { showBloodTests = true }) {
+                Label("Add Test Manually", systemImage: "plus.circle")
+            }
+            
+            Button(action: { showingImport = true }) {
+                Label("Import Lab Data", systemImage: "square.and.arrow.down")
+            }
+            
+            Button(action: { showingPDFImport = true }) {
+                Label("Import from PDF", systemImage: "doc.text.magnifyingglass")
+            }
+        } label: {
+            Image(systemName: "plus")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.white)
+                .frame(width: 56, height: 56)
+                .background(Color.accentColor)
+                .clipShape(Circle())
+                .shadow(radius: 6)
+        }
+        .padding()
     }
 }
 

@@ -23,6 +23,10 @@ struct HealthMetricsView: View {
     @State private var showManualTemperatureEntry = false
     @State private var authorizationAttempted = false
     
+    // MARK: - Performance Optimization
+    @State private var isDataLoaded = false
+    @State private var refreshTimer: Timer?
+    
     private let healthStore = HKHealthStore()
     
     // Health data states
@@ -67,7 +71,6 @@ struct HealthMetricsView: View {
                 self.temperature = HealthData(value: temperature, date: Date())
             }
         }
-
         .sheet(item: $selectedMetricInfo) { metric in
             NavigationView {
                 MetricDetailView(metric: metric)
@@ -76,6 +79,65 @@ struct HealthMetricsView: View {
         .onAppear {
             // Remove automatic authorization - only trigger on user action
             print("=== App Launch - Ready for HealthKit Authorization ===")
+            
+            // Start background refresh timer for better performance
+            startBackgroundRefresh()
+        }
+        .onDisappear {
+            // Clean up timer when view disappears
+            stopBackgroundRefresh()
+        }
+    }
+    
+    // MARK: - Performance Optimization
+    
+    /// Starts background refresh timer for health data
+    private func startBackgroundRefresh() {
+        guard refreshTimer == nil else { return }
+        
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: 300.0, repeats: true) { _ in
+            // Refresh health data every 5 minutes in background
+            Task {
+                await refreshHealthDataInBackground()
+            }
+        }
+    }
+    
+    /// Stops background refresh timer
+    private func stopBackgroundRefresh() {
+        refreshTimer?.invalidate()
+        refreshTimer = nil
+    }
+    
+    /// Refreshes health data in background for better performance
+    private func refreshHealthDataInBackground() async {
+        guard isAuthorized else { return }
+        
+        // Use background task for better performance
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask {
+                await self.fetchHeartRateData()
+            }
+            group.addTask {
+                await self.fetchBloodPressureData()
+            }
+            group.addTask {
+                await self.fetchOxygenSaturationData()
+            }
+            group.addTask {
+                await self.fetchTemperatureData()
+            }
+            group.addTask {
+                await self.fetchRespiratoryRateData()
+            }
+            group.addTask {
+                await self.fetchHeartRateVariabilityData()
+            }
+        }
+        
+        // Update UI on main thread
+        await MainActor.run {
+            isDataLoaded = true
         }
     }
     

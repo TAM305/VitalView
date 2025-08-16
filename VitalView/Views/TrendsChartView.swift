@@ -1,537 +1,237 @@
 import SwiftUI
 import Charts
-import HealthKit
 
 struct TrendsChartView: View {
-    @Environment(\.dismiss) private var dismiss
-    @State private var selectedMetric = "Heart Rate"
-    @State private var timeRange: TimeRange = .week
-    @State private var chartData: [HealthDataPoint] = []
-    @State private var isLoading = false
+    let data: [BloodTest]
+    let testType: String
+    let timeRange: BloodTestTrendsView.TimeRange
     
-    let healthStore = HKHealthStore()
-    
-    enum TimeRange: String, CaseIterable {
-        case day = "24 Hours"
-        case week = "7 Days"
-        case month = "30 Days"
-        case threeMonths = "3 Months"
-        
-        var days: Int {
-            switch self {
-            case .day: return 1
-            case .week: return 7
-            case .month: return 30
-            case .threeMonths: return 90
-            }
-        }
-    }
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            // Header with metric selector and time range
-            VStack(spacing: 16) {
-                // Metric selector with icons
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        MetricButton(
-                            title: "Heart Rate",
-                            icon: "heart.fill",
-                            color: .red,
-                            isSelected: selectedMetric == "Heart Rate"
-                        ) {
-                            selectedMetric = "Heart Rate"
-                        }
-                        
-                        MetricButton(
-                            title: "Blood Pressure",
-                            icon: "waveform.path.ecg",
-                            color: .blue,
-                            isSelected: selectedMetric == "Blood Pressure"
-                        ) {
-                            selectedMetric = "Blood Pressure"
-                        }
-                        
-                        MetricButton(
-                            title: "Oxygen",
-                            icon: "lungs.fill",
-                            color: .green,
-                            isSelected: selectedMetric == "Oxygen Saturation"
-                        ) {
-                            selectedMetric = "Oxygen Saturation"
-                        }
-                        
-                        MetricButton(
-                            title: "Temperature",
-                            icon: "thermometer",
-                            color: .orange,
-                            isSelected: selectedMetric == "Temperature"
-                        ) {
-                            selectedMetric = "Temperature"
-                        }
-                        
-                        MetricButton(
-                            title: "Respiratory",
-                            icon: "wind",
-                            color: .purple,
-                            isSelected: selectedMetric == "Respiratory Rate"
-                        ) {
-                            selectedMetric = "Respiratory Rate"
-                        }
-                        
-                        MetricButton(
-                            title: "HRV",
-                            icon: "heart.text.square",
-                            color: .indigo,
-                            isSelected: selectedMetric == "Heart Rate Variability"
-                        ) {
-                            selectedMetric = "Heart Rate Variability"
-                        }
-                    }
-                    .padding(.horizontal)
-                }
-                
-                // Time range selector
-                HStack(spacing: 8) {
-                    ForEach(TimeRange.allCases, id: \.self) { range in
-                        TimeRangeButton(
-                            range: range,
-                            isSelected: timeRange == range
-                        ) {
-                            timeRange = range
-                        }
-                    }
-                }
-                .padding(.horizontal)
-            }
-            .padding(.top)
-            .background(Color(.systemBackground))
-            
-            // Chart area
-            if isLoading {
-                VStack {
-                    ProgressView("Loading data...")
-                        .padding()
-                    Spacer()
-                }
-            } else if chartData.isEmpty {
-                VStack {
-                    Image(systemName: "chart.line.uptrend.xyaxis")
-                        .font(.system(size: 60))
-                        .foregroundColor(.gray)
-                        .padding()
-                    
-                    Text("No data available")
-                        .font(.headline)
-                        .foregroundColor(.secondary)
-                    
-                    Text("Try selecting a different time range or metric")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                    
-                    Spacer()
-                }
-            } else {
-                ScrollView {
-                    VStack(spacing: 20) {
-                        // Main chart
-                        ChartView(data: chartData, metric: selectedMetric)
-                            .frame(height: 300)
-                            .padding()
-                        
-                        // Statistics
-                        StatisticsView(data: chartData, metric: selectedMetric)
-                            .padding(.horizontal)
-                        
-                        // Trend analysis
-                        TrendAnalysisView(data: chartData, metric: selectedMetric)
-                            .padding(.horizontal)
-                    }
-                    .padding(.bottom)
-                }
-            }
-        }
-        .frame(maxWidth: 900)
-        .padding(.horizontal)
-        .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
-        .onAppear {
-            loadChartData()
-        }
-        .onChange(of: selectedMetric) {
-            loadChartData()
-        }
-        .onChange(of: timeRange) {
-            loadChartData()
-        }
-    }
-    
-    private func loadChartData() {
-        isLoading = true
-        chartData = []
-        
-        // Simulate data loading for demo
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            chartData = generateSampleData()
-            isLoading = false
-        }
-    }
-    
-    private func generateSampleData() -> [HealthDataPoint] {
-        let calendar = Calendar.current
-        let now = Date()
-        var data: [HealthDataPoint] = []
-        
-        for i in 0..<timeRange.days {
-            let date = calendar.date(byAdding: .day, value: -i, to: now) ?? now
-            
-            switch selectedMetric {
-            case "Heart Rate":
-                let value = Double.random(in: 60...100)
-                data.append(HealthDataPoint(date: date, value: value, unit: "BPM"))
-            case "Blood Pressure":
-                let systolic = Double.random(in: 110...140)
-                let diastolic = Double.random(in: 70...90)
-                data.append(HealthDataPoint(date: date, systolic: systolic, diastolic: diastolic, unit: "mmHg"))
-            case "Oxygen Saturation":
-                let value = Double.random(in: 95...100)
-                data.append(HealthDataPoint(date: date, value: value, unit: "%"))
-            case "Temperature":
-                let value = Double.random(in: 97.0...99.5)
-                data.append(HealthDataPoint(date: date, value: value, unit: "°F"))
-            case "Respiratory Rate":
-                let value = Double.random(in: 12...20)
-                data.append(HealthDataPoint(date: date, value: value, unit: "breaths/min"))
-            case "Heart Rate Variability":
-                let value = Double.random(in: 15...50)
-                data.append(HealthDataPoint(date: date, value: value, unit: "ms"))
-            default:
-                break
-            }
-        }
-        
-        return data.reversed()
-    }
-}
-
-struct ChartView: View {
-    let data: [HealthDataPoint]
-    let metric: String
-    
-    var body: some View {
-        Chart(data) { point in
-            if metric == "Blood Pressure" {
-                LineMark(
-                    x: .value("Date", point.date),
-                    y: .value("Systolic", point.systolic ?? 0)
-                )
-                .foregroundStyle(.red)
-                .lineStyle(StrokeStyle(lineWidth: 2))
-                
-                LineMark(
-                    x: .value("Date", point.date),
-                    y: .value("Diastolic", point.diastolic ?? 0)
-                )
-                .foregroundStyle(.blue)
-                .lineStyle(StrokeStyle(lineWidth: 2))
-            } else {
-                LineMark(
-                    x: .value("Date", point.date),
-                    y: .value("Value", point.value ?? 0)
-                )
-                .foregroundStyle(metricColor)
-                .lineStyle(StrokeStyle(lineWidth: 2))
-                
-                AreaMark(
-                    x: .value("Date", point.date),
-                    y: .value("Value", point.value ?? 0)
-                )
-                .foregroundStyle(metricColor.opacity(0.1))
-            }
-        }
-        .chartYAxis {
-            AxisMarks(position: .leading)
-        }
-        .chartXAxis {
-            AxisMarks(values: .stride(by: .day)) { value in
-                AxisGridLine()
-                AxisValueLabel(format: .dateTime.day().month())
-            }
-        }
-    }
-    
-    private var metricColor: Color {
-        switch metric {
-        case "Heart Rate": return .red
-        case "Oxygen Saturation": return .green
-        case "Temperature": return .orange
-        case "Respiratory Rate": return .purple
-        case "Heart Rate Variability": return .blue
-        default: return .blue
-        }
-    }
-}
-
-struct StatisticsView: View {
-    let data: [HealthDataPoint]
-    let metric: String
+    // MARK: - Performance Optimization
+    @State private var chartData: [ChartDataPoint] = []
+    @State private var isLoadingChart = false
+    @State private var cachedChartData: [String: [ChartDataPoint]] = [:]
     
     var body: some View {
         VStack(spacing: 16) {
+            if isLoadingChart {
+                ProgressView("Loading chart...")
+                    .frame(height: 200)
+            } else if chartData.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 40))
+                        .foregroundColor(.secondary)
+                    Text("No data available")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                    Text("Add blood tests to see trends over time")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(height: 200)
+            } else {
+                // Optimized chart with lazy loading
+                LazyChartView(data: chartData, testType: testType)
+                    .frame(height: 200)
+                    .chartXAxis {
+                        AxisMarks(values: .automatic) { value in
+                            AxisGridLine()
+                            AxisValueLabel()
+                        }
+                    }
+                    .chartYAxis {
+                        AxisMarks(values: .automatic) { value in
+                            AxisGridLine()
+                            AxisValueLabel()
+                        }
+                    }
+            }
+            
+            // Chart statistics
+            if !chartData.isEmpty {
+                ChartStatisticsView(data: chartData, testType: testType)
+            }
+        }
+        .onAppear {
+            loadChartData()
+        }
+        .onChange(of: data) { _ in
+            loadChartData()
+        }
+        .onChange(of: timeRange) { _ in
+            loadChartData()
+        }
+    }
+    
+    // MARK: - Performance Optimization
+    
+    /// Loads chart data with caching for better performance
+    private func loadChartData() {
+        let cacheKey = "\(testType)_\(timeRange.rawValue)"
+        
+        // Check if we have cached data
+        if let cached = cachedChartData[cacheKey] {
+            chartData = cached
+            return
+        }
+        
+        isLoadingChart = true
+        
+        Task {
+            let processedData = await processChartData()
+            
+            await MainActor.run {
+                chartData = processedData
+                isLoadingChart = false
+                
+                // Cache the processed data
+                cachedChartData[cacheKey] = processedData
+            }
+        }
+    }
+    
+    /// Processes chart data in background for better performance
+    private func processChartData() async -> [ChartDataPoint] {
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                let processed = self.data
+                    .filter { test in
+                        let daysSince = Calendar.current.dateComponents([.day], from: test.date, to: Date()).day ?? 0
+                        return daysSince <= self.timeRange.days
+                    }
+                    .sorted { $0.date < $1.date }
+                    .compactMap { test -> ChartDataPoint? in
+                        guard let result = test.results.first(where: { $0.analyte == self.testType }) else {
+                            return nil
+                        }
+                        
+                        return ChartDataPoint(
+                            date: test.date,
+                            value: result.value,
+                            status: result.status
+                        )
+                    }
+                
+                continuation.resume(returning: processed)
+            }
+        }
+    }
+}
+
+// MARK: - Optimized Chart View
+struct LazyChartView: View {
+    let data: [ChartDataPoint]
+    let testType: String
+    
+    var body: some View {
+        Chart(data) { point in
+            LineMark(
+                x: .value("Date", point.date),
+                y: .value("Value", point.value)
+            )
+            .foregroundStyle(Color.blue)
+            .lineStyle(StrokeStyle(lineWidth: 2))
+            
+            PointMark(
+                x: .value("Date", point.date),
+                y: .value("Value", point.value)
+            )
+            .foregroundStyle(point.statusColor)
+            .symbolSize(8)
+        }
+        .chartYScale(domain: .automatic(includesZero: false))
+        .chartXScale(domain: .automatic)
+    }
+}
+
+// MARK: - Chart Data Point
+struct ChartDataPoint: Identifiable {
+    let id = UUID()
+    let date: Date
+    let value: Double
+    let status: TestStatus
+    
+    var statusColor: Color {
+        switch status {
+        case .normal:
+            return .green
+        case .high:
+            return .red
+        case .low:
+            return .orange
+        }
+    }
+}
+
+// MARK: - Chart Statistics View
+struct ChartStatisticsView: View {
+    let data: [ChartDataPoint]
+    let testType: String
+    
+    private var statistics: ChartStatistics {
+        let values = data.map { $0.value }
+        let sortedValues = values.sorted()
+        
+        return ChartStatistics(
+            count: values.count,
+            average: values.reduce(0, +) / Double(values.count),
+            min: sortedValues.first ?? 0,
+            max: sortedValues.last ?? 0,
+            median: sortedValues.count % 2 == 0 ? 
+                (sortedValues[sortedValues.count / 2 - 1] + sortedValues[sortedValues.count / 2]) / 2 :
+                sortedValues[sortedValues.count / 2]
+        )
+    }
+    
+    var body: some View {
+        VStack(spacing: 12) {
             Text("Statistics")
                 .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .foregroundColor(.primary)
             
             LazyVGrid(columns: [
                 GridItem(.flexible()),
+                GridItem(.flexible()),
                 GridItem(.flexible())
             ], spacing: 16) {
-                StatCard(title: "Average", value: averageValue, unit: data.first?.unit ?? "")
-                StatCard(title: "Highest", value: maxValue, unit: data.first?.unit ?? "")
-                StatCard(title: "Lowest", value: minValue, unit: data.first?.unit ?? "")
-                StatCard(title: "Trend", value: trendDirection, unit: "")
+                StatCard(title: "Count", value: "\(statistics.count)")
+                StatCard(title: "Average", value: String(format: "%.1f", statistics.average))
+                StatCard(title: "Range", value: String(format: "%.1f - %.1f", statistics.min, statistics.max))
             }
         }
         .padding()
         .background(Color(.systemGray6))
         .cornerRadius(12)
     }
-    
-    private var averageValue: String {
-        let values = data.compactMap { $0.value }
-        let avg = values.isEmpty ? 0 : values.reduce(0, +) / Double(values.count)
-        return String(format: "%.1f", avg)
-    }
-    
-    private var maxValue: String {
-        let values = data.compactMap { $0.value }
-        let max = values.max() ?? 0
-        return String(format: "%.1f", max)
-    }
-    
-    private var minValue: String {
-        let values = data.compactMap { $0.value }
-        let min = values.min() ?? 0
-        return String(format: "%.1f", min)
-    }
-    
-    private var trendDirection: String {
-        guard data.count >= 2 else { return "Stable" }
-        let first = data.first?.value ?? 0
-        let last = data.last?.value ?? 0
-        let change = last - first
-        
-        if change > 0 {
-            return "↗️ Increasing"
-        } else if change < 0 {
-            return "↘️ Decreasing"
-        } else {
-            return "→ Stable"
-        }
-    }
 }
 
+// MARK: - Chart Statistics
+struct ChartStatistics {
+    let count: Int
+    let average: Double
+    let min: Double
+    let max: Double
+    let median: Double
+}
+
+// MARK: - Stat Card
 struct StatCard: View {
     let title: String
     let value: String
-    let unit: String
     
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 4) {
             Text(title)
                 .font(.caption)
                 .foregroundColor(.secondary)
-            
             Text(value)
-                .font(.title2)
-                .fontWeight(.bold)
-            
-            if !unit.isEmpty {
-                Text(unit)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
+                .font(.headline)
+                .foregroundColor(.primary)
         }
         .frame(maxWidth: .infinity)
-        .padding()
+        .padding(.vertical, 8)
         .background(Color(.systemBackground))
         .cornerRadius(8)
     }
-}
-
-struct TrendAnalysisView: View {
-    let data: [HealthDataPoint]
-    let metric: String
-    
-    var body: some View {
-        VStack(spacing: 16) {
-            Text("Trend Analysis")
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
-            VStack(spacing: 12) {
-                HStack {
-                    Image(systemName: trendIcon)
-                        .foregroundColor(trendColor)
-                    Text(trendDescription)
-                        .font(.subheadline)
-                    Spacer()
-                }
-                
-                Text(healthRecommendation)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.leading)
-            }
-            .padding()
-            .background(Color(.systemGray6))
-            .cornerRadius(12)
-        }
-    }
-    
-    private var trendIcon: String {
-        let values = data.compactMap { $0.value }
-        guard values.count >= 2 else { return "arrow.right" }
-        let first = values.first ?? 0
-        let last = values.last ?? 0
-        let change = last - first
-        
-        if change > 0 {
-            return "arrow.up"
-        } else if change < 0 {
-            return "arrow.down"
-        } else {
-            return "arrow.right"
-        }
-    }
-    
-    private var trendColor: Color {
-        let values = data.compactMap { $0.value }
-        guard values.count >= 2 else { return .blue }
-        let first = values.first ?? 0
-        let last = values.last ?? 0
-        let change = last - first
-        
-        if change > 0 {
-            return .red
-        } else if change < 0 {
-            return .green
-        } else {
-            return .blue
-        }
-    }
-    
-    private var trendDescription: String {
-        let values = data.compactMap { $0.value }
-        guard values.count >= 2 else { return "Insufficient data for trend analysis" }
-        let first = values.first ?? 0
-        let last = values.last ?? 0
-        let change = last - first
-        let percentChange = (change / first) * 100
-        
-        if change > 0 {
-            return "Trending upward by \(String(format: "%.1f", percentChange))%"
-        } else if change < 0 {
-            return "Trending downward by \(String(format: "%.1f", abs(percentChange)))%"
-        } else {
-            return "Stable trend over time"
-        }
-    }
-    
-    private var healthRecommendation: String {
-        switch metric {
-        case "Heart Rate":
-            return "Your heart rate is within normal range. Consider regular exercise to maintain cardiovascular health."
-        case "Blood Pressure":
-            return "Monitor your blood pressure regularly. Consider reducing salt intake and increasing physical activity."
-        case "Oxygen Saturation":
-            return "Your oxygen levels are healthy. Continue with regular breathing exercises and outdoor activities."
-        case "Temperature":
-            return "Your body temperature is normal. Stay hydrated and maintain good sleep hygiene."
-        case "Respiratory Rate":
-            return "Your breathing rate is within normal limits. Practice deep breathing exercises for stress relief."
-        case "Heart Rate Variability":
-            return "Your HRV indicates good cardiovascular fitness. Continue with regular exercise and stress management."
-        default:
-            return "Continue monitoring this metric regularly and consult with healthcare providers as needed."
-        }
-    }
-}
-
-struct HealthDataPoint: Identifiable {
-    let id = UUID()
-    let date: Date
-    let value: Double?
-    let systolic: Double?
-    let diastolic: Double?
-    let unit: String
-    
-    init(date: Date, value: Double? = nil, systolic: Double? = nil, diastolic: Double? = nil, unit: String) {
-        self.date = date
-        self.value = value
-        self.systolic = systolic
-        self.diastolic = diastolic
-        self.unit = unit
-    }
-}
-
-struct MetricButton: View {
-    let title: String
-    let icon: String
-    let color: Color
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.system(size: 24, weight: .medium))
-                    .foregroundColor(isSelected ? .white : color)
-                
-                Text(title)
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(isSelected ? .white : .primary)
-                    .multilineTextAlignment(.center)
-            }
-            .frame(width: 80, height: 70)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? color : Color(.systemGray6))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? color : Color.clear, lineWidth: 2)
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
-
-struct TimeRangeButton: View {
-    let range: TrendsChartView.TimeRange
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            Text(range.rawValue)
-                .font(.caption)
-                .fontWeight(.medium)
-                .foregroundColor(isSelected ? .white : .primary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(isSelected ? .blue : Color(.systemGray6))
-                )
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
-
-#Preview {
-    TrendsChartView()
 }
