@@ -968,77 +968,77 @@ struct BloodTestExplanationView: View {
         switch testName {
         // Complete Blood Count (CBC) Tests
         case "WBC":
-            return "White Blood Cell count measures your body's infection-fighting cells. WBCs are your immune system's first line of defense against infections, bacteria, and viruses."
+            return "White blood cells; infection defense"
         case "NEUTROPHILS":
-            return "Neutrophils are the most abundant type of white blood cell, specializing in fighting bacterial infections. They quickly respond to infections and are crucial for acute inflammatory responses."
+            return "Bacterial defense WBC"
         case "NEUTROPHILS %":
-            return "Neutrophil percentage shows the proportion of neutrophils in your total white blood cell count. This helps evaluate your body's ability to fight bacterial infections."
+            return "Bacterial defense WBC percentage"
         case "NEUTROPHILS #":
-            return "Absolute neutrophil count is the actual number of neutrophils in your blood. This is more accurate than percentage for assessing infection risk and immune function."
+            return "Absolute neutrophil count"
         case "LYMPHS %":
-            return "Lymphocyte percentage indicates the proportion of lymphocytes in your white blood cells. Lymphocytes are key players in your immune system, fighting viruses and producing antibodies."
+            return "Lymphocytes %; viral/immune response"
         case "LYMPHS #":
-            return "Absolute lymphocyte count shows the actual number of lymphocytes in your blood. This helps assess immune function and can indicate viral infections or immune disorders."
+            return "Absolute lymphocyte count"
         case "MONOS":
-            return "Monocytes are white blood cells that help clean up dead cells and fight infections. They can transform into macrophages to engulf and destroy harmful substances."
+            return "Monocytes; infection cleanup"
         case "MONOS %":
-            return "Monocyte percentage shows the proportion of monocytes in your white blood cell count. Elevated levels may indicate chronic inflammation or certain infections."
+            return "Monocytes %; infection cleanup"
         case "MONOS #":
-            return "Absolute monocyte count is the actual number of monocytes in your blood. This helps evaluate your body's inflammatory response and immune function."
+            return "Absolute monocyte count"
         case "EOS":
-            return "Eosinophils are white blood cells that fight parasitic infections and are involved in allergic reactions. They release chemicals that help control inflammation."
+            return "Eosinophils; allergies/parasites"
         case "EOS %":
-            return "Eosinophil percentage indicates the proportion of eosinophils in your white blood cells. Elevated levels may suggest allergies, parasitic infections, or certain blood disorders."
+            return "Eosinophils %; allergies/parasites"
         case "EOS #":
-            return "Absolute eosinophil count shows the actual number of eosinophils in your blood. This helps diagnose allergic reactions, parasitic infections, and certain inflammatory conditions."
+            return "Absolute eosinophil count"
         case "BASOS %":
-            return "Basophil percentage shows the proportion of basophils in your white blood cells. Basophils release histamine and other chemicals involved in allergic and inflammatory responses."
+            return "Basophils %; allergy/inflammation"
         case "HGB":
-            return "Hemoglobin is the oxygen-carrying protein in red blood cells. It transports oxygen from your lungs to tissues throughout your body and carries carbon dioxide back to your lungs."
+            return "Oxygen-carrying protein in RBCs"
         case "MCV":
-            return "Mean Corpuscular Volume measures the average size of your red blood cells. This helps diagnose different types of anemia and blood disorders."
+            return "Average red blood cell size"
         case "MCH":
-            return "Mean Corpuscular Hemoglobin measures the average amount of hemoglobin in each red blood cell. This helps evaluate the quality of your red blood cells."
+            return "Hemoglobin amount per red cell"
         case "MCHC":
-            return "Mean Corpuscular Hemoglobin Concentration measures the concentration of hemoglobin in your red blood cells. This helps diagnose different types of anemia."
+            return "Hemoglobin concentration in red cells"
         case "RDW":
-            return "Red Cell Distribution Width measures the variation in size of your red blood cells. Elevated levels may indicate anemia or other blood disorders."
+            return "Variation in RBC size"
         case "PLATELET COUNT":
-            return "Platelet count measures the number of platelets in your blood. Platelets are essential for blood clotting and preventing excessive bleeding."
+            return "Platelets; clotting function"
         case "MPV":
-            return "Mean Platelet Volume measures the average size of your platelets. This helps evaluate platelet function and can indicate certain blood disorders."
+            return "Average platelet size"
         
         // Comprehensive Metabolic Panel (CMP) Tests
         case "GLUCOSE":
-            return "Glucose is your body's primary source of energy. It's regulated by insulin and other hormones, and levels indicate how well your body manages blood sugar."
+            return "Blood sugar; diabetes screen"
         case "UREA NITROGEN":
-            return "Blood Urea Nitrogen (BUN) measures the amount of nitrogen from urea in your blood. It's a key indicator of kidney function and protein metabolism."
+            return "Protein waste; kidney function"
         case "CREATININE":
-            return "Creatinine is a waste product filtered by your kidneys. Levels help assess kidney function and can indicate kidney disease or muscle damage."
+            return "Muscle waste; kidney function marker"
         case "SODIUM":
-            return "Sodium is the main electrolyte in your blood, essential for fluid balance, nerve function, and muscle contractions. It's crucial for maintaining blood pressure."
+            return "Main electrolyte; fluid balance, nerve/muscle"
         case "POTASSIUM":
-            return "Potassium is a critical electrolyte for heart function, muscle contractions, and nerve transmission. It's essential for maintaining normal heart rhythm."
+            return "Electrolyte; heart, nerve, muscle function"
         case "CHLORIDE":
-            return "Chloride is an electrolyte that works with sodium and potassium to maintain fluid balance and acid-base balance in your body."
+            return "Electrolyte; acid-base balance"
         case "ECO2":
-            return "Bicarbonate (CO2) helps maintain your body's acid-base balance. It's crucial for respiratory function and indicates how well your body handles acid-base regulation."
+            return "Reflects acid-base balance"
         case "ANION GAP":
-            return "Anion gap measures the balance of electrolytes in your blood. It helps detect acid-base disorders and can indicate metabolic problems."
+            return "Electrolyte balance; detects acid-base disorders"
         case "CALCIUM":
-            return "Calcium is essential for strong bones, muscle function, nerve transmission, and blood clotting. It's one of the most important minerals in your body."
+            return "Bone, nerve, muscle function; clotting"
         case "TOTAL PROTEIN":
-            return "Total protein measures the combined amount of albumin and globulins in your blood. It reflects your nutritional status and liver/kidney function."
+            return "Albumin + globulins; reflects nutrition, liver/kidneys"
         case "ALBUMIN":
-            return "Albumin is the main protein in your blood, essential for maintaining fluid balance and transporting hormones, vitamins, and medications throughout your body."
+            return "Major blood protein; maintains fluid balance, transport"
         case "AST":
-            return "Aspartate Aminotransferase (AST) is an enzyme found in your liver, heart, and muscles. Elevated levels can indicate liver damage, heart problems, or muscle injury."
+            return "Liver/heart enzyme; rises in liver/muscle injury"
         case "ALKALINE PHOSPHATASE":
-            return "Alkaline phosphatase is an enzyme found in your liver, bones, and other tissues. Elevated levels may indicate liver disease, bone disorders, or certain cancers."
+            return "Enzyme from liver/bone; high in liver or bone disease"
         case "BILIRUBIN TOTAL":
-            return "Total bilirubin measures the amount of bilirubin in your blood. Bilirubin is a waste product from red blood cell breakdown and is processed by your liver."
+            return "Red cell breakdown product; liver/bile duct marker"
         
-        // Default case for other tests
+        // Default case
         default:
             return "This blood test measures important health markers in your body. Results help healthcare providers assess your overall health and detect potential health issues."
         }
