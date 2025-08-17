@@ -56,10 +56,10 @@ struct TrendsChartView: View {
         .onAppear {
             loadChartData()
         }
-        .onChange(of: data) { _ in
+        .onChange(of: data) { _, _ in
             loadChartData()
         }
-        .onChange(of: timeRange) { _ in
+        .onChange(of: timeRange) { _, _ in
             loadChartData()
         }
     }
@@ -102,7 +102,7 @@ struct TrendsChartView: View {
                     }
                     .sorted { $0.date < $1.date }
                     .compactMap { test -> ChartDataPoint? in
-                        guard let result = test.results.first(where: { $0.analyte == self.testType }) else {
+                        guard let result = test.results.first(where: { $0.name == self.testType }) else {
                             return nil
                         }
                         
@@ -213,25 +213,4 @@ struct ChartStatistics {
     let min: Double
     let max: Double
     let median: Double
-}
-
-// MARK: - Stat Card
-struct StatCard: View {
-    let title: String
-    let value: String
-    
-    var body: some View {
-        VStack(spacing: 4) {
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.secondary)
-            Text(value)
-                .font(.headline)
-                .foregroundColor(.primary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-        .background(Color(.systemBackground))
-        .cornerRadius(8)
-    }
 }

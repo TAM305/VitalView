@@ -16,7 +16,8 @@ struct TrendsTabView: View {
             
             Group {
                 if selected == .health {
-                    TrendsChartView()
+                    // Use the comprehensive HealthTrendsView
+                    HealthTrendsView()
                 } else {
                     BloodTestTrendsView(
                         viewModel: BloodTestViewModel(context: PersistenceController.shared.container.viewContext),
@@ -26,7 +27,6 @@ struct TrendsTabView: View {
             }
             .frame(maxWidth: 900)
             .padding(.horizontal)
-            Spacer(minLength: 0)
         }
         .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
     }

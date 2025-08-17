@@ -141,6 +141,117 @@ struct HealthMetricsView: View {
         }
     }
     
+    // MARK: - Health Data Fetching Methods
+    
+    /// Fetches heart rate data from HealthKit
+    private func fetchHeartRateData() async {
+        guard let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate) else { return }
+        
+        let query = HKSampleQuery(sampleType: heartRateType, predicate: nil, limit: 1, sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)]) { _, samples, error in
+            guard let sample = samples?.first as? HKQuantitySample else { return }
+            
+            let value = sample.quantity.doubleValue(for: HKUnit(from: "count/min"))
+            DispatchQueue.main.async {
+                self.heartRate = HealthData(value: value, date: sample.endDate)
+            }
+        }
+        
+        healthStore.execute(query)
+    }
+    
+    /// Fetches blood pressure data from HealthKit
+    private func fetchBloodPressureData() async {
+        guard let systolicType = HKObjectType.quantityType(forIdentifier: .bloodPressureSystolic),
+              let diastolicType = HKObjectType.quantityType(forIdentifier: .bloodPressureDiastolic) else { return }
+        
+        let systolicQuery = HKSampleQuery(sampleType: systolicType, predicate: nil, limit: 1, sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)]) { _, samples, error in
+            guard let sample = samples?.first as? HKQuantitySample else { return }
+            
+            let systolicValue = sample.quantity.doubleValue(for: HKUnit.millimeterOfMercury())
+            DispatchQueue.main.async {
+                self.bloodPressure.systolic = systolicValue
+                self.bloodPressure.date = sample.endDate
+            }
+        }
+        
+        let diastolicQuery = HKSampleQuery(sampleType: diastolicType, predicate: nil, limit: 1, sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)]) { _, samples, error in
+            guard let sample = samples?.first as? HKQuantitySample else { return }
+            
+            let diastolicValue = sample.quantity.doubleValue(for: HKUnit.millimeterOfMercury())
+            DispatchQueue.main.async {
+                self.bloodPressure.diastolic = diastolicValue
+                self.bloodPressure.date = sample.endDate
+            }
+        }
+        
+        healthStore.execute(systolicQuery)
+        healthStore.execute(diastolicQuery)
+    }
+    
+    /// Fetches oxygen saturation data from HealthKit
+    private func fetchOxygenSaturationData() async {
+        guard let oxygenType = HKObjectType.quantityType(forIdentifier: .oxygenSaturation) else { return }
+        
+        let query = HKSampleQuery(sampleType: oxygenType, predicate: nil, limit: 1, sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)]) { _, samples, error in
+            guard let sample = samples?.first as? HKQuantitySample else { return }
+            
+            let value = sample.quantity.doubleValue(for: HKUnit.percent())
+            DispatchQueue.main.async {
+                self.oxygenSaturation = HealthData(value: value, date: sample.endDate)
+            }
+        }
+        
+        healthStore.execute(query)
+    }
+    
+    /// Fetches temperature data from HealthKit
+    private func fetchTemperatureData() async {
+        guard let temperatureType = HKObjectType.quantityType(forIdentifier: .bodyTemperature) else { return }
+        
+        let query = HKSampleQuery(sampleType: temperatureType, predicate: nil, limit: 1, sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)]) { _, samples, error in
+            guard let sample = samples?.first as? HKQuantitySample else { return }
+            
+            let value = sample.quantity.doubleValue(for: HKUnit.degreeFahrenheit())
+            DispatchQueue.main.async {
+                self.temperature = HealthData(value: value, date: sample.endDate)
+            }
+        }
+        
+        healthStore.execute(query)
+    }
+    
+    /// Fetches respiratory rate data from HealthKit
+    private func fetchRespiratoryRateData() async {
+        guard let respiratoryType = HKObjectType.quantityType(forIdentifier: .respiratoryRate) else { return }
+        
+        let query = HKSampleQuery(sampleType: respiratoryType, predicate: nil, limit: 1, sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)]) { _, samples, error in
+            guard let sample = samples?.first as? HKQuantitySample else { return }
+            
+            let value = sample.quantity.doubleValue(for: HKUnit(from: "count/min"))
+            DispatchQueue.main.async {
+                self.respiratoryRate = HealthData(value: value, date: sample.endDate)
+            }
+        }
+        
+        healthStore.execute(query)
+    }
+    
+    /// Fetches heart rate variability data from HealthKit
+    private func fetchHeartRateVariabilityData() async {
+        guard let hrvType = HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN) else { return }
+        
+        let query = HKSampleQuery(sampleType: hrvType, predicate: nil, limit: 1, sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)]) { _, samples, error in
+            guard let sample = samples?.first as? HKQuantitySample else { return }
+            
+            let value = sample.quantity.doubleValue(for: HKUnit.secondUnit(with: .milli))
+            DispatchQueue.main.async {
+                self.heartRateVariability = HealthData(value: value, date: sample.endDate)
+            }
+        }
+        
+        healthStore.execute(query)
+    }
+    
     // Bottom overlay removed in favor of cleaner HIG-compliant layout
     
     // Computed property for metrics to avoid complex expressions in body

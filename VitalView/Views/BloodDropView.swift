@@ -98,11 +98,18 @@ struct AnimatedBloodDropView: View {
                 .opacity(opacity)
                 .rotationEffect(.degrees(rotation))
                 .overlay(
-                    // Shine effect
-                    Image(systemName: "drop.fill")
-                        .font(.system(size: size * 0.7))
-                        .foregroundColor(.white.opacity(0.4))
-                        .offset(x: -size * 0.1, y: -size * 0.1)
+                    // Shine effect using shape instead of duplicate icon
+                    Ellipse()
+                        .fill(
+                            LinearGradient(
+                                colors: [.white.opacity(0.6), .clear],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: size * 0.4, height: size * 0.3)
+                        .offset(x: -size * 0.15, y: -size * 0.15)
+                        .blendMode(.overlay)
                 )
         }
         .onAppear {
@@ -110,7 +117,7 @@ struct AnimatedBloodDropView: View {
                 startAnimation()
             }
         }
-        .onChange(of: isAnimating) { newValue in
+        .onChange(of: isAnimating) { oldValue, newValue in
             if newValue {
                 startAnimation()
             } else {
@@ -159,10 +166,18 @@ struct StaticBloodDropView: View {
             .font(.system(size: size))
             .foregroundColor(color)
             .overlay(
-                Image(systemName: "drop.fill")
-                    .font(.system(size: size * 0.7))
-                    .foregroundColor(.white.opacity(0.3))
-                    .offset(x: -size * 0.1, y: -size * 0.1)
+                // Shine effect using shape instead of duplicate icon
+                Ellipse()
+                    .fill(
+                        LinearGradient(
+                            colors: [.white.opacity(0.5), .clear],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: size * 0.4, height: size * 0.3)
+                    .offset(x: -size * 0.15, y: -size * 0.15)
+                    .blendMode(.overlay)
             )
     }
 }

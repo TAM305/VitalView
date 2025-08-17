@@ -38,12 +38,19 @@ struct AnimatedSplashView: View {
                         .scaleEffect(bloodDropScale)
                         .opacity(bloodDropOpacity)
                         .overlay(
-                            // Shine effect
-                            Image(systemName: "drop.fill")
-                                .font(.system(size: 80))
-                                .foregroundColor(.white.opacity(0.3))
+                            // Shine effect using shape instead of duplicate icon
+                            Ellipse()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [.white.opacity(0.6), .clear],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 40, height: 30)
+                                .offset(x: -15, y: -15)
                                 .scaleEffect(bloodDropScale * 0.7)
-                                .offset(x: -10, y: -10)
+                                .blendMode(.overlay)
                         )
                 }
                 

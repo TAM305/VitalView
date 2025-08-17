@@ -37,89 +37,94 @@ struct BloodTestTrendsView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header with test selector and time range
-            VStack(spacing: 16) {
-                HStack {
-                    Spacer()
-                    if let onClose {
-                        Button("Done") { onClose() }
-                            .buttonStyle(.bordered)
-                    } else {
-                        Button("Done") { dismiss() }
-                            .buttonStyle(.bordered)
+        ScrollView {
+            VStack(spacing: 0) {
+                // Header with test selector and time range
+                VStack(spacing: 16) {
+                    HStack {
+                        Spacer()
+                        if let onClose {
+                            Button("Done") { onClose() }
+                                .buttonStyle(.bordered)
+                        } else {
+                            Button("Done") { dismiss() }
+                                .buttonStyle(.bordered)
+                        }
                     }
-                }
-                .padding(.horizontal)
-                
-                // Test selector
-                Menu {
-                    let tests = getAvailableTests()
-                    if tests.isEmpty {
-                        Text("No tests available")
-                    } else {
-                        ForEach(tests, id: \.self) { test in
-                            Button(test) { 
-                                selectedTest = test
-                                // Clear cache when test changes
-                                cachedTrendData.removeValue(forKey: test)
+                    .padding(.horizontal)
+                    
+                    // Test selector with educational content
+                    VStack(spacing: 12) {
+                        Menu {
+                            let tests = getAvailableTests()
+                            if tests.isEmpty {
+                                Text("No tests available")
+                            } else {
+                                ForEach(tests, id: \.self) { test in
+                                    Button(test) { 
+                                        selectedTest = test
+                                        // Clear cache when test changes
+                                        cachedTrendData.removeValue(forKey: test)
+                                    }
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Selected Test")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Text(selectedTest)
+                                        .font(.headline)
+                                        .foregroundColor(.primary)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.down")
+                                    .foregroundColor(.blue)
+                            }
+                            .padding()
+                            .background(Color(.systemGray6))
+                            .cornerRadius(10)
+                        }
+                        
+                        // Blood Test Explanation
+                        BloodTestExplanationView(testName: selectedTest)
+                    }
+                    .padding(.horizontal)
+                    
+                    // Time range selector
+                    HStack(spacing: 8) {
+                        ForEach(TimeRange.allCases, id: \.self) { range in
+                            BloodTimeRangeButton(
+                                range: range,
+                                isSelected: timeRange == range
+                            ) {
+                                timeRange = range
+                                // Clear cache when time range changes
+                                cachedTrendData.removeValue(forKey: selectedTest)
                             }
                         }
                     }
-                } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Selected Test")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text(selectedTest)
-                                .font(.headline)
-                                .foregroundColor(.primary)
+                    .padding(.horizontal)
+                    
+                    // Add button to show test panels
+                    Button(action: { showingTestPanels = true }) {
+                        HStack {
+                            Image(systemName: "list.bullet")
+                            Text("View Test Panels")
                         }
-                        Spacer()
-                        Image(systemName: "chevron.down")
-                            .foregroundColor(.blue)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
                     }
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(10)
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
+                .padding(.top)
+                .background(Color(.systemBackground))
                 
-                // Time range selector
-                HStack(spacing: 8) {
-                    ForEach(TimeRange.allCases, id: \.self) { range in
-                        BloodTimeRangeButton(
-                            range: range,
-                            isSelected: timeRange == range
-                        ) {
-                            timeRange = range
-                            // Clear cache when time range changes
-                            cachedTrendData.removeValue(forKey: selectedTest)
-                        }
-                    }
-                }
-                .padding(.horizontal)
-                
-                // Add button to show test panels
-                Button(action: { showingTestPanels = true }) {
-                    HStack {
-                        Image(systemName: "list.bullet")
-                        Text("View Test Panels")
-                    }
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-                }
-                .padding(.horizontal)
-            }
-            .padding(.top)
-            .background(Color(.systemBackground))
-            
-            // Chart and analysis
-            if let trendData = getTrendData() {
-                ScrollView {
+                // Chart and analysis
+                if let trendData = getTrendData() {
                     VStack(spacing: 20) {
                         // Data sufficiency indicator for longer time ranges
                         if timeRange == .fiveYears || timeRange == .tenYears {
@@ -157,25 +162,25 @@ struct BloodTestTrendsView: View {
                             .padding(.horizontal)
                     }
                     .padding(.bottom)
-                }
-            } else {
-                VStack {
-                    Image(systemName: "chart.line.uptrend.xyaxis")
-                        .font(.system(size: 60))
-                        .foregroundColor(.gray)
-                        .padding()
-                    
-                    Text("No trend data available")
-                        .font(.headline)
-                        .foregroundColor(.secondary)
-                    
-                    Text("Add more blood tests to see trends over time")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                    
-                    Spacer()
+                } else {
+                    VStack {
+                        Image(systemName: "chart.line.uptrend.xyaxis")
+                            .font(.system(size: 60))
+                            .foregroundColor(.gray)
+                            .padding()
+                        
+                        Text("No trend data available")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                        
+                        Text("Add more blood tests to see trends over time")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                        
+                        Spacer(minLength: 100)
+                    }
                 }
             }
         }
@@ -774,6 +779,273 @@ struct BloodTimeRangeButton: View {
                 .background(isSelected ? Color.blue : Color(.systemGray5))
                 .foregroundColor(isSelected ? .white : .primary)
                 .cornerRadius(8)
+        }
+    }
+}
+
+// MARK: - Blood Test Explanation View
+
+struct BloodTestExplanationView: View {
+    let testName: String
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Image(systemName: "info.circle.fill")
+                    .foregroundColor(.blue)
+                    .font(.title3)
+                
+                Text("About \(testName)")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                
+                Spacer()
+            }
+            
+            VStack(alignment: .leading, spacing: 8) {
+                Text(testDescription)
+                    .font(.caption)
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.leading)
+                
+                if let normalRange = testNormalRange {
+                    HStack {
+                        Text("Normal Range:")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
+                        
+                        Text(normalRange)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                if let healthSignificance = testHealthSignificance {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Health Significance:")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
+                        
+                        Text(healthSignificance)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.leading)
+                    }
+                }
+            }
+            .padding()
+            .background(Color(.systemGray6))
+            .cornerRadius(8)
+        }
+    }
+    
+    private var testDescription: String {
+        switch testName {
+        case "Glucose":
+            return "Glucose is the primary sugar in your blood and the main source of energy for your body's cells. It's regulated by insulin and other hormones."
+        case "Hemoglobin A1c":
+            return "Hemoglobin A1c measures your average blood sugar levels over the past 2-3 months. It's a key indicator of long-term glucose control."
+        case "Cholesterol (Total)":
+            return "Total cholesterol measures the overall amount of cholesterol in your blood, including both 'good' (HDL) and 'bad' (LDL) cholesterol."
+        case "HDL Cholesterol":
+            return "HDL (High-Density Lipoprotein) is known as 'good' cholesterol. It helps remove excess cholesterol from your bloodstream."
+        case "LDL Cholesterol":
+            return "LDL (Low-Density Lipoprotein) is known as 'bad' cholesterol. High levels can lead to plaque buildup in arteries."
+        case "Triglycerides":
+            return "Triglycerides are a type of fat found in your blood. High levels can increase your risk of heart disease and stroke."
+        case "Creatinine":
+            return "Creatinine is a waste product filtered by your kidneys. Levels help assess kidney function and muscle mass."
+        case "BUN (Blood Urea Nitrogen)":
+            return "BUN measures the amount of nitrogen in your blood from urea, a waste product filtered by your kidneys."
+        case "Sodium":
+            return "Sodium is an electrolyte that helps regulate fluid balance, blood pressure, and nerve function in your body."
+        case "Potassium":
+            return "Potassium is an electrolyte crucial for heart function, muscle contractions, and maintaining fluid balance."
+        case "Chloride":
+            return "Chloride is an electrolyte that works with sodium and potassium to maintain fluid balance and acid-base balance."
+        case "CO2 (Bicarbonate)":
+            return "CO2/Bicarbonate helps maintain your body's acid-base balance and is important for respiratory function."
+        case "Calcium":
+            return "Calcium is essential for strong bones, muscle function, nerve transmission, and blood clotting."
+        case "Phosphorus":
+            return "Phosphorus works with calcium to build strong bones and teeth, and is involved in energy production."
+        case "Magnesium":
+            return "Magnesium is involved in over 300 biochemical reactions, including muscle and nerve function, blood sugar control, and blood pressure regulation."
+        case "Iron":
+            return "Iron is essential for making hemoglobin, which carries oxygen in your blood. It's crucial for energy production and immune function."
+        case "Ferritin":
+            return "Ferritin stores iron in your body. Low levels can indicate iron deficiency, while high levels may indicate inflammation or iron overload."
+        case "Vitamin D":
+            return "Vitamin D helps your body absorb calcium, supports immune function, and is important for bone health and muscle function."
+        case "Vitamin B12":
+            return "Vitamin B12 is essential for nerve function, red blood cell formation, and DNA synthesis. It's particularly important for energy and brain health."
+        case "Folate (Vitamin B9)":
+            return "Folate is crucial for cell division, DNA synthesis, and red blood cell formation. It's especially important during pregnancy."
+        case "TSH (Thyroid Stimulating Hormone)":
+            return "TSH regulates thyroid hormone production. It's the primary test for thyroid function and can detect both overactive and underactive thyroid."
+        case "T4 (Thyroxine)":
+            return "T4 is the main thyroid hormone that regulates metabolism, energy production, and many body functions."
+        case "T3 (Triiodothyronine)":
+            return "T3 is the active form of thyroid hormone that affects metabolism, heart rate, and body temperature."
+        case "PSA (Prostate Specific Antigen)":
+            return "PSA is a protein produced by the prostate gland. Elevated levels may indicate prostate conditions, though not necessarily cancer."
+        case "CRP (C-Reactive Protein)":
+            return "CRP is a marker of inflammation in your body. High levels may indicate infection, injury, or chronic inflammatory conditions."
+        case "ESR (Erythrocyte Sedimentation Rate)":
+            return "ESR measures how quickly red blood cells settle in a test tube. It's a non-specific marker of inflammation or infection."
+        case "WBC (White Blood Cell Count)":
+            return "White blood cells are part of your immune system. The count helps identify infection, inflammation, or immune system disorders."
+        case "RBC (Red Blood Cell Count)":
+            return "Red blood cells carry oxygen throughout your body. The count helps diagnose anemia and other blood disorders."
+        case "Hemoglobin":
+            return "Hemoglobin carries oxygen in your red blood cells. It's crucial for energy production and overall health."
+        case "Hematocrit":
+            return "Hematocrit measures the percentage of your blood that consists of red blood cells. It helps diagnose anemia and other conditions."
+        case "Platelets":
+            return "Platelets help your blood clot and stop bleeding. Abnormal levels can affect your body's ability to form blood clots."
+        default:
+            return "This blood test measures important markers of your health. Regular monitoring helps track changes over time and identify potential health issues early."
+        }
+    }
+    
+    private var testNormalRange: String? {
+        switch testName {
+        case "Glucose":
+            return "70-100 mg/dL (fasting), <140 mg/dL (2 hours after eating)"
+        case "Hemoglobin A1c":
+            return "<5.7% (normal), 5.7-6.4% (prediabetes), ≥6.5% (diabetes)"
+        case "Cholesterol (Total)":
+            return "<200 mg/dL (desirable), 200-239 mg/dL (borderline), ≥240 mg/dL (high)"
+        case "HDL Cholesterol":
+            return "≥60 mg/dL (protective), 40-59 mg/dL (normal), <40 mg/dL (low)"
+        case "LDL Cholesterol":
+            return "<100 mg/dL (optimal), 100-129 mg/dL (near optimal), 130-159 mg/dL (borderline high)"
+        case "Triglycerides":
+            return "<150 mg/dL (normal), 150-199 mg/dL (borderline high), ≥200 mg/dL (high)"
+        case "Creatinine":
+            return "0.7-1.3 mg/dL (men), 0.6-1.1 mg/dL (women)"
+        case "BUN (Blood Urea Nitrogen)":
+            return "7-20 mg/L"
+        case "Sodium":
+            return "135-145 mEq/L"
+        case "Potassium":
+            return "3.5-5.0 mEq/L"
+        case "Chloride":
+            return "96-106 mEq/L"
+        case "CO2 (Bicarbonate)":
+            return "22-28 mEq/L"
+        case "Calcium":
+            return "8.5-10.5 mg/dL"
+        case "Phosphorus":
+            return "2.5-4.5 mg/dL"
+        case "Magnesium":
+            return "1.5-2.5 mg/dL"
+        case "Iron":
+            return "60-170 mcg/dL (men), 50-170 mcg/dL (women)"
+        case "Ferritin":
+            return "20-250 ng/mL (men), 10-120 ng/mL (women)"
+        case "Vitamin D":
+            return "30-100 ng/mL (sufficient), 20-29 ng/mL (insufficient), <20 ng/mL (deficient)"
+        case "Vitamin B12":
+            return "200-900 pg/mL"
+        case "Folate (Vitamin B9)":
+            return "2-20 ng/mL"
+        case "TSH (Thyroid Stimulating Hormone)":
+            return "0.4-4.0 mIU/L"
+        case "T4 (Thyroxine)":
+            return "0.8-1.8 ng/dL"
+        case "T3 (Triiodothyronine)":
+            return "80-200 ng/dL"
+        case "PSA (Prostate Specific Antigen)":
+            return "<4.0 ng/mL (normal), 4.0-10.0 ng/mL (borderline), >10.0 ng/mL (elevated)"
+        case "CRP (C-Reactive Protein)":
+            return "<3.0 mg/L (normal), 3.0-10.0 mg/L (moderate), >10.0 mg/L (high)"
+        case "ESR (Erythrocyte Sedimentation Rate)":
+            return "0-15 mm/hr (men), 0-20 mm/hr (women)"
+        case "WBC (White Blood Cell Count)":
+            return "4,500-11,000 cells/μL"
+        case "RBC (Red Blood Cell Count)":
+            return "4.5-5.9 million cells/μL (men), 4.1-5.1 million cells/μL (women)"
+        case "Hemoglobin":
+            return "13.5-17.5 g/dL (men), 12.0-15.5 g/dL (women)"
+        case "Hematocrit":
+            return "41-50% (men), 36-46% (women)"
+        case "Platelets":
+            return "150,000-450,000 cells/μL"
+        default:
+            return nil
+        }
+    }
+    
+    private var testHealthSignificance: String? {
+        switch testName {
+        case "Glucose":
+            return "High levels may indicate diabetes or prediabetes. Low levels can cause dizziness, confusion, and fainting. Regular monitoring is crucial for diabetes management."
+        case "Hemoglobin A1c":
+            return "This test provides a long-term view of blood sugar control. Higher levels increase risk of diabetes complications affecting eyes, kidneys, and nerves."
+        case "Cholesterol (Total)":
+            return "High cholesterol increases risk of heart disease and stroke. Lifestyle changes and medication can help manage levels and reduce cardiovascular risk."
+        case "HDL Cholesterol":
+            return "Higher HDL levels are protective against heart disease. Exercise, healthy fats, and avoiding smoking can help increase HDL levels."
+        case "LDL Cholesterol":
+            return "High LDL levels contribute to artery plaque buildup. Diet, exercise, and medication can help lower LDL and reduce heart disease risk."
+        case "Triglycerides":
+            return "High levels increase heart disease risk. Reducing sugar, refined carbs, and alcohol while increasing exercise can help lower triglycerides."
+        case "Creatinine":
+            return "High levels may indicate kidney problems. Regular monitoring helps track kidney function and detect issues early."
+        case "BUN (Blood Urea Nitrogen)":
+            return "High levels may indicate kidney dysfunction, dehydration, or high protein intake. Low levels may indicate liver disease or malnutrition."
+        case "Sodium":
+            return "Imbalances can affect fluid balance, blood pressure, and nerve function. Dehydration and certain medications can affect sodium levels."
+        case "Potassium":
+            return "Critical for heart rhythm and muscle function. High or low levels can cause serious heart problems and require immediate attention."
+        case "Chloride":
+            return "Works with sodium to maintain fluid balance. Changes often parallel sodium changes and help assess acid-base balance."
+        case "CO2 (Bicarbonate)":
+            return "Helps maintain body's acid-base balance. Low levels may indicate metabolic acidosis, high levels may indicate metabolic alkalosis."
+        case "Calcium":
+            return "Essential for bone health, muscle function, and nerve transmission. High or low levels can affect bone density and cause muscle problems."
+        case "Phosphorus":
+            return "Works with calcium for bone health. Kidney disease can cause high levels, while malnutrition can cause low levels."
+        case "Magnesium":
+            return "Involved in hundreds of biochemical reactions. Low levels can cause muscle cramps, irregular heartbeat, and other symptoms."
+        case "Iron":
+            return "Essential for oxygen transport and energy production. Low levels cause anemia, high levels can damage organs."
+        case "Ferritin":
+            return "Indicates iron stores. Low levels suggest iron deficiency, high levels may indicate inflammation or iron overload."
+        case "Vitamin D":
+            return "Crucial for bone health and immune function. Deficiency is common and linked to bone problems, immune issues, and chronic diseases."
+        case "Vitamin B12":
+            return "Essential for nerve function and red blood cell formation. Deficiency can cause anemia, nerve damage, and cognitive problems."
+        case "Folate (Vitamin B9)":
+            return "Critical for cell division and DNA synthesis. Deficiency during pregnancy can cause birth defects."
+        case "TSH (Thyroid Stimulating Hormone)":
+            return "Primary thyroid function test. High TSH suggests underactive thyroid, low TSH suggests overactive thyroid."
+        case "T4 (Thyroxine)":
+            return "Main thyroid hormone. Low levels cause hypothyroidism symptoms, high levels cause hyperthyroidism symptoms."
+        case "T3 (Triiodothyronine)":
+            return "Active thyroid hormone. Changes can indicate thyroid problems and affect metabolism and energy levels."
+        case "PSA (Prostate Specific Antigen)":
+            return "Prostate health marker. Elevated levels may indicate prostate enlargement, inflammation, or cancer. Regular monitoring is important for men."
+        case "CRP (C-Reactive Protein)":
+            return "Inflammation marker. High levels may indicate infection, injury, or chronic inflammatory conditions like heart disease."
+        case "ESR (Erythrocyte Sedimentation Rate)":
+            return "Non-specific inflammation marker. High levels may indicate infection, inflammation, or certain cancers."
+        case "WBC (White Blood Cell Count)":
+            return "Immune system indicator. High levels suggest infection or inflammation, low levels may indicate immune system problems."
+        case "RBC (Red Blood Cell Count)":
+            return "Oxygen transport indicator. Low levels cause anemia, high levels may indicate dehydration or blood disorders."
+        case "Hemoglobin":
+            return "Oxygen-carrying protein. Low levels cause fatigue and shortness of breath, high levels may indicate dehydration or blood disorders."
+        case "Hematocrit":
+            return "Blood cell percentage. Low levels suggest anemia, high levels may indicate dehydration or blood disorders."
+        case "Platelets":
+            return "Blood clotting cells. Low levels increase bleeding risk, high levels increase clotting risk."
+        default:
+            return "Regular blood test monitoring helps track your health over time, identify potential issues early, and guide preventive healthcare decisions."
         }
     }
 }

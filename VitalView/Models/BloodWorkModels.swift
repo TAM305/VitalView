@@ -40,7 +40,7 @@ import HealthKit
 /// This class provides methods to check authorization status for different
 /// health data types and handle authorization requests properly.
 class HealthKitManager: ObservableObject {
-    private let healthStore = HKHealthStore()
+    let healthStore = HKHealthStore()
     private var isPrewarmed = false
     
     /// Checks if HealthKit is available on the current device.
@@ -173,7 +173,7 @@ public enum TestStatus: String, Codable {
 ///     results: [testResult1, testResult2]
 /// )
 /// ```
-public struct BloodTest: Identifiable, Codable {
+public struct BloodTest: Identifiable, Codable, Equatable {
     /// Unique identifier for the blood test
     public let id: UUID
     /// Date when the blood test was performed
@@ -195,6 +195,15 @@ public struct BloodTest: Identifiable, Codable {
         self.date = date
         self.testType = testType
         self.results = results
+    }
+    
+    // MARK: - Equatable
+    
+    public static func == (lhs: BloodTest, rhs: BloodTest) -> Bool {
+        return lhs.id == rhs.id &&
+               lhs.date == rhs.date &&
+               lhs.testType == rhs.testType &&
+               lhs.results == rhs.results
     }
 }
 
@@ -228,7 +237,7 @@ public struct BloodTest: Identifiable, Codable {
 /// )
 /// print(result.status) // .normal
 /// ```
-public struct TestResult: Identifiable, Codable {
+public struct TestResult: Identifiable, Codable, Equatable {
     /// Unique identifier for the test result
     public let id: UUID
     /// Name of the test parameter
@@ -248,7 +257,7 @@ public struct TestResult: Identifiable, Codable {
     /// is normal, high, or low by comparing the value against the parsed
     /// reference range.
     ///
-    /// - Returns: The status of the test result
+    /// - Returns: The status of the result
     public var status: TestStatus {
         let bounds = parseReferenceBounds(from: referenceRange)
         if let lower = bounds.lower, value < lower { return .low }
@@ -272,6 +281,17 @@ public struct TestResult: Identifiable, Codable {
         self.unit = unit
         self.referenceRange = referenceRange
         self.explanation = explanation
+    }
+    
+    // MARK: - Equatable
+    
+    public static func == (lhs: TestResult, rhs: TestResult) -> Bool {
+        return lhs.id == rhs.id &&
+               lhs.name == rhs.name &&
+               lhs.value == rhs.value &&
+               lhs.unit == rhs.unit &&
+               lhs.referenceRange == rhs.referenceRange &&
+               lhs.explanation == rhs.explanation
     }
     
     /// Validates the value against the reference range.
