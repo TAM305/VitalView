@@ -186,6 +186,10 @@ struct PDFImportView: View {
     private func importResults() {
         guard !pdfImporter.parsedResults.isEmpty else { return }
         
+        print("=== PDF Import Debug ===")
+        print("Importing \(pdfImporter.parsedResults.count) test results")
+        print("First result: \(pdfImporter.parsedResults.first?.name ?? "unknown") = \(pdfImporter.parsedResults.first?.value ?? 0) \(pdfImporter.parsedResults.first?.unit ?? "unknown")")
+        
         // Create a blood test from the extracted results
         let bloodTest = BloodTest(
             date: Date(),
@@ -193,8 +197,13 @@ struct PDFImportView: View {
             results: pdfImporter.parsedResults
         )
         
+        print("Created BloodTest with ID: \(bloodTest.id)")
+        print("BloodTest has \(bloodTest.results.count) results")
+        
         // Add to the view model
         bloodTestViewModel.addTest(bloodTest)
+        
+        print("Added test to view model. Total tests in view model: \(bloodTestViewModel.bloodTests.count)")
         
         // Show success alert
         showingSuccessAlert = true

@@ -526,7 +526,9 @@ public final class BloodTestViewModel: ObservableObject {
         // Save to Core Data
         do {
             try viewContext.save()
-            bloodTests.append(test)
+            // Refresh the published array from Core Data to ensure consistency
+            loadTests()
+            print("Successfully added test and refreshed view model. Total tests: \(bloodTests.count)")
         } catch {
             errorMessage = "Failed to save test: \(error.localizedDescription)"
         }
@@ -604,13 +606,19 @@ public final class BloodTestViewModel: ObservableObject {
         
         do {
             let testEntities = try viewContext.fetch(fetchRequest)
+            print("=== loadTests Debug ===")
+            print("Found \(testEntities.count) test entities in Core Data")
+            
             bloodTests = testEntities.compactMap { testEntity in
                 guard let id = testEntity.value(forKey: "id") as? UUID,
                       let date = testEntity.value(forKey: "date") as? Date,
                       let testType = testEntity.value(forKey: "testType") as? String,
                       let resultEntities = testEntity.value(forKey: "results") as? Set<NSManagedObject> else {
+                    print("Failed to parse test entity: id=\(testEntity.value(forKey: "id") ?? "nil"), date=\(testEntity.value(forKey: "date") ?? "nil"), testType=\(testEntity.value(forKey: "testType") ?? "nil"), results=\(testEntity.value(forKey: "results") ?? "nil")")
                     return nil
                 }
+                
+                print("Parsing test: \(testType) with \(resultEntities.count) results")
                 
                 let results = resultEntities.compactMap { resultEntity -> TestResult? in
                     guard let id = resultEntity.value(forKey: "id") as? UUID,
@@ -619,6 +627,7 @@ public final class BloodTestViewModel: ObservableObject {
                           let unit = resultEntity.value(forKey: "unit") as? String,
                           let referenceRange = resultEntity.value(forKey: "referenceRange") as? String,
                           let explanation = resultEntity.value(forKey: "explanation") as? String else {
+                        print("Failed to parse result entity: name=\(resultEntity.value(forKey: "name") ?? "nil"), value=\(resultEntity.value(forKey: "value") ?? "nil")")
                         return nil
                     }
                     
@@ -632,6 +641,8 @@ public final class BloodTestViewModel: ObservableObject {
                     )
                 }
                 
+                print("Successfully parsed \(results.count) results for test: \(testType)")
+                
                 return BloodTest(
                     id: id,
                     date: date,
@@ -639,8 +650,11 @@ public final class BloodTestViewModel: ObservableObject {
                     results: results
                 )
             }
+            
+            print("Successfully loaded \(bloodTests.count) blood tests from Core Data")
             errorMessage = nil
         } catch {
+            print("Failed to load test data: \(error)")
             errorMessage = "Failed to load test data: \(error.localizedDescription)"
         }
     }

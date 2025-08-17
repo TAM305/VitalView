@@ -3,6 +3,7 @@ import SwiftUI
 struct TrendsTabView: View {
     enum TrendsKind: String, CaseIterable { case health = "Health", blood = "Blood" }
     @State private var selected: TrendsKind = .health
+    @EnvironmentObject var bloodTestViewModel: BloodTestViewModel
     
     var body: some View {
         VStack(spacing: 16) {
@@ -20,7 +21,7 @@ struct TrendsTabView: View {
                     HealthTrendsView()
                 } else {
                     BloodTestTrendsView(
-                        viewModel: BloodTestViewModel(context: PersistenceController.shared.container.viewContext),
+                        viewModel: bloodTestViewModel,
                         onClose: { selected = .health }
                     )
                 }
@@ -34,4 +35,5 @@ struct TrendsTabView: View {
 
 #Preview {
     TrendsTabView()
+        .environmentObject(BloodTestViewModel(context: PersistenceController.shared.container.viewContext))
 }

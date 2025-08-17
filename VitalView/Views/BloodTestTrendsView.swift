@@ -36,6 +36,22 @@ struct BloodTestTrendsView: View {
         }
     }
     
+    private var testCategory: String {
+        switch selectedTest {
+        // Complete Blood Count (CBC) Tests
+        case "WBC", "NEUTROPHILS", "NEUTROPHILS %", "NEUTROPHILS #", "LYMPHS %", "LYMPHS #", "MONOS", "MONOS %", "MONOS #", "EOS", "EOS %", "EOS #", "BASOS %", "HGB", "MCV", "MCH", "MCHC", "RDW", "PLATELET COUNT", "MPV":
+            return "Complete Blood Count (CBC)"
+        
+        // Comprehensive Metabolic Panel (CMP) Tests
+        case "GLUCOSE", "UREA NITROGEN", "CREATININE", "SODIUM", "POTASSIUM", "CHLORIDE", "ECO2", "ANION GAP", "CALCIUM", "TOTAL PROTEIN", "ALBUMIN", "AST", "ALKALINE PHOSPHATASE", "BILIRUBIN TOTAL":
+            return "Comprehensive Metabolic Panel (CMP)"
+        
+        // Default case
+        default:
+            return "General Lab Test"
+        }
+    }
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
@@ -108,15 +124,28 @@ struct BloodTestTrendsView: View {
                     .padding(.horizontal)
                     
                     // Add button to show test panels
-                    Button(action: { showingTestPanels = true }) {
-                        HStack {
-                            Image(systemName: "list.bullet")
-                            Text("View Test Panels")
+                    HStack(spacing: 12) {
+                        Button(action: { showingTestPanels = true }) {
+                            HStack {
+                                Image(systemName: "list.bullet")
+                                Text("View Test Panels")
+                            }
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
                         }
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
+                        
+                        Button(action: { refreshData() }) {
+                            HStack {
+                                Image(systemName: "arrow.clockwise")
+                                Text("Refresh")
+                            }
+                            .padding()
+                            .background(Color.green)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                        }
                     }
                     .padding(.horizontal)
                 }
@@ -195,6 +224,13 @@ struct BloodTestTrendsView: View {
             
             // Auto-select appropriate time range based on available data
             autoSelectTimeRange()
+            
+            // Refresh data from view model
+            refreshData()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            // Refresh data when app comes to foreground
+            refreshData()
         }
         .sheet(isPresented: $showingTestPanels) {
             NavigationView {
@@ -227,7 +263,16 @@ struct BloodTestTrendsView: View {
         let allTests = Set(viewModel.bloodTests.flatMap { test in
             test.results.map { $0.name }
         })
-        return Array(allTests).sorted()
+        let sortedTests = Array(allTests).sorted()
+        
+        print("=== Blood Trends Debug ===")
+        print("Total blood tests in view model: \(viewModel.bloodTests.count)")
+        print("Available test names: \(sortedTests)")
+        if !viewModel.bloodTests.isEmpty {
+            print("Sample test: \(viewModel.bloodTests.first?.testType ?? "unknown") with \(viewModel.bloodTests.first?.results.count ?? 0) results")
+        }
+        
+        return sortedTests
     }
     
     private func autoSelectTimeRange() {
@@ -259,6 +304,12 @@ struct BloodTestTrendsView: View {
         // For longer time ranges, we want at least 3 data points to show meaningful trends
         let minDataPoints = timeRange == .fiveYears || timeRange == .tenYears ? 3 : 2
         return filteredTests.count >= minDataPoints
+    }
+    
+    private func refreshData() {
+        // Refresh data from the view model to ensure newly imported data is visible
+        viewModel.loadTests()
+        print("Refreshed data from view model. Total tests: \(viewModel.bloodTests.count)")
     }
 }
 
@@ -788,193 +839,280 @@ struct BloodTimeRangeButton: View {
 struct BloodTestExplanationView: View {
     let testName: String
     
+    private var testCategory: String {
+        switch testName {
+        // Complete Blood Count (CBC) Tests
+        case "WBC", "NEUTROPHILS", "NEUTROPHILS %", "NEUTROPHILS #", "LYMPHS %", "LYMPHS #", "MONOS", "MONOS %", "MONOS #", "EOS", "EOS %", "EOS #", "BASOS %", "HGB", "MCV", "MCH", "MCHC", "RDW", "PLATELET COUNT", "MPV":
+            return "Complete Blood Count (CBC)"
+        
+        // Comprehensive Metabolic Panel (CMP) Tests
+        case "GLUCOSE", "UREA NITROGEN", "CREATININE", "SODIUM", "POTASSIUM", "CHLORIDE", "ECO2", "ANION GAP", "CALCIUM", "TOTAL PROTEIN", "ALBUMIN", "AST", "ALKALINE PHOSPHATASE", "BILIRUBIN TOTAL":
+            return "Comprehensive Metabolic Panel (CMP)"
+        
+        // Default case
+        default:
+            return "General Lab Test"
+        }
+    }
+    
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             HStack {
                 Image(systemName: "info.circle.fill")
                     .foregroundColor(.blue)
-                    .font(.title3)
+                    .font(.title2)
                 
-                Text("About \(testName)")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.primary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("About \(testName)")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                    
+                    Text(testCategory)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(Color(.systemGray5))
+                        .cornerRadius(4)
+                }
                 
                 Spacer()
             }
             
-            VStack(alignment: .leading, spacing: 8) {
-                Text(testDescription)
-                    .font(.caption)
-                    .foregroundColor(.primary)
-                    .multilineTextAlignment(.leading)
+            VStack(alignment: .leading, spacing: 16) {
+                // Test Description
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("What it measures:")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                    
+                    Text(testDescription)
+                        .font(.body)
+                        .foregroundColor(.primary)
+                        .multilineTextAlignment(.leading)
+                        .lineSpacing(4)
+                }
                 
+                // Normal Range
                 if let normalRange = testNormalRange {
-                    HStack {
+                    VStack(alignment: .leading, spacing: 8) {
                         Text("Normal Range:")
-                            .font(.caption)
-                            .fontWeight(.medium)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
                             .foregroundColor(.primary)
                         
                         Text(normalRange)
-                            .font(.caption)
+                            .font(.body)
                             .foregroundColor(.secondary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
                     }
                 }
                 
+                // Health Significance
                 if let healthSignificance = testHealthSignificance {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 8) {
                         Text("Health Significance:")
-                            .font(.caption)
-                            .fontWeight(.medium)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
                             .foregroundColor(.primary)
                         
                         Text(healthSignificance)
-                            .font(.caption)
+                            .font(.body)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.leading)
+                            .lineSpacing(4)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
                     }
+                }
+                
+                // Interpretation Tip
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("💡 Interpretation Tip:")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                    
+                    Text("Compare your result to the normal range above. Results outside the normal range may indicate health conditions that require medical attention. Always discuss abnormal results with your healthcare provider for proper interpretation and follow-up.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.leading)
+                        .lineSpacing(4)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(8)
                 }
             }
             .padding()
-            .background(Color(.systemGray6))
-            .cornerRadius(8)
+            .background(Color(.systemBackground))
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color(.systemGray4), lineWidth: 1)
+            )
         }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(16)
     }
     
     private var testDescription: String {
         switch testName {
-        case "Glucose":
-            return "Glucose is the primary sugar in your blood and the main source of energy for your body's cells. It's regulated by insulin and other hormones."
-        case "Hemoglobin A1c":
-            return "Hemoglobin A1c measures your average blood sugar levels over the past 2-3 months. It's a key indicator of long-term glucose control."
-        case "Cholesterol (Total)":
-            return "Total cholesterol measures the overall amount of cholesterol in your blood, including both 'good' (HDL) and 'bad' (LDL) cholesterol."
-        case "HDL Cholesterol":
-            return "HDL (High-Density Lipoprotein) is known as 'good' cholesterol. It helps remove excess cholesterol from your bloodstream."
-        case "LDL Cholesterol":
-            return "LDL (Low-Density Lipoprotein) is known as 'bad' cholesterol. High levels can lead to plaque buildup in arteries."
-        case "Triglycerides":
-            return "Triglycerides are a type of fat found in your blood. High levels can increase your risk of heart disease and stroke."
-        case "Creatinine":
-            return "Creatinine is a waste product filtered by your kidneys. Levels help assess kidney function and muscle mass."
-        case "BUN (Blood Urea Nitrogen)":
-            return "BUN measures the amount of nitrogen in your blood from urea, a waste product filtered by your kidneys."
-        case "Sodium":
-            return "Sodium is an electrolyte that helps regulate fluid balance, blood pressure, and nerve function in your body."
-        case "Potassium":
-            return "Potassium is an electrolyte crucial for heart function, muscle contractions, and maintaining fluid balance."
-        case "Chloride":
-            return "Chloride is an electrolyte that works with sodium and potassium to maintain fluid balance and acid-base balance."
-        case "CO2 (Bicarbonate)":
-            return "CO2/Bicarbonate helps maintain your body's acid-base balance and is important for respiratory function."
-        case "Calcium":
-            return "Calcium is essential for strong bones, muscle function, nerve transmission, and blood clotting."
-        case "Phosphorus":
-            return "Phosphorus works with calcium to build strong bones and teeth, and is involved in energy production."
-        case "Magnesium":
-            return "Magnesium is involved in over 300 biochemical reactions, including muscle and nerve function, blood sugar control, and blood pressure regulation."
-        case "Iron":
-            return "Iron is essential for making hemoglobin, which carries oxygen in your blood. It's crucial for energy production and immune function."
-        case "Ferritin":
-            return "Ferritin stores iron in your body. Low levels can indicate iron deficiency, while high levels may indicate inflammation or iron overload."
-        case "Vitamin D":
-            return "Vitamin D helps your body absorb calcium, supports immune function, and is important for bone health and muscle function."
-        case "Vitamin B12":
-            return "Vitamin B12 is essential for nerve function, red blood cell formation, and DNA synthesis. It's particularly important for energy and brain health."
-        case "Folate (Vitamin B9)":
-            return "Folate is crucial for cell division, DNA synthesis, and red blood cell formation. It's especially important during pregnancy."
-        case "TSH (Thyroid Stimulating Hormone)":
-            return "TSH regulates thyroid hormone production. It's the primary test for thyroid function and can detect both overactive and underactive thyroid."
-        case "T4 (Thyroxine)":
-            return "T4 is the main thyroid hormone that regulates metabolism, energy production, and many body functions."
-        case "T3 (Triiodothyronine)":
-            return "T3 is the active form of thyroid hormone that affects metabolism, heart rate, and body temperature."
-        case "PSA (Prostate Specific Antigen)":
-            return "PSA is a protein produced by the prostate gland. Elevated levels may indicate prostate conditions, though not necessarily cancer."
-        case "CRP (C-Reactive Protein)":
-            return "CRP is a marker of inflammation in your body. High levels may indicate infection, injury, or chronic inflammatory conditions."
-        case "ESR (Erythrocyte Sedimentation Rate)":
-            return "ESR measures how quickly red blood cells settle in a test tube. It's a non-specific marker of inflammation or infection."
-        case "WBC (White Blood Cell Count)":
-            return "White blood cells are part of your immune system. The count helps identify infection, inflammation, or immune system disorders."
-        case "RBC (Red Blood Cell Count)":
-            return "Red blood cells carry oxygen throughout your body. The count helps diagnose anemia and other blood disorders."
-        case "Hemoglobin":
-            return "Hemoglobin carries oxygen in your red blood cells. It's crucial for energy production and overall health."
-        case "Hematocrit":
-            return "Hematocrit measures the percentage of your blood that consists of red blood cells. It helps diagnose anemia and other conditions."
-        case "Platelets":
-            return "Platelets help your blood clot and stop bleeding. Abnormal levels can affect your body's ability to form blood clots."
+        // Complete Blood Count (CBC) Tests
+        case "WBC":
+            return "White Blood Cell count measures your body's infection-fighting cells. WBCs are your immune system's first line of defense against infections, bacteria, and viruses."
+        case "NEUTROPHILS":
+            return "Neutrophils are the most abundant type of white blood cell, specializing in fighting bacterial infections. They quickly respond to infections and are crucial for acute inflammatory responses."
+        case "NEUTROPHILS %":
+            return "Neutrophil percentage shows the proportion of neutrophils in your total white blood cell count. This helps evaluate your body's ability to fight bacterial infections."
+        case "NEUTROPHILS #":
+            return "Absolute neutrophil count is the actual number of neutrophils in your blood. This is more accurate than percentage for assessing infection risk and immune function."
+        case "LYMPHS %":
+            return "Lymphocyte percentage indicates the proportion of lymphocytes in your white blood cells. Lymphocytes are key players in your immune system, fighting viruses and producing antibodies."
+        case "LYMPHS #":
+            return "Absolute lymphocyte count shows the actual number of lymphocytes in your blood. This helps assess immune function and can indicate viral infections or immune disorders."
+        case "MONOS":
+            return "Monocytes are white blood cells that help clean up dead cells and fight infections. They can transform into macrophages to engulf and destroy harmful substances."
+        case "MONOS %":
+            return "Monocyte percentage shows the proportion of monocytes in your white blood cell count. Elevated levels may indicate chronic inflammation or certain infections."
+        case "MONOS #":
+            return "Absolute monocyte count is the actual number of monocytes in your blood. This helps evaluate your body's inflammatory response and immune function."
+        case "EOS":
+            return "Eosinophils are white blood cells that fight parasitic infections and are involved in allergic reactions. They release chemicals that help control inflammation."
+        case "EOS %":
+            return "Eosinophil percentage indicates the proportion of eosinophils in your white blood cells. Elevated levels may suggest allergies, parasitic infections, or certain blood disorders."
+        case "EOS #":
+            return "Absolute eosinophil count shows the actual number of eosinophils in your blood. This helps diagnose allergic reactions, parasitic infections, and certain inflammatory conditions."
+        case "BASOS %":
+            return "Basophil percentage shows the proportion of basophils in your white blood cells. Basophils release histamine and other chemicals involved in allergic and inflammatory responses."
+        case "HGB":
+            return "Hemoglobin is the oxygen-carrying protein in red blood cells. It transports oxygen from your lungs to tissues throughout your body and carries carbon dioxide back to your lungs."
+        case "MCV":
+            return "Mean Corpuscular Volume measures the average size of your red blood cells. This helps diagnose different types of anemia and blood disorders."
+        case "MCH":
+            return "Mean Corpuscular Hemoglobin measures the average amount of hemoglobin in each red blood cell. This helps evaluate the quality of your red blood cells."
+        case "MCHC":
+            return "Mean Corpuscular Hemoglobin Concentration measures the concentration of hemoglobin in your red blood cells. This helps diagnose different types of anemia."
+        case "RDW":
+            return "Red Cell Distribution Width measures the variation in size of your red blood cells. Elevated levels may indicate anemia or other blood disorders."
+        case "PLATELET COUNT":
+            return "Platelet count measures the number of platelets in your blood. Platelets are essential for blood clotting and preventing excessive bleeding."
+        case "MPV":
+            return "Mean Platelet Volume measures the average size of your platelets. This helps evaluate platelet function and can indicate certain blood disorders."
+        
+        // Comprehensive Metabolic Panel (CMP) Tests
+        case "GLUCOSE":
+            return "Glucose is your body's primary source of energy. It's regulated by insulin and other hormones, and levels indicate how well your body manages blood sugar."
+        case "UREA NITROGEN":
+            return "Blood Urea Nitrogen (BUN) measures the amount of nitrogen from urea in your blood. It's a key indicator of kidney function and protein metabolism."
+        case "CREATININE":
+            return "Creatinine is a waste product filtered by your kidneys. Levels help assess kidney function and can indicate kidney disease or muscle damage."
+        case "SODIUM":
+            return "Sodium is the main electrolyte in your blood, essential for fluid balance, nerve function, and muscle contractions. It's crucial for maintaining blood pressure."
+        case "POTASSIUM":
+            return "Potassium is a critical electrolyte for heart function, muscle contractions, and nerve transmission. It's essential for maintaining normal heart rhythm."
+        case "CHLORIDE":
+            return "Chloride is an electrolyte that works with sodium and potassium to maintain fluid balance and acid-base balance in your body."
+        case "ECO2":
+            return "Bicarbonate (CO2) helps maintain your body's acid-base balance. It's crucial for respiratory function and indicates how well your body handles acid-base regulation."
+        case "ANION GAP":
+            return "Anion gap measures the balance of electrolytes in your blood. It helps detect acid-base disorders and can indicate metabolic problems."
+        case "CALCIUM":
+            return "Calcium is essential for strong bones, muscle function, nerve transmission, and blood clotting. It's one of the most important minerals in your body."
+        case "TOTAL PROTEIN":
+            return "Total protein measures the combined amount of albumin and globulins in your blood. It reflects your nutritional status and liver/kidney function."
+        case "ALBUMIN":
+            return "Albumin is the main protein in your blood, essential for maintaining fluid balance and transporting hormones, vitamins, and medications throughout your body."
+        case "AST":
+            return "Aspartate Aminotransferase (AST) is an enzyme found in your liver, heart, and muscles. Elevated levels can indicate liver damage, heart problems, or muscle injury."
+        case "ALKALINE PHOSPHATASE":
+            return "Alkaline phosphatase is an enzyme found in your liver, bones, and other tissues. Elevated levels may indicate liver disease, bone disorders, or certain cancers."
+        case "BILIRUBIN TOTAL":
+            return "Total bilirubin measures the amount of bilirubin in your blood. Bilirubin is a waste product from red blood cell breakdown and is processed by your liver."
+        
+        // Default case for other tests
         default:
-            return "This blood test measures important markers of your health. Regular monitoring helps track changes over time and identify potential health issues early."
+            return "This blood test measures important health markers in your body. Results help healthcare providers assess your overall health and detect potential health issues."
         }
     }
     
     private var testNormalRange: String? {
         switch testName {
-        case "Glucose":
-            return "70-100 mg/dL (fasting), <140 mg/dL (2 hours after eating)"
-        case "Hemoglobin A1c":
-            return "<5.7% (normal), 5.7-6.4% (prediabetes), ≥6.5% (diabetes)"
-        case "Cholesterol (Total)":
-            return "<200 mg/dL (desirable), 200-239 mg/dL (borderline), ≥240 mg/dL (high)"
-        case "HDL Cholesterol":
-            return "≥60 mg/dL (protective), 40-59 mg/dL (normal), <40 mg/dL (low)"
-        case "LDL Cholesterol":
-            return "<100 mg/dL (optimal), 100-129 mg/dL (near optimal), 130-159 mg/dL (borderline high)"
-        case "Triglycerides":
-            return "<150 mg/dL (normal), 150-199 mg/dL (borderline high), ≥200 mg/dL (high)"
-        case "Creatinine":
-            return "0.7-1.3 mg/dL (men), 0.6-1.1 mg/dL (women)"
-        case "BUN (Blood Urea Nitrogen)":
-            return "7-20 mg/L"
-        case "Sodium":
-            return "135-145 mEq/L"
-        case "Potassium":
-            return "3.5-5.0 mEq/L"
-        case "Chloride":
-            return "96-106 mEq/L"
-        case "CO2 (Bicarbonate)":
-            return "22-28 mEq/L"
-        case "Calcium":
-            return "8.5-10.5 mg/dL"
-        case "Phosphorus":
-            return "2.5-4.5 mg/dL"
-        case "Magnesium":
-            return "1.5-2.5 mg/dL"
-        case "Iron":
-            return "60-170 mcg/dL (men), 50-170 mcg/dL (women)"
-        case "Ferritin":
-            return "20-250 ng/mL (men), 10-120 ng/mL (women)"
-        case "Vitamin D":
-            return "30-100 ng/mL (sufficient), 20-29 ng/mL (insufficient), <20 ng/mL (deficient)"
-        case "Vitamin B12":
-            return "200-900 pg/mL"
-        case "Folate (Vitamin B9)":
-            return "2-20 ng/mL"
-        case "TSH (Thyroid Stimulating Hormone)":
-            return "0.4-4.0 mIU/L"
-        case "T4 (Thyroxine)":
-            return "0.8-1.8 ng/dL"
-        case "T3 (Triiodothyronine)":
-            return "80-200 ng/dL"
-        case "PSA (Prostate Specific Antigen)":
-            return "<4.0 ng/mL (normal), 4.0-10.0 ng/mL (borderline), >10.0 ng/mL (elevated)"
-        case "CRP (C-Reactive Protein)":
-            return "<3.0 mg/L (normal), 3.0-10.0 mg/L (moderate), >10.0 mg/L (high)"
-        case "ESR (Erythrocyte Sedimentation Rate)":
-            return "0-15 mm/hr (men), 0-20 mm/hr (women)"
-        case "WBC (White Blood Cell Count)":
-            return "4,500-11,000 cells/μL"
-        case "RBC (Red Blood Cell Count)":
-            return "4.5-5.9 million cells/μL (men), 4.1-5.1 million cells/μL (women)"
-        case "Hemoglobin":
-            return "13.5-17.5 g/dL (men), 12.0-15.5 g/dL (women)"
-        case "Hematocrit":
-            return "41-50% (men), 36-46% (women)"
-        case "Platelets":
-            return "150,000-450,000 cells/μL"
+        // Complete Blood Count (CBC) Ranges
+        case "WBC":
+            return "4,000–11,000 /µL"
+        case "NEUTROPHILS %":
+            return "40–70%"
+        case "NEUTROPHILS #":
+            return "1.5–8.0 ×10³/µL"
+        case "LYMPHS %":
+            return "20–40%"
+        case "LYMPHS #":
+            return "1.0–3.0 ×10³/µL"
+        case "MONOS %":
+            return "2–8%"
+        case "MONOS #":
+            return "0.2–0.8 ×10³/µL"
+        case "EOS %":
+            return "1–4%"
+        case "EOS #":
+            return "0.0–0.5 ×10³/µL"
+        case "BASOS %":
+            return "0–1%"
+        case "HGB":
+            return "Men: 13.5–17.5 g/dL, Women: 12.0–15.5 g/dL"
+        case "MCV":
+            return "80–100 fL"
+        case "MCH":
+            return "27–33 pg"
+        case "MCHC":
+            return "32–36 g/dL"
+        case "RDW":
+            return "11.5–14.5%"
+        case "PLATELET COUNT":
+            return "150,000–450,000 /µL"
+        case "MPV":
+            return "7.5–11.5 fL"
+        
+        // Comprehensive Metabolic Panel (CMP) Ranges
+        case "GLUCOSE":
+            return "70–99 mg/dL (fasting)"
+        case "UREA NITROGEN":
+            return "7–20 mg/dL"
+        case "CREATININE":
+            return "0.6–1.3 mg/dL"
+        case "SODIUM":
+            return "135–145 mEq/L"
+        case "POTASSIUM":
+            return "3.5–5.0 mEq/L"
+        case "CHLORIDE":
+            return "98–106 mEq/L"
+        case "ECO2":
+            return "22–29 mEq/L"
+        case "ANION GAP":
+            return "8–16 mEq/L"
+        case "CALCIUM":
+            return "8.5–10.5 mg/dL"
+        case "TOTAL PROTEIN":
+            return "6.0–8.3 g/dL"
+        case "ALBUMIN":
+            return "3.5–5.0 g/dL"
+        case "AST":
+            return "10–40 IU/L"
+        case "ALKALINE PHOSPHATASE":
+            return "44–147 IU/L"
+        case "BILIRUBIN TOTAL":
+            return "0.1–1.2 mg/dL"
+        
+        // Default case
         default:
             return nil
         }
@@ -982,70 +1120,33 @@ struct BloodTestExplanationView: View {
     
     private var testHealthSignificance: String? {
         switch testName {
-        case "Glucose":
-            return "High levels may indicate diabetes or prediabetes. Low levels can cause dizziness, confusion, and fainting. Regular monitoring is crucial for diabetes management."
-        case "Hemoglobin A1c":
-            return "This test provides a long-term view of blood sugar control. Higher levels increase risk of diabetes complications affecting eyes, kidneys, and nerves."
-        case "Cholesterol (Total)":
-            return "High cholesterol increases risk of heart disease and stroke. Lifestyle changes and medication can help manage levels and reduce cardiovascular risk."
-        case "HDL Cholesterol":
-            return "Higher HDL levels are protective against heart disease. Exercise, healthy fats, and avoiding smoking can help increase HDL levels."
-        case "LDL Cholesterol":
-            return "High LDL levels contribute to artery plaque buildup. Diet, exercise, and medication can help lower LDL and reduce heart disease risk."
-        case "Triglycerides":
-            return "High levels increase heart disease risk. Reducing sugar, refined carbs, and alcohol while increasing exercise can help lower triglycerides."
-        case "Creatinine":
-            return "High levels may indicate kidney problems. Regular monitoring helps track kidney function and detect issues early."
-        case "BUN (Blood Urea Nitrogen)":
-            return "High levels may indicate kidney dysfunction, dehydration, or high protein intake. Low levels may indicate liver disease or malnutrition."
-        case "Sodium":
-            return "Imbalances can affect fluid balance, blood pressure, and nerve function. Dehydration and certain medications can affect sodium levels."
-        case "Potassium":
-            return "Critical for heart rhythm and muscle function. High or low levels can cause serious heart problems and require immediate attention."
-        case "Chloride":
-            return "Works with sodium to maintain fluid balance. Changes often parallel sodium changes and help assess acid-base balance."
-        case "CO2 (Bicarbonate)":
-            return "Helps maintain body's acid-base balance. Low levels may indicate metabolic acidosis, high levels may indicate metabolic alkalosis."
-        case "Calcium":
-            return "Essential for bone health, muscle function, and nerve transmission. High or low levels can affect bone density and cause muscle problems."
-        case "Phosphorus":
-            return "Works with calcium for bone health. Kidney disease can cause high levels, while malnutrition can cause low levels."
-        case "Magnesium":
-            return "Involved in hundreds of biochemical reactions. Low levels can cause muscle cramps, irregular heartbeat, and other symptoms."
-        case "Iron":
-            return "Essential for oxygen transport and energy production. Low levels cause anemia, high levels can damage organs."
-        case "Ferritin":
-            return "Indicates iron stores. Low levels suggest iron deficiency, high levels may indicate inflammation or iron overload."
-        case "Vitamin D":
-            return "Crucial for bone health and immune function. Deficiency is common and linked to bone problems, immune issues, and chronic diseases."
-        case "Vitamin B12":
-            return "Essential for nerve function and red blood cell formation. Deficiency can cause anemia, nerve damage, and cognitive problems."
-        case "Folate (Vitamin B9)":
-            return "Critical for cell division and DNA synthesis. Deficiency during pregnancy can cause birth defects."
-        case "TSH (Thyroid Stimulating Hormone)":
-            return "Primary thyroid function test. High TSH suggests underactive thyroid, low TSH suggests overactive thyroid."
-        case "T4 (Thyroxine)":
-            return "Main thyroid hormone. Low levels cause hypothyroidism symptoms, high levels cause hyperthyroidism symptoms."
-        case "T3 (Triiodothyronine)":
-            return "Active thyroid hormone. Changes can indicate thyroid problems and affect metabolism and energy levels."
-        case "PSA (Prostate Specific Antigen)":
-            return "Prostate health marker. Elevated levels may indicate prostate enlargement, inflammation, or cancer. Regular monitoring is important for men."
-        case "CRP (C-Reactive Protein)":
-            return "Inflammation marker. High levels may indicate infection, injury, or chronic inflammatory conditions like heart disease."
-        case "ESR (Erythrocyte Sedimentation Rate)":
-            return "Non-specific inflammation marker. High levels may indicate infection, inflammation, or certain cancers."
-        case "WBC (White Blood Cell Count)":
-            return "Immune system indicator. High levels suggest infection or inflammation, low levels may indicate immune system problems."
-        case "RBC (Red Blood Cell Count)":
-            return "Oxygen transport indicator. Low levels cause anemia, high levels may indicate dehydration or blood disorders."
-        case "Hemoglobin":
-            return "Oxygen-carrying protein. Low levels cause fatigue and shortness of breath, high levels may indicate dehydration or blood disorders."
-        case "Hematocrit":
-            return "Blood cell percentage. Low levels suggest anemia, high levels may indicate dehydration or blood disorders."
-        case "Platelets":
-            return "Blood clotting cells. Low levels increase bleeding risk, high levels increase clotting risk."
+        // CBC Tests - Health Significance
+        case "WBC":
+            return "High WBC may indicate infection, inflammation, or blood disorders. Low WBC may suggest immune suppression, bone marrow problems, or certain medications."
+        case "NEUTROPHILS":
+            return "High neutrophils often indicate bacterial infections or inflammation. Low neutrophils (neutropenia) increase infection risk and may indicate bone marrow problems."
+        case "HGB":
+            return "Low hemoglobin indicates anemia, which can cause fatigue, weakness, and shortness of breath. High levels may suggest dehydration or blood disorders."
+        case "PLATELET COUNT":
+            return "Low platelets increase bleeding risk. High platelets may indicate inflammation, blood disorders, or increased clotting risk."
+        
+        // CMP Tests - Health Significance
+        case "GLUCOSE":
+            return "High glucose may indicate diabetes or prediabetes. Low glucose can cause dizziness, confusion, and in severe cases, unconsciousness."
+        case "CREATININE":
+            return "High creatinine suggests kidney function problems. Low levels may indicate reduced muscle mass or certain medications."
+        case "SODIUM":
+            return "High sodium may indicate dehydration. Low sodium can cause confusion, seizures, and in severe cases, coma."
+        case "POTASSIUM":
+            return "High potassium can cause dangerous heart rhythm problems. Low potassium may cause muscle weakness and heart rhythm issues."
+        case "AST":
+            return "High AST may indicate liver damage, heart problems, or muscle injury. Levels help monitor liver disease progression."
+        case "ALBUMIN":
+            return "Low albumin may indicate malnutrition, liver disease, or kidney problems. It's crucial for maintaining fluid balance and transporting nutrients."
+        
+        // Default case
         default:
-            return "Regular blood test monitoring helps track your health over time, identify potential issues early, and guide preventive healthcare decisions."
+            return "Abnormal results may indicate underlying health conditions. Always discuss results with your healthcare provider for proper interpretation and follow-up."
         }
     }
 }
@@ -1248,3 +1349,4 @@ struct BloodTestPanelCard: View {
         return panelTypes.contains(testName)
     }
 }
+

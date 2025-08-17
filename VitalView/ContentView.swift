@@ -110,6 +110,7 @@ struct ContentView: View {
             NavigationView {
                 LazyView {
                     TrendsTabView()
+                        .environmentObject(viewModel)
                         .navigationTitle("Trends")
                         .navigationBarTitleDisplayMode(.inline)
                 }
