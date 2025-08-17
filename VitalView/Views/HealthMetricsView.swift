@@ -197,7 +197,8 @@ struct HealthMetricsView: View {
             
             let value = sample.quantity.doubleValue(for: HKUnit.percent())
             DispatchQueue.main.async {
-                self.oxygenSaturation = HealthData(value: value, date: sample.endDate)
+                // Store as percentage (0-100) instead of decimal (0.0-1.0)
+                self.oxygenSaturation = HealthData(value: value * 100, date: sample.endDate)
             }
         }
         
