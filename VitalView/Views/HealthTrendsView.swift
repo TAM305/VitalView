@@ -348,11 +348,31 @@ struct HealthTrendsView: View {
                 }
                 
                 let dataPoints = samples.map { sample in
-                    let rawValue = sample.quantity.doubleValue(for: HKUnit.percent())
+                    // Get raw value using the appropriate unit for each metric
+                    let rawValue: Double
+                    switch self.selectedMetric {
+                    case .oxygenSaturation:
+                        rawValue = sample.quantity.doubleValue(for: HKUnit.percent())
+                    case .heartRate, .respiratoryRate:
+                        rawValue = sample.quantity.doubleValue(for: HKUnit(from: "count/min"))
+                    case .bodyTemperature:
+                        rawValue = sample.quantity.doubleValue(for: HKUnit.degreeFahrenheit())
+                    case .heartRateVariability:
+                        rawValue = sample.quantity.doubleValue(for: HKUnit.secondUnit(with: .milli))
+                    case .steps:
+                        rawValue = sample.quantity.doubleValue(for: HKUnit.count())
+                    case .sleepHours:
+                        rawValue = sample.quantity.doubleValue(for: HKUnit.hour())
+                    case .bloodPressure:
+                        rawValue = sample.quantity.doubleValue(for: HKUnit.millimeterOfMercury())
+                    }
+                    
                     let value = self.convertHealthKitValue(sample.quantity, for: self.selectedMetric)
                     
                     if self.selectedMetric == .oxygenSaturation {
                         print("Oxygen sample: raw=\(rawValue), converted=\(value), date=\(sample.endDate)")
+                    } else if self.selectedMetric == .respiratoryRate {
+                        print("Respiratory rate sample: raw=\(rawValue), converted=\(value), date=\(sample.endDate)")
                     }
                     
                     return HealthDataPoint(
