@@ -879,7 +879,7 @@ class BloodTestViewModel: ObservableObject {
     }
     
     private func startMemoryMonitoring() {
-        memoryUsageTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
+        memoryUsageTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { [weak self] _ in
             self?.checkMemoryUsage()
         }
     }
@@ -887,13 +887,15 @@ class BloodTestViewModel: ObservableObject {
     private func checkMemoryUsage() {
         let currentMemory = getCurrentMemoryUsage()
         
-        if currentMemory > 80 * 1024 * 1024 { // 80 MB
+        if currentMemory > 150 * 1024 * 1024 { // 150 MB (increased from 80 MB)
             print("⚠️ High memory usage in BloodTestViewModel: \(currentMemory / 1024 / 1024) MB")
             performMemoryCleanup()
         }
         
-        // Log memory usage periodically
-        print("📊 BloodTestViewModel memory usage: \(currentMemory / 1024 / 1024) MB")
+        // Log memory usage periodically (less frequent)
+        if currentMemory > 100 * 1024 * 1024 { // Only log when above 100 MB
+            print("📊 BloodTestViewModel memory usage: \(currentMemory / 1024 / 1024) MB")
+        }
     }
     
     private func getCurrentMemoryUsage() -> UInt64 {

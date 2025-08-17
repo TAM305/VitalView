@@ -13,7 +13,7 @@ class PersistenceController: ObservableObject {
     private var memoryWarningObserver: NSObjectProtocol?
     private var memoryPressureObserver: NSObjectProtocol?
     private var appStateObserver: NSObjectProtocol?
-    private let memoryThreshold: UInt64 = 100 * 1024 * 1024 // 100 MB threshold
+    private let memoryThreshold: UInt64 = 200 * 1024 * 1024 // 200 MB threshold (increased from 100 MB)
     
     init() {
         container = NSPersistentContainer(name: "BloodWorkData")
@@ -22,7 +22,7 @@ class PersistenceController: ObservableObject {
         let description = NSPersistentStoreDescription()
         description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
         description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
-        description.setOption(true as NSNumber, forKey: NSPersistentStoreFileProtectionKey)
+        description.setOption(FileProtectionType.complete as NSString, forKey: NSPersistentStoreFileProtectionKey)
         
         // Memory optimization options
         description.setOption(NSNumber(value: 1000), forKey: "NSPersistentStoreBatchSize")
@@ -92,8 +92,8 @@ class PersistenceController: ObservableObject {
     }
     
     private func startMemoryMonitoring() {
-        // Monitor memory usage every 5 seconds
-        Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+        // Monitor memory usage every 30 seconds (reduced from 5 seconds)
+        Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { [weak self] _ in
             self?.checkMemoryUsage()
         }
     }
