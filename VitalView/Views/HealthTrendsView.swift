@@ -99,79 +99,139 @@ struct HealthTrendsView: View {
     
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
-                // Header
-                VStack(spacing: 8) {
+            VStack(spacing: 32) {
+                // Header with improved spacing and typography
+                VStack(spacing: 12) {
                     Text("Health Trends")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
                         .foregroundColor(.primary)
+                        .multilineTextAlignment(.center)
                     
                     Text("Monitor your health metrics over time")
-                        .font(.subheadline)
+                        .font(.title3)
                         .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
                 }
-                .padding(.top)
+                .padding(.top, 24)
+                .padding(.horizontal, 20)
                 
-                // Metric Selection
-                ScrollView(.horizontal, showsIndicators: false) {
+                // Metric Selection with enhanced visual design
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Select Metric")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .padding(.horizontal, 20)
+                    
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 16) {
+                            ForEach(HealthMetric.allCases, id: \.self) { metric in
+                                MetricButton(
+                                    metric: metric,
+                                    isSelected: selectedMetric == metric
+                                ) {
+                                    selectedMetric = metric
+                                    loadHealthData()
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                    }
+                    .scrollDisabled(false) // Ensure horizontal scrolling works
+                }
+                
+                // Time Range Selection with improved visual separation
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Time Period")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .padding(.horizontal, 20)
+                    
                     HStack(spacing: 12) {
-                        ForEach(HealthMetric.allCases, id: \.self) { metric in
-                            MetricButton(
-                                metric: metric,
-                                isSelected: selectedMetric == metric
+                        ForEach(TimeRange.allCases, id: \.self) { range in
+                            TimeRangeButton(
+                                range: range,
+                                isSelected: timeRange == range
                             ) {
-                                selectedMetric = metric
+                                timeRange = range
                                 loadHealthData()
                             }
                         }
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, 20)
                 }
                 
-                // Time Range Selection
-                HStack(spacing: 8) {
-                    ForEach(TimeRange.allCases, id: \.self) { range in
-                        TimeRangeButton(
-                            range: range,
-                            isSelected: timeRange == range
-                        ) {
-                            timeRange = range
-                            loadHealthData()
-                        }
-                    }
-                }
-                .padding(.horizontal)
-                
-                // Main Content
+                // Main Content with better organization and spacing
                 if !isAuthorized {
                     HealthKitAuthorizationView {
                         requestHealthKitAuthorization()
                     }
+                    .padding(.horizontal, 20)
                 } else if isLoading {
-                    ProgressView("Loading health data...")
-                        .frame(height: 200)
+                    VStack(spacing: 20) {
+                        ProgressView()
+                            .scaleEffect(1.2)
+                        
+                        Text("Loading health data...")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(height: 200)
+                    .frame(maxWidth: .infinity)
+                    .background(Color(.systemBackground))
+                    .cornerRadius(16)
+                    .padding(.horizontal, 20)
                 } else if healthData.isEmpty {
                     EmptyHealthDataView(metric: selectedMetric)
+                        .padding(.horizontal, 20)
                 } else {
-                    // Health Chart
-                    HealthChartView(data: healthData, metric: selectedMetric)
-                        .frame(height: 300)
-                        .padding(.horizontal)
+                    // Health Chart with enhanced presentation
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Trend Chart")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                            .padding(.horizontal, 20)
+                        
+                        HealthChartView(data: healthData, metric: selectedMetric)
+                            .frame(height: 300)
+                            .background(Color(.systemBackground))
+                            .cornerRadius(16)
+                            .padding(.horizontal, 20)
+                    }
                     
-                    // Health Statistics
-                    HealthStatisticsView(data: healthData, metric: selectedMetric)
-                        .padding(.horizontal)
+                    // Health Statistics with better visual separation
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Statistics")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                            .padding(.horizontal, 20)
+                        
+                        HealthStatisticsView(data: healthData, metric: selectedMetric)
+                            .padding(.horizontal, 20)
+                    }
                     
-                    // Health Metric Explanation
-                    HealthMetricExplanationView(metric: selectedMetric)
-                        .padding(.horizontal)
+                    // Health Metric Explanation with enhanced presentation
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("About \(selectedMetric.rawValue)")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                            .padding(.horizontal, 20)
+                        
+                        HealthMetricExplanationView(metric: selectedMetric)
+                            .padding(.horizontal, 20)
+                    }
                 }
                 
                 // Bottom spacing for better scrolling
-                Spacer(minLength: 100)
+                Spacer(minLength: 120)
             }
         }
+        .scrollIndicators(.visible) // Show scroll indicators for better UX
+        .scrollDismissesKeyboard(.immediately) // Dismiss keyboard when scrolling
         .background(Color(.systemGroupedBackground).ignoresSafeArea())
         .onAppear {
             checkHealthKitAuthorization()
@@ -390,26 +450,31 @@ struct MetricButton: View {
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 8) {
+            VStack(spacing: 10) {
                 Image(systemName: metric.icon)
-                    .font(.system(size: 24, weight: .medium))
+                    .font(.system(size: 28, weight: .medium))
                     .foregroundColor(isSelected ? .white : metric.color)
+                    .frame(height: 32)
                 
                 Text(metric.rawValue)
                     .font(.caption)
-                    .fontWeight(.medium)
+                    .fontWeight(.semibold)
                     .foregroundColor(isSelected ? .white : .primary)
                     .multilineTextAlignment(.center)
+                    .lineLimit(2)
             }
-            .frame(width: 80, height: 70)
+            .frame(width: 90, height: 80)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? metric.color : Color(.systemGray6))
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(isSelected ? metric.color : Color(.systemBackground))
+                    .shadow(color: isSelected ? metric.color.opacity(0.3) : Color.black.opacity(0.05), radius: isSelected ? 8 : 4, x: 0, y: 2)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? metric.color : Color.clear, lineWidth: 2)
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(isSelected ? metric.color : Color(.systemGray4), lineWidth: isSelected ? 0 : 1)
             )
+            .scaleEffect(isSelected ? 1.05 : 1.0)
+            .animation(.easeInOut(duration: 0.2), value: isSelected)
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -423,15 +488,22 @@ struct TimeRangeButton: View {
     var body: some View {
         Button(action: action) {
             Text(range.rawValue)
-                .font(.caption)
+                .font(.subheadline)
                 .fontWeight(.medium)
                 .foregroundColor(isSelected ? .white : .primary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
                 .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(isSelected ? .blue : Color(.systemGray6))
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(isSelected ? .blue : Color(.systemBackground))
+                        .shadow(color: isSelected ? .blue.opacity(0.3) : Color.black.opacity(0.05), radius: isSelected ? 6 : 3, x: 0, y: 2)
                 )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(isSelected ? .blue : Color(.systemGray4), lineWidth: isSelected ? 0 : 1)
+                )
+                .scaleEffect(isSelected ? 1.02 : 1.0)
+                .animation(.easeInOut(duration: 0.2), value: isSelected)
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -441,31 +513,38 @@ struct HealthKitAuthorizationView: View {
     let onAuthorize: () -> Void
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 24) {
             Image(systemName: "heart.text.square")
-                .font(.system(size: 60))
+                .font(.system(size: 70))
                 .foregroundColor(.blue)
+                .padding(.top, 20)
             
-            Text("HealthKit Access Required")
-                .font(.title2)
-                .fontWeight(.semibold)
-                .foregroundColor(.primary)
-            
-            Text("To view your health trends, please allow access to your health data in the Health app.")
-                .font(.body)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+            VStack(spacing: 16) {
+                Text("HealthKit Access Required")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.center)
+                
+                Text("To view your health trends, please allow access to your health data in the Health app. This enables us to display your vital signs and create meaningful health insights.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(4)
+                    .padding(.horizontal, 20)
+            }
             
             Button("Grant Access") {
                 onAuthorize()
             }
             .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .padding(.bottom, 20)
         }
-        .padding()
+        .frame(maxWidth: .infinity)
         .background(Color(.systemBackground))
-        .cornerRadius(16)
-        .padding(.horizontal)
+        .cornerRadius(20)
+        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 4)
     }
 }
 
@@ -473,61 +552,300 @@ struct EmptyHealthDataView: View {
     let metric: HealthTrendsView.HealthMetric
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 24) {
             Image(systemName: metric.icon)
-                .font(.system(size: 60))
+                .font(.system(size: 70))
                 .foregroundColor(.secondary)
+                .padding(.top, 20)
             
-            Text("No \(metric.rawValue) Data")
-                .font(.title2)
-                .fontWeight(.semibold)
-                .foregroundColor(.primary)
+            VStack(spacing: 16) {
+                Text("No \(metric.rawValue) Data Available")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.center)
+                
+                Text("We couldn't find any \(metric.rawValue.lowercased()) data in your Health app for the selected time period. Try selecting a different time range or ensure your device is recording this health metric.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(4)
+                    .padding(.horizontal, 20)
+            }
             
-            Text("Add \(metric.rawValue.lowercased()) data in the Health app to see trends here.")
-                .font(.body)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+            Spacer(minLength: 20)
         }
-        .padding()
+        .frame(maxWidth: .infinity)
         .background(Color(.systemBackground))
-        .cornerRadius(16)
-        .padding(.horizontal)
+        .cornerRadius(20)
+        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 4)
     }
 }
 
 struct HealthChartView: View {
     let data: [HealthDataPoint]
     let metric: HealthTrendsView.HealthMetric
+    @State private var selectedPoint: HealthDataPoint?
+    @State private var gestureDebounceTimer: Timer?
     
     var body: some View {
-        Chart(data) { point in
-            LineMark(
-                x: .value("Date", point.date),
-                y: .value("Value", point.value)
-            )
-            .foregroundStyle(metric.color)
-            .lineStyle(StrokeStyle(lineWidth: 2))
+        VStack(spacing: 16) {
+            // Chart Header with metric info
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(metric.rawValue)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                    
+                    Text("\(data.count) data points")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                // Current value display
+                if let latest = data.last {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(String(format: "%.1f", latest.value))
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(metric.color)
+                        Text(metric.unit)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
             
-            PointMark(
-                x: .value("Date", point.date),
-                y: .value("Value", point.value)
-            )
-            .foregroundStyle(metric.color)
-            .symbolSize(8)
-        }
-        .chartYScale(domain: .automatic(includesZero: false))
-        .chartXAxis {
-            AxisMarks(values: .stride(by: .day)) { value in
-                AxisGridLine()
-                AxisValueLabel(format: .dateTime.day().month())
+            // Enhanced Chart with optimized gesture handling
+            Chart(data) { point in
+                // Area fill for better visual impact
+                AreaMark(
+                    x: .value("Date", point.date),
+                    y: .value("Value", point.value)
+                )
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [
+                            metric.color.opacity(0.3),
+                            metric.color.opacity(0.1)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                
+                // Main line with enhanced styling
+                LineMark(
+                    x: .value("Date", point.date),
+                    y: .value("Value", point.value)
+                )
+                .foregroundStyle(metric.color)
+                .lineStyle(StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                .interpolationMethod(.catmullRom)
+                
+                // Enhanced point markers
+                PointMark(
+                    x: .value("Date", point.date),
+                    y: .value("Value", point.value)
+                )
+                .foregroundStyle(metric.color)
+                .symbolSize(selectedPoint?.id == point.id ? 12 : 8)
+                .symbol(.circle)
+                .opacity(selectedPoint?.id == point.id ? 1.0 : 0.7)
+            }
+            .chartYScale(domain: .automatic(includesZero: false))
+            .chartXAxis {
+                AxisMarks(values: .stride(by: getTimeStride())) { value in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [2, 2]))
+                        .foregroundStyle(Color(.systemGray4))
+                    
+                    if let date = value.as(Date.self) {
+                        AxisValueLabel {
+                            Text(formatDate(date))
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            }
+            .chartYAxis {
+                AxisMarks { value in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
+                        .foregroundStyle(Color(.systemGray4))
+                    
+                    AxisValueLabel {
+                        if let doubleValue = value.as(Double.self) {
+                            Text(formatYAxisValue(doubleValue))
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            }
+            .chartOverlay { proxy in
+                Rectangle()
+                    .fill(.clear)
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 10) // Increased minimum distance to reduce conflicts
+                            .onChanged { value in
+                                // Debounce gesture updates to prevent main thread blocking
+                                gestureDebounceTimer?.invalidate()
+                                gestureDebounceTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: false) { _ in
+                                    Task { @MainActor in
+                                        let location = value.location
+                                        if let date = proxy.value(atX: location.x, as: Date.self),
+                                           let dataPoint = findClosestDataPoint(to: date) {
+                                            selectedPoint = dataPoint
+                                        }
+                                    }
+                                }
+                            }
+                            .onEnded { _ in
+                                // Clear timer and animate selection reset
+                                gestureDebounceTimer?.invalidate()
+                                withAnimation(.easeOut(duration: 0.2)) {
+                                    selectedPoint = nil
+                                }
+                            }
+                    )
+                    .simultaneousGesture(
+                        TapGesture()
+                            .onEnded { _ in
+                                // Allow taps to clear selection
+                                withAnimation(.easeOut(duration: 0.2)) {
+                                    selectedPoint = nil
+                                }
+                            }
+                    )
+            }
+            .frame(height: 250)
+            .padding(.horizontal, 20)
+            
+            // Interactive Tooltip with optimized rendering
+            if let selected = selectedPoint {
+                VStack(spacing: 8) {
+                    HStack {
+                        Text(formatDate(selected.date))
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
+                        
+                        Spacer()
+                        
+                        Text("\(String(format: "%.1f", selected.value)) \(metric.unit)")
+                            .font(.subheadline)
+                            .fontWeight(.bold)
+                            .foregroundColor(metric.color)
+                    }
+                    
+                    // Trend indicator
+                    if data.count >= 2 {
+                        let trend = calculateTrendForPoint(selected)
+                        HStack {
+                            Image(systemName: trend.icon)
+                                .foregroundColor(trend.color)
+                            Text(trend.description)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+                .padding()
+                .background(Color(.systemBackground))
+                .cornerRadius(12)
+                .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+                .padding(.horizontal, 20)
+                .transition(.opacity.combined(with: .scale))
             }
         }
-        .chartYAxis {
-            AxisMarks { value in
-                AxisGridLine()
-                AxisValueLabel()
-            }
+        .background(Color(.systemBackground))
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .onDisappear {
+            // Clean up timer when view disappears
+            gestureDebounceTimer?.invalidate()
+        }
+    }
+    
+    // MARK: - Helper Functions
+    
+    private func getTimeStride() -> Calendar.Component {
+        let days = Calendar.current.dateComponents([.day], from: data.first?.date ?? Date(), to: data.last?.date ?? Date()).day ?? 0
+        
+        if days <= 7 {
+            return .day
+        } else if days <= 30 {
+            return .weekOfYear
+        } else if days <= 90 {
+            return .month
+        } else {
+            return .month
+        }
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        
+        if getTimeStride() == .day {
+            formatter.dateFormat = "MMM d"
+        } else if getTimeStride() == .weekOfYear {
+            formatter.dateFormat = "MMM d"
+        } else {
+            formatter.dateFormat = "MMM"
+        }
+        
+        return formatter.string(from: date)
+    }
+    
+    private func formatYAxisValue(_ value: Double) -> String {
+        if metric == .heartRate {
+            return "\(Int(value))"
+        } else if metric == .bloodPressure {
+            return "\(Int(value))"
+        } else if metric == .oxygenSaturation {
+            return "\(Int(value))%"
+        } else if metric == .bodyTemperature {
+            return String(format: "%.1f°", value)
+        } else if metric == .respiratoryRate {
+            return "\(Int(value))"
+        } else if metric == .heartRateVariability {
+            return String(format: "%.1f", value)
+        } else if metric == .steps {
+            return "\(Int(value/1000))k"
+        } else if metric == .sleepHours {
+            return String(format: "%.1fh", value)
+        }
+        return String(format: "%.1f", value)
+    }
+    
+    private func findClosestDataPoint(to date: Date) -> HealthDataPoint? {
+        return data.min { point1, point2 in
+            abs(point1.date.timeIntervalSince(date)) < abs(point2.date.timeIntervalSince(date))
+        }
+    }
+    
+    private func calculateTrendForPoint(_ point: HealthDataPoint) -> (icon: String, color: Color, description: String) {
+        guard let index = data.firstIndex(where: { $0.id == point.id }),
+              index > 0 else {
+            return ("arrow.right", .blue, "No trend data")
+        }
+        
+        let current = point.value
+        let previous = data[index - 1].value
+        let change = current - previous
+        let percentChange = (change / previous) * 100
+        
+        if abs(percentChange) < 2 {
+            return ("arrow.right", .blue, "Stable")
+        } else if change > 0 {
+            return ("arrow.up", .green, "Up \(String(format: "%.1f", percentChange))%")
+        } else {
+            return ("arrow.down", .red, "Down \(String(format: "%.1f", abs(percentChange)))%")
         }
     }
 }
@@ -752,17 +1070,32 @@ struct StatCard: View {
     let value: String
     
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 8) {
             Text(title)
                 .font(.caption)
+                .fontWeight(.medium)
                 .foregroundColor(.secondary)
+                .textCase(.uppercase)
+                .tracking(0.5)
+            
             Text(value)
-                .font(.headline)
+                .font(.title2)
+                .fontWeight(.bold)
                 .foregroundColor(.primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-        .background(Color(.systemGray6))
-        .cornerRadius(8)
+        .padding(.vertical, 16)
+        .padding(.horizontal, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.systemBackground))
+                .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(.systemGray5), lineWidth: 0.5)
+        )
     }
 }
