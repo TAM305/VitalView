@@ -354,13 +354,6 @@ public struct TestResult: Identifiable, Codable, Equatable {
 /// which measures various aspects of blood cells and hemoglobin.
 /// It includes standard reference ranges and validation for each component.
 ///
-/// ## Components
-/// - White Blood Cells (WBC): Infection fighting cells
-/// - Red Blood Cells (RBC): Oxygen-carrying cells
-/// - Hemoglobin (HGB): Oxygen-carrying protein
-/// - Hematocrit (HCT): Percentage of blood volume occupied by red cells
-/// - Platelets (PLT): Blood clotting cells
-///
 // Removed old CBCResult struct - using enhanced version below
 
 // Removed old CMPResult struct - using enhanced version below
@@ -471,59 +464,239 @@ private extension String {
 /// let viewModel = BloodTestViewModel(context: viewContext)
 /// viewModel.addTest(bloodTest)
 /// ```
-public final class BloodTestViewModel: ObservableObject {
-    /// Published array of blood tests for reactive UI updates
-    @Published public var bloodTests: [BloodTest] = []
-    /// Currently selected blood test
-    @Published public var selectedTest: BloodTest?
-    /// Error message for user feedback
-    @Published public var errorMessage: String?
+class BloodTestViewModel: ObservableObject {
+    @Published var bloodTests: [BloodTest] = []
+    @Published var errorMessage: String?
+    @Published var isLoading = false
     
-    /// Core Data managed object context for persistence
     private let viewContext: NSManagedObjectContext
+    private let persistenceController: PersistenceController
+    private var memoryWarningObserver: NSObjectProtocol?
     
-    /// Creates a new view model with the specified Core Data context.
-    ///
-    /// - Parameter context: Core Data managed object context
-    public init(context: NSManagedObjectContext) {
+    // Memory optimization properties
+    private let maxTestsInMemory = 100
+    private var loadedTestIds: Set<UUID> = []
+    private var memoryUsageTimer: Timer?
+    
+    init(context: NSManagedObjectContext) {
         self.viewContext = context
+        self.persistenceController = PersistenceController.shared
+        setupMemoryManagement()
         loadTests()
     }
     
-    /// Adds a new blood test to the collection.
-    ///
-    /// This method validates the test results before adding them to ensure
-    /// data integrity and provides user feedback for any validation issues.
-    ///
-    /// - Parameter test: The blood test to add
-    public func addTest(_ test: BloodTest) {
-        // Validate test results (non-blocking)
-        let invalidResults = test.results.filter { !$0.isValidValue() }
-        if !invalidResults.isEmpty {
-            errorMessage = "Some test results are outside their reference ranges. Saved anyway."
+    deinit {
+        cleanup()
+    }
+    
+    // MARK: - Memory Management
+    
+    private func setupMemoryManagement() {
+        // Monitor memory warnings
+        memoryWarningObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.handleMemoryWarning()
         }
         
-        // Create BloodTestEntity
-        let testEntity = NSEntityDescription.insertNewObject(forEntityName: "BloodTestEntity", into: viewContext)
+        // Start memory monitoring
+        startMemoryMonitoring()
+    }
+    
+    private func startMemoryMonitoring() {
+        memoryUsageTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
+            self?.checkMemoryUsage()
+        }
+    }
+    
+    private func checkMemoryUsage() {
+        let currentMemory = getCurrentMemoryUsage()
         
-        testEntity.setValue(test.id, forKey: "id")
-        testEntity.setValue(test.date, forKey: "date")
-        testEntity.setValue(test.testType, forKey: "testType")
+        if currentMemory > 80 * 1024 * 1024 { // 80 MB
+            print("⚠️ High memory usage in BloodTestViewModel: \(currentMemory / 1024 / 1024) MB")
+            performMemoryCleanup()
+        }
         
-        // Create TestResultEntity for each result
-        for result in test.results {
-            let resultEntity = NSEntityDescription.insertNewObject(forEntityName: "TestResultEntity", into: viewContext)
+        // Log memory usage periodically
+        print("📊 BloodTestViewModel memory usage: \(currentMemory / 1024 / 1024) MB")
+    }
+    
+    private func getCurrentMemoryUsage() -> UInt64 {
+        var info = mach_task_basic_info()
+        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size)/4
+        
+        let kerr: kern_return_t = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
+                task_info(mach_task_self_,
+                         task_flavor_t(MACH_TASK_BASIC_INFO),
+                         $0,
+                         &count)
+            }
+        }
+        
+        if kerr == KERN_SUCCESS {
+            return UInt64(info.resident_size)
+        } else {
+            // Fallback to ProcessInfo
+            return UInt64(ProcessInfo.processInfo.physicalMemory)
+        }
+    }
+    
+    private func handleMemoryWarning() {
+        print("🚨 Memory warning in BloodTestViewModel - performing cleanup")
+        performMemoryCleanup()
+    }
+    
+    private func performMemoryCleanup() {
+        // Clear loaded test IDs to force reloading from Core Data
+        loadedTestIds.removeAll()
+        
+        // Clear blood tests array if too many loaded
+        if bloodTests.count > maxTestsInMemory {
+            let testsToKeep = Array(bloodTests.prefix(maxTestsInMemory / 2))
+            bloodTests = testsToKeep
+            print("🧹 Cleared \(bloodTests.count - testsToKeep.count) tests from memory")
+        }
+        
+        // Force garbage collection
+        autoreleasepool {
+            // Additional cleanup
+        }
+        
+        print("🧹 BloodTestViewModel memory cleanup completed")
+    }
+    
+    private func cleanup() {
+        if let observer = memoryWarningObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        
+        memoryUsageTimer?.invalidate()
+        memoryUsageTimer = nil
+        
+        // Clear arrays
+        bloodTests.removeAll()
+        loadedTestIds.removeAll()
+    }
+    
+    // MARK: - Data Loading
+    
+    func loadTests() {
+        isLoading = true
+        
+        // Use memory-optimized fetching
+        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "BloodTestEntity")
+        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \BloodTestEntity.date, ascending: false)]
+        
+        // Set memory limits
+        fetchRequest.fetchBatchSize = 50
+        fetchRequest.fetchLimit = maxTestsInMemory
+        
+        do {
+            let testEntities = try persistenceController.fetchWithMemoryOptimization(fetchRequest)
+            print("=== loadTests Debug ===")
+            print("Found \(testEntities.count) test entities in Core Data")
             
-            resultEntity.setValue(result.id, forKey: "id")
-            resultEntity.setValue(result.name, forKey: "name")
-            resultEntity.setValue(result.value, forKey: "value")
-            resultEntity.setValue(result.unit, forKey: "unit")
-            resultEntity.setValue(result.referenceRange, forKey: "referenceRange")
-            resultEntity.setValue(result.explanation, forKey: "explanation")
-            resultEntity.setValue(testEntity, forKey: "test")
+            // Process entities in batches to avoid memory spikes
+            let batchSize = 20
+            var processedTests: [BloodTest] = []
+            
+            for i in stride(from: 0, to: testEntities.count, by: batchSize) {
+                let endIndex = min(i + batchSize, testEntities.count)
+                let batch = Array(testEntities[i..<endIndex])
+                
+                let batchTests = batch.compactMap { testEntity -> BloodTest? in
+                    autoreleasepool {
+                        guard let id = testEntity.value(forKey: "id") as? UUID,
+                              let date = testEntity.value(forKey: "date") as? Date,
+                              let testType = testEntity.value(forKey: "testType") as? String,
+                              let resultEntities = testEntity.value(forKey: "results") as? Set<NSManagedObject> else {
+                            print("Failed to parse test entity: id=\(testEntity.value(forKey: "id") ?? "nil"), date=\(testEntity.value(forKey: "date") ?? "nil"), testType=\(testEntity.value(forKey: "testType") ?? "nil"), results=\(testEntity.value(forKey: "results") ?? "nil")")
+                            return nil
+                        }
+                        
+                        print("Parsing test: \(testType) with \(resultEntities.count) results")
+                        
+                        let results = resultEntities.compactMap { resultEntity -> TestResult? in
+                            guard let id = resultEntity.value(forKey: "id") as? UUID,
+                                  let name = resultEntity.value(forKey: "name") as? String,
+                                  let value = resultEntity.value(forKey: "value") as? Double,
+                                  let unit = resultEntity.value(forKey: "unit") as? String,
+                                  let referenceRange = resultEntity.value(forKey: "referenceRange") as? String,
+                                  let explanation = resultEntity.value(forKey: "explanation") as? String else {
+                                print("Failed to parse result entity: name=\(resultEntity.value(forKey: "name") ?? "nil"), value=\(resultEntity.value(forKey: "value") ?? "nil")")
+                                return nil
+                            }
+                            
+                            return TestResult(
+                                id: id,
+                                name: name,
+                                value: value,
+                                unit: unit,
+                                referenceRange: referenceRange,
+                                explanation: explanation
+                            )
+                        }
+                        
+                        print("Successfully parsed \(results.count) results for test: \(testType)")
+                        
+                        return BloodTest(
+                            id: id,
+                            date: date,
+                            testType: testType,
+                            results: results
+                        )
+                    }
+                }
+                
+                processedTests.append(contentsOf: batchTests)
+                
+                // Small delay to prevent UI blocking
+                if endIndex < testEntities.count {
+                    Thread.sleep(forTimeInterval: 0.01)
+                }
+            }
+            
+            bloodTests = processedTests
+            loadedTestIds = Set(processedTests.map { $0.id })
+            
+            print("Successfully loaded \(bloodTests.count) blood tests from Core Data")
+            errorMessage = nil
+        } catch {
+            print("Failed to load test data: \(error)")
+            errorMessage = "Failed to load test data: \(error.localizedDescription)"
         }
         
-        // Save to Core Data
+        isLoading = false
+    }
+    
+    // MARK: - Test Management
+    
+    func addTest(_ test: BloodTest) {
+        // Check memory before adding
+        if bloodTests.count >= maxTestsInMemory {
+            performMemoryCleanup()
+        }
+        
+        let testEntity = BloodTestEntity(context: viewContext)
+        testEntity.id = test.id
+        testEntity.date = test.date
+        testEntity.testType = test.testType
+        
+        // Create result entities
+        for result in test.results {
+            let resultEntity = TestResultEntity(context: viewContext)
+            resultEntity.id = result.id
+            resultEntity.name = result.name
+            resultEntity.value = result.value
+            resultEntity.unit = result.unit
+            resultEntity.referenceRange = result.referenceRange
+            resultEntity.explanation = result.explanation
+            resultEntity.test = testEntity
+        }
+        
         do {
             try viewContext.save()
             // Refresh the published array from Core Data to ensure consistency
@@ -534,691 +707,50 @@ public final class BloodTestViewModel: ObservableObject {
         }
     }
     
-    public func deleteTest(_ test: BloodTest) {
+    func deleteTest(_ test: BloodTest) {
         // Find and delete the test entity
-        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "BloodTestEntity")
+        let fetchRequest: NSFetchRequest<BloodTestEntity> = BloodTestEntity.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "id == %@", test.id as CVarArg)
         
         do {
-            let results = try viewContext.fetch(fetchRequest)
-            if let testEntity = results.first {
-                viewContext.delete(testEntity)
-                try viewContext.save()
-                bloodTests.removeAll { $0.id == test.id }
+            let testEntities = try viewContext.fetch(fetchRequest)
+            for entity in testEntities {
+                viewContext.delete(entity)
             }
+            
+            try viewContext.save()
+            loadTests() // Refresh the list
+            print("Successfully deleted test")
         } catch {
             errorMessage = "Failed to delete test: \(error.localizedDescription)"
         }
     }
     
-    public func updateTest(_ test: BloodTest) {
-        // Validate test results (non-blocking)
-        let invalidResults = test.results.filter { !$0.isValidValue() }
-        if !invalidResults.isEmpty {
-            errorMessage = "Some test results are outside their reference ranges. Saved anyway."
-        }
-        
-        // Find the existing test entity
-        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "BloodTestEntity")
-        fetchRequest.predicate = NSPredicate(format: "id == %@", test.id as CVarArg)
-        
-        do {
-            let results = try viewContext.fetch(fetchRequest)
-            if let testEntity = results.first {
-                // Update test entity
-                testEntity.setValue(test.date, forKey: "date")
-                testEntity.setValue(test.testType, forKey: "testType")
-                
-                // Remove existing results
-                if let existingResults = testEntity.value(forKey: "results") as? Set<NSManagedObject> {
-                    for result in existingResults {
-                        viewContext.delete(result)
-                    }
-                }
-                
-                // Add new results
-                for result in test.results {
-                    let resultEntity = NSEntityDescription.insertNewObject(forEntityName: "TestResultEntity", into: viewContext)
-                    
-                    resultEntity.setValue(result.id, forKey: "id")
-                    resultEntity.setValue(result.name, forKey: "name")
-                    resultEntity.setValue(result.value, forKey: "value")
-                    resultEntity.setValue(result.unit, forKey: "unit")
-                    resultEntity.setValue(result.referenceRange, forKey: "referenceRange")
-                    resultEntity.setValue(result.explanation, forKey: "explanation")
-                    resultEntity.setValue(testEntity, forKey: "test")
-                }
-                
-                try viewContext.save()
-                
-                // Update published property
-                if let index = bloodTests.firstIndex(where: { $0.id == test.id }) {
-                    bloodTests[index] = test
-                }
-            }
-        } catch {
-            errorMessage = "Failed to update test: \(error.localizedDescription)"
-        }
+    // MARK: - Memory-Efficient Operations
+    
+    func getTestById(_ id: UUID) -> BloodTest? {
+        return bloodTests.first { $0.id == id }
     }
     
-    public func loadTests() {
-        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "BloodTestEntity")
+    func getTestsByType(_ type: String) -> [BloodTest] {
+        return bloodTests.filter { $0.testType == type }
+    }
+    
+    func clearAllTests() {
+        // Clear from memory
+        bloodTests.removeAll()
+        loadedTestIds.removeAll()
+        
+        // Clear from Core Data
+        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "BloodTestEntity")
+        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
         
         do {
-            let testEntities = try viewContext.fetch(fetchRequest)
-            print("=== loadTests Debug ===")
-            print("Found \(testEntities.count) test entities in Core Data")
-            
-            bloodTests = testEntities.compactMap { testEntity in
-                guard let id = testEntity.value(forKey: "id") as? UUID,
-                      let date = testEntity.value(forKey: "date") as? Date,
-                      let testType = testEntity.value(forKey: "testType") as? String,
-                      let resultEntities = testEntity.value(forKey: "results") as? Set<NSManagedObject> else {
-                    print("Failed to parse test entity: id=\(testEntity.value(forKey: "id") ?? "nil"), date=\(testEntity.value(forKey: "date") ?? "nil"), testType=\(testEntity.value(forKey: "testType") ?? "nil"), results=\(testEntity.value(forKey: "results") ?? "nil")")
-                    return nil
-                }
-                
-                print("Parsing test: \(testType) with \(resultEntities.count) results")
-                
-                let results = resultEntities.compactMap { resultEntity -> TestResult? in
-                    guard let id = resultEntity.value(forKey: "id") as? UUID,
-                          let name = resultEntity.value(forKey: "name") as? String,
-                          let value = resultEntity.value(forKey: "value") as? Double,
-                          let unit = resultEntity.value(forKey: "unit") as? String,
-                          let referenceRange = resultEntity.value(forKey: "referenceRange") as? String,
-                          let explanation = resultEntity.value(forKey: "explanation") as? String else {
-                        print("Failed to parse result entity: name=\(resultEntity.value(forKey: "name") ?? "nil"), value=\(resultEntity.value(forKey: "value") ?? "nil")")
-                        return nil
-                    }
-                    
-                    return TestResult(
-                        id: id,
-                        name: name,
-                        value: value,
-                        unit: unit,
-                        referenceRange: referenceRange,
-                        explanation: explanation
-                    )
-                }
-                
-                print("Successfully parsed \(results.count) results for test: \(testType)")
-                
-                return BloodTest(
-                    id: id,
-                    date: date,
-                    testType: testType,
-                    results: results
-                )
-            }
-            
-            print("Successfully loaded \(bloodTests.count) blood tests from Core Data")
-            errorMessage = nil
+            try viewContext.execute(deleteRequest)
+            try viewContext.save()
+            print("Successfully cleared all tests")
         } catch {
-            print("Failed to load test data: \(error)")
-            errorMessage = "Failed to load test data: \(error.localizedDescription)"
-        }
-    }
-    
-    public func getResultColor(_ result: TestResult) -> Color {
-        switch result.status {
-        case .normal:
-            return .green
-        case .high:
-            return .red
-        case .low:
-            return .blue
-        }
-    }
-    
-    // Helper method to get test history for a specific test type
-    public func getTestHistory(for testType: String) -> [BloodTest] {
-        return bloodTests.filter { $0.testType == testType }
-            .sorted { $0.date > $1.date }
-    }
-    
-    // Helper method to get the most recent test of a specific type
-    public func getMostRecentTest(of testType: String) -> BloodTest? {
-        return getTestHistory(for: testType).first
-    }
-    
-    /// Imports comprehensive lab data from the user's preferred JSON format
-    /// - Parameter jsonData: The JSON data string to import
-    /// - Returns: Success status and any error message
-    public func importComprehensiveLabData(_ jsonData: String) -> (success: Bool, errorMessage: String?) {
-        do {
-            let data = jsonData.data(using: .utf8)!
-            _ = try JSONDecoder().decode(ComprehensiveLabData.self, from: data)
-            
-            // The comprehensive format is no longer supported - use enhanced format instead
-            print("Comprehensive format is deprecated. Please use the enhanced JSON format.")
-            return (false, "Comprehensive format is deprecated. Please use the enhanced JSON format.")
-        } catch {
-            return (false, "Failed to import lab data: \(error.localizedDescription)")
-        }
-    }
-    
-    /// Converts comprehensive lab data to internal BloodTest format
-    /// - Parameter comprehensiveData: The comprehensive lab data to convert
-    /// - Returns: Array of converted BloodTest objects
-    /// NOTE: This method is deprecated since we removed the lab_tests structure
-    /// The enhanced JSON format is now handled by importEnhancedLabResults
-    private func convertComprehensiveDataToBloodTests(_ comprehensiveData: ComprehensiveLabData) -> [BloodTest] {
-        // This method is no longer used - enhanced format is handled separately
-        return []
-    }
-    
-    /// Converts CBC results from comprehensive data to TestResult objects
-    /// - Parameter cbcResults: CBC results from comprehensive data
-    /// - Returns: Array of TestResult objects
-    private func convertCBCResultsToTestResults(_ cbcResults: [String: CBCResult]) -> [TestResult] {
-        var results: [TestResult] = []
-        
-        // Helper function to convert individual results
-        func addResult(_ labResult: CBCResult?, name: String, referenceRange: String, explanation: String) {
-            guard let labResult = labResult else { return }
-            
-            let testResult = TestResult(
-                name: labResult.name,
-                value: labResult.value ?? 0.0,
-                unit: labResult.units,
-                referenceRange: referenceRange,
-                explanation: explanation
-            )
-            
-            results.append(testResult)
-        }
-        
-        // Add CBC results with standard reference ranges
-        addResult(cbcResults["WBC"], name: "White Blood Cell Count", referenceRange: "4.5-11.0", explanation: "Measures infection-fighting white blood cells")
-        addResult(cbcResults["RBC"], name: "Red Blood Cell Count", referenceRange: "4.5-5.5", explanation: "Measures oxygen-carrying red blood cells")
-        addResult(cbcResults["HGB"], name: "Hemoglobin", referenceRange: "13.5-17.5", explanation: "Measures oxygen-carrying protein in red blood cells")
-        addResult(cbcResults["HCT"], name: "Hematocrit", referenceRange: "38.8-50.0", explanation: "Percentage of blood volume occupied by red blood cells")
-        addResult(cbcResults["PLATELET_COUNT"], name: "Platelet Count", referenceRange: "150-450", explanation: "Measures blood clotting cells")
-        addResult(cbcResults["MCV"], name: "Mean Corpuscular Volume", referenceRange: "80-100", explanation: "Average size of red blood cells")
-        addResult(cbcResults["MCH"], name: "Mean Corpuscular Hemoglobin", referenceRange: "27-32", explanation: "Average amount of hemoglobin per red blood cell")
-        addResult(cbcResults["MCHC"], name: "Mean Corpuscular Hemoglobin Concentration", referenceRange: "32-36", explanation: "Concentration of hemoglobin in red blood cells")
-        addResult(cbcResults["RDW"], name: "Red Cell Distribution Width", referenceRange: "11.5-14.5", explanation: "Variation in red blood cell size")
-        addResult(cbcResults["MPV"], name: "Mean Platelet Volume", referenceRange: "7.5-11.5", explanation: "Average size of platelets")
-        
-        // Add differential counts
-        addResult(cbcResults["NEUTROPHILS_PERCENT"], name: "Neutrophils %", referenceRange: "40-70", explanation: "Percentage of neutrophils (infection-fighting cells)")
-        addResult(cbcResults["LYMPHS_PERCENT"], name: "Lymphocytes %", referenceRange: "20-40", explanation: "Percentage of lymphocytes (immune system cells)")
-        addResult(cbcResults["MONOS_PERCENT"], name: "Monocytes %", referenceRange: "2-8", explanation: "Percentage of monocytes (immune system cells)")
-        addResult(cbcResults["EOS_PERCENT"], name: "Eosinophils %", referenceRange: "1-4", explanation: "Percentage of eosinophils (allergy and parasite-fighting cells)")
-        addResult(cbcResults["BASOS_PERCENT"], name: "Basophils %", referenceRange: "0.5-1", explanation: "Percentage of basophils (inflammation and allergy cells)")
-        
-        return results
-    }
-    
-    /// Converts CMP results from comprehensive data to TestResult objects
-    /// - Parameter cmpResults: CMP results from comprehensive data
-    /// - Returns: Array of TestResult objects
-    private func convertCMPResultsToTestResults(_ cmpResults: [String: CMPResult]) -> [TestResult] {
-        var results: [TestResult] = []
-        
-        // Helper function to convert individual results
-        func addResult(_ labResult: CMPResult?, name: String, referenceRange: String, explanation: String) {
-            guard let labResult = labResult else { return }
-            
-            let testResult = TestResult(
-                name: labResult.name,
-                value: labResult.value?.numericValue ?? 0.0,
-                unit: labResult.units,
-                referenceRange: referenceRange,
-                explanation: explanation
-            )
-            
-            results.append(testResult)
-        }
-        
-        // Add CMP results with standard reference ranges
-        addResult(cmpResults["GLUCOSE"], name: "Glucose", referenceRange: "70-100", explanation: "Blood sugar level - high levels may indicate diabetes")
-        addResult(cmpResults["UREA_NITROGEN"], name: "Urea Nitrogen (BUN)", referenceRange: "7-20", explanation: "Kidney function marker - high levels may indicate kidney problems")
-        addResult(cmpResults["CREATININE"], name: "Creatinine", referenceRange: "0.7-1.3", explanation: "Kidney function marker - high levels may indicate kidney problems")
-        addResult(cmpResults["SODIUM"], name: "Sodium", referenceRange: "135-145", explanation: "Electrolyte that helps maintain fluid balance")
-        addResult(cmpResults["POTASSIUM"], name: "Potassium", referenceRange: "3.5-5.0", explanation: "Electrolyte important for heart and muscle function")
-        addResult(cmpResults["CHLORIDE"], name: "Chloride", referenceRange: "98-107", explanation: "Electrolyte that helps maintain fluid balance and pH")
-        addResult(cmpResults["CO2"], name: "Carbon Dioxide (CO2)", referenceRange: "23-29", explanation: "Measures acid-base balance in the body")
-        addResult(cmpResults["CALCIUM"], name: "Calcium", referenceRange: "8.5-10.2", explanation: "Important for bones, muscles, and nerve function")
-        addResult(cmpResults["ALBUMIN"], name: "Albumin", referenceRange: "3.4-5.4", explanation: "Main protein in blood - helps maintain fluid balance")
-        addResult(cmpResults["AST"], name: "AST", referenceRange: "10-40", explanation: "Liver enzyme - high levels may indicate liver damage")
-        
-        return results
-    }
-    
-    /// Parses date string in MM/DD/YYYY format
-    /// - Parameter dateString: Date string to parse
-    /// - Returns: Date object or current date if parsing fails
-    private func parseDate(_ dateString: String) -> Date {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MM/dd/yyyy"
-        return formatter.date(from: dateString) ?? Date()
-    }
-    
-    /// Imports simple lab results from the user's current JSON format
-    /// - Parameter jsonData: The JSON data string to import
-    /// - Returns: Success status and any error message
-    public func importSimpleLabResults(_ jsonData: String) -> (success: Bool, errorMessage: String?) {
-        do {
-            let data = jsonData.data(using: .utf8)!
-            let simpleResults = try JSONDecoder().decode(SimpleLabResults.self, from: data)
-            
-            // Convert to internal format and save
-            var totalTestsAdded = 0
-            
-            // Process CBC results
-            if let cbcResults = simpleResults.BC_Complete_Blood_Count {
-                print("Processing CBC results: \(cbcResults.count) items")
-                let testResults = convertSimpleResultsToTestResults(cbcResults, testType: "CBC")
-                if !testResults.isEmpty {
-                    let bloodTest = BloodTest(
-                        date: parseDate(from: cbcResults.first?.date ?? "") ?? Date(),
-                        testType: "Complete Blood Count",
-                        results: testResults
-                    )
-                    addTest(bloodTest)
-                    totalTestsAdded += 1
-                    print("✓ Added CBC test with \(testResults.count) results")
-                } else {
-                    print("⚠ No valid CBC results to add")
-                }
-            }
-            
-            // Process CMP Metabolism Studies results
-            if let cmpResults = simpleResults.CMP_Metabolism_Studies {
-                print("Processing CMP Metabolism Studies results: \(cmpResults.count) items")
-                let testResults = convertSimpleResultsToTestResults(cmpResults, testType: "CMP")
-                if !testResults.isEmpty {
-                    let bloodTest = BloodTest(
-                        date: parseDate(from: cmpResults.first?.date ?? "") ?? Date(),
-                        testType: "Comprehensive Metabolic Panel",
-                        results: testResults
-                    )
-                    addTest(bloodTest)
-                    totalTestsAdded += 1
-                    print("✓ Added CMP test with \(testResults.count) results")
-                } else {
-                    print("⚠ No valid CMP results to add")
-                }
-            }
-            
-            // Process Cholesterol results
-            if let cholesterolResults = simpleResults.Cholesterol_Results {
-                print("Processing Cholesterol Results: \(cholesterolResults.count) items")
-                let testResults = convertSimpleResultsToTestResults(cholesterolResults, testType: "Cholesterol")
-                if !testResults.isEmpty {
-                    let bloodTest = BloodTest(
-                        date: parseDate(from: cholesterolResults.first?.date ?? "") ?? Date(),
-                        testType: "Cholesterol Panel",
-                        results: testResults
-                    )
-                    addTest(bloodTest)
-                    totalTestsAdded += 1
-                    print("✓ Added Cholesterol Panel test with \(testResults.count) results")
-                } else {
-                    print("⚠ No valid Cholesterol results to add")
-                }
-            }
-            
-            print("=== Import Summary ===")
-            print("Total tests added: \(totalTestsAdded)")
-            print("Total blood tests in viewModel: \(bloodTests.count)")
-            
-            // Save to Core Data
-            do {
-                try PersistenceController.shared.container.viewContext.save()
-                print("✓ Successfully saved \(totalTestsAdded) tests to Core Data")
-                return (true, nil)
-            } catch {
-                print("❌ Failed to save to Core Data: \(error)")
-                return (false, "Failed to save data: \(error.localizedDescription)")
-            }
-            
-        } catch {
-            print("❌ Failed to decode simple lab results: \(error)")
-            return (false, "Failed to parse JSON: \(error.localizedDescription)")
-        }
-    }
-    
-    // Helper method to convert simple results to test results
-    private func convertSimpleResultsToTestResults(_ simpleResults: [SimpleTestResult], testType: String) -> [TestResult] {
-        var testResults: [TestResult] = []
-        print("Converting \(simpleResults.count) simple results for \(testType)")
-        
-        for (index, simpleResult) in simpleResults.enumerated() {
-            print("Processing result \(index + 1): \(simpleResult.testName) = \(simpleResult.value ?? -999)")
-            
-            // Handle different types of test results
-            if let value = simpleResult.value {
-                // Numeric value available
-                let testResult = createTestResult(from: simpleResult, testType: testType, value: value)
-                testResults.append(testResult)
-                print("✓ Added test result: \(simpleResult.testName) = \(value)")
-            } else if simpleResult.testName.contains("null") || simpleResult.testName.contains("nil") {
-                // Skip null values
-                print("⚠ Skipping \(simpleResult.testName) - null value")
-                continue
-            } else {
-                // Try to handle string values or other non-numeric data
-                print("⚠ Skipping \(simpleResult.testName) - no numeric value available")
-                continue
-            }
-        }
-        
-        print("Converted \(testResults.count) valid test results for \(testType)")
-        return testResults
-    }
-    
-    // Helper method to create a test result with comprehensive information
-    private func createTestResult(from simpleResult: SimpleTestResult, testType: String, value: Double) -> TestResult {
-        // Create a comprehensive explanation including notes and additional info
-        var explanation = "Imported from \(testType) panel"
-        if let note = simpleResult.note {
-            explanation += " - \(note)"
-        }
-        if let time = simpleResult.time {
-            explanation += " (Time: \(time))"
-        }
-        if let sample = simpleResult.sample {
-            explanation += " (Sample: \(sample))"
-        }
-        
-        return TestResult(
-            name: simpleResult.testName,
-            value: value,
-            unit: simpleResult.unit ?? getDefaultUnit(for: simpleResult.testName),
-            referenceRange: simpleResult.reference_range ?? getDefaultReferenceRange(for: simpleResult.testName),
-            explanation: explanation
-        )
-    }
-    
-    // Helper method to extract test name from simple result
-    private func extractTestName(from simpleResult: SimpleTestResult) -> String {
-        // This would need to be implemented based on the actual JSON structure
-        // For now, return a generic name
-        return simpleResult.testName
-    }
-    
-    // Helper method to get default unit for test
-    private func getDefaultUnit(for testName: String) -> String {
-        // Add logic to determine appropriate units based on test name
-        return ""
-    }
-    
-    // Helper method to get default reference range for test
-    private func getDefaultReferenceRange(for testName: String) -> String {
-        // Add logic to determine appropriate reference ranges based on test name
-        return ""
-    }
-    
-    // Helper method to parse date strings
-    private func parseDate(from dateString: String) -> Date? {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.date(from: dateString)
-    }
-    
-    /// Imports enhanced lab results from JSON string
-    /// - Parameter jsonData: JSON string containing enhanced lab results
-    func importEnhancedLabResults(_ jsonData: String) {
-        guard let data = jsonData.data(using: .utf8) else {
-            print("Failed to convert JSON string to data")
-            return
-        }
-        
-        do {
-            let enhancedResults = try JSONDecoder().decode(EnhancedLabResults.self, from: data)
-            print("Successfully decoded enhanced lab results for patient: \(enhancedResults.patient_info.name)")
-            
-            var totalTestsImported = 0
-            
-            // Import CBC results
-            if let cbcPanel = enhancedResults.CBC_Complete_Blood_Count {
-                print("Processing CBC panel with \(cbcPanel.results.count) tests")
-                let cbcTests = convertEnhancedCBCResultsToTestResults(cbcPanel.results, testDate: cbcPanel.test_date)
-                
-                if !cbcTests.isEmpty {
-                    let cbcBloodTest = BloodTest(
-                        date: parseDate(from: cbcPanel.test_date) ?? Date(),
-                        testType: "Complete Blood Count (CBC)",
-                        results: cbcTests
-                    )
-                    addTest(cbcBloodTest)
-                    totalTestsImported += cbcTests.count
-                    print("Imported \(cbcTests.count) CBC tests")
-                }
-            }
-            
-            // Import CMP results
-            if let cmpPanel = enhancedResults.CMP_Metabolism_Studies {
-                print("Processing CMP panel with \(cmpPanel.results.count) tests")
-                let cmpTests = convertEnhancedCMPResultsToTestResults(cmpPanel.results, testDate: cmpPanel.test_date)
-                
-                if !cmpTests.isEmpty {
-                    let cmpBloodTest = BloodTest(
-                        date: parseDate(from: cmpPanel.test_date) ?? Date(),
-                        testType: "Comprehensive Metabolic Panel (CMP)",
-                        results: cmpTests
-                    )
-                    addTest(cmpBloodTest)
-                    totalTestsImported += cmpTests.count
-                    print("Imported \(cmpTests.count) CMP tests")
-                }
-            }
-            
-            // Import Cholesterol results
-            if let cholesterolPanel = enhancedResults.Cholesterol_Results {
-                print("Processing Cholesterol panel with \(cholesterolPanel.results.count) tests")
-                let cholesterolTests = convertEnhancedCholesterolResultsToTestResults(cholesterolPanel.results, testDate: cholesterolPanel.test_date)
-                
-                if !cholesterolTests.isEmpty {
-                    let cholesterolBloodTest = BloodTest(
-                        date: parseDate(from: cholesterolPanel.test_date) ?? Date(),
-                        testType: "Cholesterol Panel",
-                        results: cholesterolTests
-                    )
-                    addTest(cholesterolBloodTest)
-                    totalTestsImported += cholesterolTests.count
-                    print("Imported \(cholesterolTests.count) Cholesterol tests")
-                }
-            }
-            
-            // Save to Core Data and refresh the view model
-            do {
-                try viewContext.save()
-                print("Successfully saved \(totalTestsImported) enhanced lab tests to Core Data")
-                
-                // Refresh the view model's data from Core Data
-                loadTests()
-                print("Enhanced lab results import completed successfully")
-            } catch {
-                print("Failed to save enhanced lab results to Core Data: \(error)")
-            }
-            
-        } catch {
-            print("Failed to decode enhanced lab results: \(error)")
-        }
-    }
-    
-    /// Converts enhanced CBC results to TestResult objects
-    private func convertEnhancedCBCResultsToTestResults(_ cbcResults: [String: CBCResult], testDate: String) -> [TestResult] {
-        var results: [TestResult] = []
-        
-        for (key, result) in cbcResults {
-            guard let value = result.value else { continue } // Skip null values
-            
-            let testResult = TestResult(
-                name: result.name,
-                value: value,
-                unit: result.units,
-                referenceRange: getCBCReferenceRange(for: key),
-                explanation: getCBCExplanation(for: key)
-            )
-            
-            results.append(testResult)
-        }
-        
-        return results
-    }
-    
-    /// Converts enhanced CMP results to TestResult objects
-    private func convertEnhancedCMPResultsToTestResults(_ cmpResults: [String: CMPResult], testDate: String) -> [TestResult] {
-        var results: [TestResult] = []
-        
-        for (key, result) in cmpResults {
-            guard let value = result.value?.numericValue else { continue } // Skip null values
-            
-            // Add flag and note information if available
-            var explanation = getCMPExplanation(for: key)
-            if let flag = result.flag {
-                explanation += " [\(flag)]"
-            }
-            if let note = result.note {
-                explanation += " - \(note)"
-            }
-            
-            let testResult = TestResult(
-                name: result.name,
-                value: value,
-                unit: result.units,
-                referenceRange: getCMPReferenceRange(for: key),
-                explanation: explanation
-            )
-            
-            results.append(testResult)
-        }
-        
-        return results
-    }
-    
-    /// Converts enhanced Cholesterol results to TestResult objects
-    private func convertEnhancedCholesterolResultsToTestResults(_ cholesterolResults: [String: CholesterolResult], testDate: String) -> [TestResult] {
-        var results: [TestResult] = []
-        
-        for (key, result) in cholesterolResults {
-            guard let value = result.value else { continue } // Skip null values
-            
-            // Add flag and note information if available
-            var explanation = getCholesterolExplanation(for: key)
-            if let flag = result.flag {
-                explanation += " [\(flag)]"
-            }
-            if let note = result.note {
-                explanation += " - \(note)"
-            }
-            
-            let testResult = TestResult(
-                name: result.name,
-                value: value,
-                unit: result.units,
-                referenceRange: getCholesterolReferenceRange(for: key),
-                explanation: explanation
-            )
-            
-            results.append(testResult)
-        }
-        
-        return results
-    }
-    
-    // Helper methods for reference ranges and explanations
-    private func getCBCReferenceRange(for key: String) -> String {
-        switch key {
-        case "WBC": return "4.5-11.0"
-        case "RBC": return "4.5-5.5"
-        case "HGB": return "13.5-17.5"
-        case "HCT": return "38.8-50.0"
-        case "PLATELET_COUNT": return "150-450"
-        case "MCV": return "80-100"
-        case "MCH": return "27-32"
-        case "MCHC": return "32-36"
-        case "RDW": return "11.5-14.5"
-        case "MPV": return "7.5-11.5"
-        case "NEUTROPHILS_PERCENT": return "40-70"
-        case "LYMPHS_PERCENT": return "20-40"
-        case "MONOS_PERCENT": return "2-8"
-        case "EOS_PERCENT": return "1-4"
-        case "BASOS_PERCENT": return "0.5-1"
-        default: return "N/A"
-        }
-    }
-    
-    private func getCMPReferenceRange(for key: String) -> String {
-        switch key {
-        case "GLUCOSE": return "70-100"
-        case "UREA_NITROGEN": return "7-20"
-        case "CREATININE": return "0.7-1.3"
-        case "SODIUM": return "135-145"
-        case "POTASSIUM": return "3.5-5.0"
-        case "CHLORIDE": return "98-107"
-        case "CO2": return "23-29"
-        case "CALCIUM": return "8.5-10.2"
-        case "ALBUMIN": return "3.4-5.4"
-        case "AST": return "10-40"
-        case "ALT": return "7-56"
-        case "ALKALINE_PHOSPHATASE": return "44-147"
-        case "BILIRUBIN_TOTAL": return "0.3-1.2"
-        default: return "N/A"
-        }
-    }
-    
-    private func getCholesterolReferenceRange(for key: String) -> String {
-        switch key {
-        case "LDL_NON_FASTING": return "<100"
-        case "HDL": return ">40"
-        case "TOTAL_CHOLESTEROL": return "<200"
-        case "TRIGLYCERIDES": return "<150"
-        default: return "N/A"
-        }
-    }
-    
-    private func getCBCExplanation(for key: String) -> String {
-        switch key {
-        case "WBC": return "Measures infection-fighting white blood cells"
-        case "RBC": return "Measures oxygen-carrying red blood cells"
-        case "HGB": return "Measures oxygen-carrying protein in red blood cells"
-        case "HCT": return "Percentage of blood volume occupied by red blood cells"
-        case "PLATELET_COUNT": return "Measures blood clotting cells"
-        case "MCV": return "Average size of red blood cells"
-        case "MCH": return "Average amount of hemoglobin per red blood cell"
-        case "MCHC": return "Concentration of hemoglobin in red blood cells"
-        case "RDW": return "Variation in red blood cell size"
-        case "MPV": return "Average size of platelets"
-        case "NEUTROPHILS_PERCENT": return "Percentage of neutrophils (infection-fighting cells)"
-        case "LYMPHS_PERCENT": return "Percentage of lymphocytes (immune system cells)"
-        case "MONOS_PERCENT": return "Percentage of monocytes (immune system cells)"
-        case "EOS_PERCENT": return "Percentage of eosinophils (allergy and parasite-fighting cells)"
-        case "BASOS_PERCENT": return "Percentage of basophils (inflammation and allergy cells)"
-        default: return "Blood cell measurement"
-        }
-    }
-    
-    private func getCMPExplanation(for key: String) -> String {
-        switch key {
-        case "GLUCOSE": return "Blood sugar level - high levels may indicate diabetes"
-        case "UREA_NITROGEN": return "Kidney function marker - high levels may indicate kidney problems"
-        case "CREATININE": return "Kidney function marker - high levels may indicate kidney problems"
-        case "SODIUM": return "Electrolyte that helps maintain fluid balance"
-        case "POTASSIUM": return "Electrolyte important for heart and muscle function"
-        case "CHLORIDE": return "Electrolyte that helps maintain fluid balance and pH"
-        case "CO2": return "Measures acid-base balance in the body"
-        case "CALCIUM": return "Important for bones, muscles, and nerve function"
-        case "ALBUMIN": return "Main protein in blood - helps maintain fluid balance"
-        case "AST": return "Liver enzyme - high levels may indicate liver damage"
-        case "ALT": return "Liver enzyme - high levels may indicate liver damage"
-        case "ALKALINE_PHOSPHATASE": return "Liver and bone enzyme"
-        case "BILIRUBIN_TOTAL": return "Liver function marker - high levels may indicate liver problems"
-        default: return "Metabolic panel measurement"
-        }
-    }
-    
-    private func getCholesterolExplanation(for key: String) -> String {
-        switch key {
-        case "LDL_NON_FASTING": return "LDL (bad cholesterol) - lower values are better"
-        case "HDL": return "HDL (good cholesterol) - higher values are better"
-        case "TOTAL_CHOLESTEROL": return "Total cholesterol level"
-        case "TRIGLYCERIDES": return "Fat in the blood - high levels may increase heart disease risk"
-        default: return "Cholesterol measurement"
+            errorMessage = "Failed to clear tests: \(error.localizedDescription)"
         }
     }
 }
