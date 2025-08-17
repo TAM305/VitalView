@@ -1030,6 +1030,74 @@ struct AboutAppView: View {
                     Text("For support, feature requests, or bug reports, please contact us through the App Store review system or your preferred support channel.")
                         .font(.body)
                         .lineSpacing(4)
+                    
+                    // Contact Email
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Contact the Developer")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        
+                        Button(action: {
+                            if let url = URL(string: "mailto:alexthegreat4@icloud.com?subject=VitalVu%20Support%20Request") {
+                                UIApplication.shared.open(url)
+                            }
+                        }) {
+                            HStack {
+                                Image(systemName: "envelope.fill")
+                                    .foregroundColor(.blue)
+                                Text("alexthegreat4@icloud.com")
+                                    .foregroundColor(.blue)
+                                    .underline()
+                                Spacer()
+                                Image(systemName: "arrow.up.right.square")
+                                    .foregroundColor(.blue)
+                                    .font(.caption)
+                            }
+                            .padding()
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        
+                        Text("Email us directly for support, feature requests, comments, or concerns.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineSpacing(2)
+                    }
+                }
+                
+                // Website
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Website")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    
+                    Button(action: {
+                        if let url = URL(string: "https://vitvu.com/") {
+                            UIApplication.shared.open(url)
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: "globe")
+                                .foregroundColor(.blue)
+                            Text("https://vitvu.com/")
+                                .foregroundColor(.blue)
+                                .underline()
+                            Spacer()
+                            Image(systemName: "arrow.up.right.square")
+                                .foregroundColor(.blue)
+                                .font(.caption)
+                        }
+                        .padding()
+                        .background(Color(.systemGray6))
+                        .cornerRadius(8)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Text("Visit our website to learn more about Vitvu, sign up for beta testing, and stay updated on new features and developments.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineSpacing(2)
                 }
                 
                 Spacer(minLength: 40)
