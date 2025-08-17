@@ -993,9 +993,10 @@ class BloodTestViewModel: ObservableObject {
                                 continue
                             }
                             
-                            // Robust value extraction with fallbacks
+                            // Get value directly as Double (Core Data stores as NSNumber)
                             let value: Double = {
                                 if let d = resultEntity.value(forKey: "value") as? Double { return d }
+                                // Fallback for legacy data that might be stored as String
                                 if let s = resultEntity.value(forKey: "value") as? String, let d = Double(s) { return d }
                                 return 0.0
                             }()
@@ -1056,7 +1057,7 @@ class BloodTestViewModel: ObservableObject {
             let resultEntity = NSEntityDescription.insertNewObject(forEntityName: "TestResultEntity", into: viewContext)
             resultEntity.setValue(result.id, forKey: "id")
             resultEntity.setValue(result.name, forKey: "name")
-            resultEntity.setValue(String(result.value), forKey: "value") // Convert Double to String for Core Data
+            resultEntity.setValue(result.value, forKey: "value") // Store Double directly - Core Data expects NSNumber
             resultEntity.setValue(result.unit, forKey: "unit")
             resultEntity.setValue(result.referenceRange, forKey: "referenceRange")
             resultEntity.setValue(result.explanation, forKey: "explanation")
