@@ -36,22 +36,6 @@ struct BloodTestTrendsView: View {
         }
     }
     
-    private var testCategory: String {
-        switch testName {
-        // Complete Blood Count (CBC) Tests
-        case "WBC", "WHITE BLOOD CELLS", "WHITE BLOOD CELL COUNT", "NEUTROPHILS", "NEUTROPHILS %", "NEUTROPHILS #", "LYMPHS", "LYMPHS %", "LYMPHS #", "LYMPHOCYTES", "LYMPHOCYTES %", "LYMPHOCYTES #", "MONOS", "MONOS %", "MONOS #", "MONOCYTES", "MONOCYTES %", "MONOCYTES #", "EOS", "EOS %", "EOS #", "EOSINOPHILS", "EOSINOPHILS %", "EOSINOPHILS #", "BASOS", "BASOS %", "BASOPHILS", "BASOPHILS %", "HGB", "HEMOGLOBIN", "MCV", "MCH", "MCHC", "RDW", "PLATELET COUNT", "PLATELETS", "MPV":
-            return "Complete Blood Count (CBC)"
-        
-        // Comprehensive Metabolic Panel (CMP) Tests
-        case "GLUCOSE", "BLOOD SUGAR", "UREA NITROGEN", "BUN", "CREATININE", "SODIUM", "NA", "POTASSIUM", "K", "CHLORIDE", "CL", "ECO2", "CO2", "BICARBONATE", "ANION GAP", "CALCIUM", "CA", "TOTAL PROTEIN", "ALBUMIN", "AST", "SGOT", "ALKALINE PHOSPHATASE", "ALP", "BILIRUBIN TOTAL", "BILIRUBIN", "ALT", "SGPT":
-            return "Comprehensive Metabolic Panel (CMP)"
-        
-        // Default case
-        default:
-            return "General Lab Test"
-        }
-    }
-    
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
