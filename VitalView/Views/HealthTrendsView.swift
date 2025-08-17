@@ -117,11 +117,25 @@ struct HealthTrendsView: View {
                 
                 // Metric Selection with enhanced visual design
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Select Metric")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.primary)
-                        .padding(.horizontal, 20)
+                    HStack {
+                        Text("Select Metric")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            healthData = [] // Clear cached data
+                            loadHealthData()
+                        }) {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.blue)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                    .padding(.horizontal, 20)
                     
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 16) {
@@ -131,6 +145,7 @@ struct HealthTrendsView: View {
                                     isSelected: selectedMetric == metric
                                 ) {
                                     selectedMetric = metric
+                                    healthData = [] // Clear cached data when switching metrics
                                     loadHealthData()
                                 }
                             }
@@ -288,6 +303,10 @@ struct HealthTrendsView: View {
     private func loadHealthData() {
         guard isAuthorized, let healthKitType = selectedMetric.healthKitType else { return }
         
+        print("=== Loading Health Data ===")
+        print("Selected metric: \(selectedMetric.rawValue)")
+        print("HealthKit type: \(healthKitType)")
+        
         isLoading = true
         
         Task {
@@ -299,6 +318,11 @@ struct HealthTrendsView: View {
                 data = await fetchCategoryData(for: healthKitType as! HKCategoryType)
             } else {
                 data = await fetchQuantityData(for: healthKitType as! HKQuantityType)
+            }
+            
+            print("Fetched \(data.count) data points")
+            if !data.isEmpty {
+                print("Sample data point: date=\(data.first?.date ?? Date()), value=\(data.first?.value ?? 0), unit=\(data.first?.unit ?? "unknown")")
             }
             
             await MainActor.run {
@@ -324,7 +348,13 @@ struct HealthTrendsView: View {
                 }
                 
                 let dataPoints = samples.map { sample in
+                    let rawValue = sample.quantity.doubleValue(for: HKUnit.percent())
                     let value = self.convertHealthKitValue(sample.quantity, for: self.selectedMetric)
+                    
+                    if self.selectedMetric == .oxygenSaturation {
+                        print("Oxygen sample: raw=\(rawValue), converted=\(value), date=\(sample.endDate)")
+                    }
+                    
                     return HealthDataPoint(
                         date: sample.endDate,
                         value: value,
@@ -426,7 +456,11 @@ struct HealthTrendsView: View {
         case .bloodPressure:
             return quantity.doubleValue(for: HKUnit.millimeterOfMercury())
         case .oxygenSaturation:
-            return quantity.doubleValue(for: HKUnit.percent())
+            let rawValue = quantity.doubleValue(for: HKUnit.percent())
+            let convertedValue = rawValue * 100
+            print("Oxygen Saturation conversion: raw=\(rawValue), converted=\(convertedValue)")
+            // Convert from decimal (0.0-1.0) to percentage (0-100)
+            return convertedValue
         case .bodyTemperature:
             return quantity.doubleValue(for: HKUnit.degreeFahrenheit())
         case .respiratoryRate:
