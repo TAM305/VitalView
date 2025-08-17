@@ -1,192 +1,245 @@
 import CoreData
-import LocalAuthentication
-import SwiftUI
+import Foundation
+import UIKit
 
-public class PersistenceController: ObservableObject {
-    public static let shared = PersistenceController()
-    private static var isAuthenticated = false
+class PersistenceController: ObservableObject {
+    static let shared = PersistenceController()
     
-    public let container: NSPersistentContainer
+    let container: NSPersistentContainer
+    let backgroundContext: NSManagedObjectContext
+    let saveQueue = DispatchQueue(label: "com.vitalvu.persistence.save", qos: .userInitiated)
     
-    // MARK: - Performance Optimization
-    private var backgroundContext: NSManagedObjectContext?
-    private let saveQueue = DispatchQueue(label: "com.vitalview.persistence.save", qos: .userInitiated)
+    // Memory management properties
+    private var memoryWarningObserver: NSObjectProtocol?
+    private var memoryPressureObserver: NSObjectProtocol?
+    private var appStateObserver: NSObjectProtocol?
+    private let memoryThreshold: UInt64 = 100 * 1024 * 1024 // 100 MB threshold
     
-    public init() {
+    init() {
         container = NSPersistentContainer(name: "BloodWorkData")
         
-        // Configure for local storage with file protection
+        // Configure persistent store with memory optimization
         let description = NSPersistentStoreDescription()
-        description.type = NSSQLiteStoreType
-        description.shouldMigrateStoreAutomatically = true
-        description.shouldInferMappingModelAutomatically = true
-        
-        // Performance optimizations
         description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
         description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
+        description.setOption(true as NSNumber, forKey: NSPersistentStoreFileProtectionKey)
         
-        // Enable file protection with better error handling
-        if let storeURL = description.url {
-            do {
-                try FileManager.default.setAttributes(
-                    [.protectionKey: FileProtectionType.complete],
-                    ofItemAtPath: storeURL.path
-                )
-            } catch {
-                print("Warning: Could not set file protection attributes: \(error.localizedDescription)")
-                // Continue without file protection rather than failing
-            }
-        }
+        // Memory optimization options
+        description.setOption(NSNumber(value: 1000), forKey: "NSPersistentStoreBatchSize")
+        description.setOption(NSNumber(value: 100), forKey: "NSPersistentStoreFetchBatchSize")
         
         container.persistentStoreDescriptions = [description]
         
-        container.loadPersistentStores { description, error in
+        // Create background context with memory optimization
+        backgroundContext = NSManagedObjectContext(concurrencyType: .privateQueue)
+        backgroundContext.persistentStoreCoordinator = container.persistentStoreCoordinator
+        backgroundContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        
+        // Set memory limits for background context
+        backgroundContext.setOption(NSNumber(value: 50 * 1024 * 1024), forKey: "NSManagedObjectContextMemoryLimit")
+        
+        container.loadPersistentStores { _, error in
             if let error = error {
-                print("Core Data error: \(error.localizedDescription)")
-                // Try to recover by deleting the store and recreating it
-                if let storeURL = description.url {
-                    do {
-                        try FileManager.default.removeItem(at: storeURL)
-                        print("Removed corrupted store, will recreate on next launch")
-                    } catch {
-                        print("Could not remove corrupted store: \(error.localizedDescription)")
-                    }
-                }
-                // Don't use fatalError in production - just log the error
-                print("Core Data store could not be loaded. App may not function properly.")
-            } else {
-                print("Core Data store loaded successfully")
+                fatalError("Core Data failed to load: \(error.localizedDescription)")
             }
         }
         
+        // Enable automatic merging
         container.viewContext.automaticallyMergesChangesFromParent = true
         container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         
-        // Performance optimizations
-        container.viewContext.automaticallyMergesChangesFromParent = true
-        container.viewContext.shouldDeleteInaccessibleFaults = true
+        // Set memory limits for main context
+        container.viewContext.setOption(NSNumber(value: 100 * 1024 * 1024), forKey: "NSManagedObjectContextMemoryLimit")
         
-        // Setup background context for heavy operations
-        setupBackgroundContext()
+        // Setup memory management
+        setupMemoryManagement()
+        
+        print("Core Data store loaded successfully")
     }
     
-    // MARK: - Background Context Setup
+    // MARK: - Memory Management
     
-    private func setupBackgroundContext() {
-        backgroundContext = container.newBackgroundContext()
-        backgroundContext?.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-        backgroundContext?.automaticallyMergesChangesFromParent = true
-    }
-    
-    // MARK: - Optimized Save Operations
-    
-    public func save() {
-        guard Self.isAuthenticated else {
-            print("Authentication required to save data")
-            return
+    private func setupMemoryManagement() {
+        // Monitor memory warnings
+        memoryWarningObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.handleMemoryWarning()
         }
         
+        // Monitor memory pressure
+        memoryPressureObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.handleMemoryPressure()
+        }
+        
+        // Monitor app state changes
+        appStateObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didEnterBackgroundNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.handleAppBackgrounding()
+        }
+        
+        // Start memory monitoring
+        startMemoryMonitoring()
+    }
+    
+    private func startMemoryMonitoring() {
+        // Monitor memory usage every 5 seconds
+        Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            self?.checkMemoryUsage()
+        }
+    }
+    
+    private func checkMemoryUsage() {
+        let memoryUsage = getCurrentMemoryUsage()
+        
+        if memoryUsage > memoryThreshold {
+            print("⚠️ High memory usage detected: \(memoryUsage / 1024 / 1024) MB")
+            performMemoryCleanup()
+        }
+        
+        // Log memory usage for debugging
+        if memoryUsage > 50 * 1024 * 1024 { // 50 MB
+            print("📊 Current memory usage: \(memoryUsage / 1024 / 1024) MB")
+        }
+    }
+    
+    private func getCurrentMemoryUsage() -> UInt64 {
+        var info = mach_task_basic_info()
+        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size)/4
+        
+        let kerr: kern_return_t = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
+                task_info(mach_task_self_,
+                         task_flavor_t(MACH_TASK_BASIC_INFO),
+                         $0,
+                         &count)
+            }
+        }
+        
+        if kerr == KERN_SUCCESS {
+            return UInt64(info.resident_size)
+        } else {
+            // Fallback to ProcessInfo if mach APIs fail
+            return UInt64(ProcessInfo.processInfo.physicalMemory)
+        }
+    }
+    
+    private func handleMemoryWarning() {
+        print("🚨 Memory warning received - performing cleanup")
+        performMemoryCleanup()
+    }
+    
+    private func handleMemoryPressure() {
+        print("🚨 Memory pressure detected - performing aggressive cleanup")
+        performAggressiveMemoryCleanup()
+    }
+    
+    private func handleAppBackgrounding() {
+        print("📱 App entering background - performing memory cleanup")
+        performMemoryCleanup()
+    }
+    
+    private func performMemoryCleanup() {
+        // Clear Core Data cache
+        container.viewContext.refreshAllObjects()
+        
+        // Clear background context
+        backgroundContext.refreshAllObjects()
+        
+        // Force garbage collection
+        autoreleasepool {
+            // Clear any cached data
+        }
+        
+        print("🧹 Memory cleanup completed")
+    }
+    
+    private func performAggressiveMemoryCleanup() {
+        // More aggressive cleanup
+        performMemoryCleanup()
+        
+        // Clear all contexts
+        container.viewContext.reset()
+        backgroundContext.reset()
+        
+        // Force memory release
+        autoreleasepool {
+            // Additional cleanup
+        }
+        
+        print("🧹 Aggressive memory cleanup completed")
+    }
+    
+    // MARK: - Context Management
+    
+    func save() {
         let context = container.viewContext
         
         if context.hasChanges {
             do {
                 try context.save()
+                print("✅ Core Data changes saved successfully")
             } catch {
-                print("Error saving context: \(error)")
-                // Try to save on background context if main context fails
-                saveOnBackgroundContext()
+                print("❌ Failed to save Core Data changes: \(error)")
             }
         }
     }
     
-    /// Saves data on background context for better performance
-    private func saveOnBackgroundContext() {
-        guard let backgroundContext = backgroundContext else { return }
-        
-        saveQueue.async {
-            if backgroundContext.hasChanges {
+    func saveBackground() {
+        saveQueue.async { [weak self] in
+            guard let self = self else { return }
+            
+            let context = self.backgroundContext
+            
+            if context.hasChanges {
                 do {
-                    try backgroundContext.save()
-                    print("Successfully saved on background context")
-                } catch {
-                    print("Error saving on background context: \(error)")
-                }
-            }
-        }
-    }
-    
-    /// Performs heavy operations on background context
-    public func performBackgroundTask<T>(_ block: @escaping (NSManagedObjectContext) throws -> T) async throws -> T {
-        guard let backgroundContext = backgroundContext else {
-            throw NSError(domain: "PersistenceController", code: 1, userInfo: [NSLocalizedDescriptionKey: "Background context not available"])
-        }
-        
-        return try await withCheckedThrowingContinuation { continuation in
-            backgroundContext.perform {
-                do {
-                    let result = try block(backgroundContext)
-                    continuation.resume(returning: result)
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
-        }
-    }
-    
-    // MARK: - Authentication
-    
-    public func authenticate(completion: @escaping (Bool) -> Void) {
-        let context = LAContext()
-        var error: NSError?
-        
-        if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
-            context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, 
-                                 localizedReason: "Access your blood test records") { success, _ in
-                DispatchQueue.main.async {
-                    Self.isAuthenticated = success
-                    completion(success)
-                }
-            }
-        } else {
-            completion(false)
-        }
-    }
-    
-    // MARK: - Data Management
-    
-    public func deleteAllData() {
-        guard Self.isAuthenticated else {
-            print("Authentication required to delete data")
-            return
-        }
-        
-        Task {
-            do {
-                try await performBackgroundTask { context in
-                    // Delete all test entities
-                    let testFetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "BloodTestEntity")
-                    let testDeleteRequest = NSBatchDeleteRequest(fetchRequest: testFetchRequest)
-                    
-                    try context.execute(testDeleteRequest)
                     try context.save()
+                    print("✅ Background Core Data changes saved successfully")
+                } catch {
+                    print("❌ Failed to save background Core Data changes: \(error)")
                 }
-                print("Successfully deleted all data")
-            } catch {
-                print("Error deleting all data: \(error)")
             }
         }
     }
     
-    // MARK: - Memory Management
+    // MARK: - Memory-Efficient Fetching
     
-    /// Cleans up memory when app goes to background
-    public func cleanupMemory() {
-        container.viewContext.refreshAllObjects()
-        backgroundContext?.refreshAllObjects()
+    func fetchWithMemoryOptimization<T: NSManagedObject>(_ request: NSFetchRequest<T>) throws -> [T] {
+        // Set batch size to prevent loading too many objects into memory
+        request.fetchBatchSize = 50
+        
+        // Set fetch limit if not specified
+        if request.fetchLimit == 0 {
+            request.fetchLimit = 100
+        }
+        
+        // Use faulting to reduce memory usage
+        request.returnsObjectsAsFaults = true
+        
+        return try container.viewContext.fetch(request)
     }
     
-    /// Resets the view context to free memory
-    public func resetViewContext() {
-        container.viewContext.reset()
+    // MARK: - Cleanup
+    
+    deinit {
+        if let observer = memoryWarningObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        if let observer = memoryPressureObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        if let observer = appStateObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
 } 
+

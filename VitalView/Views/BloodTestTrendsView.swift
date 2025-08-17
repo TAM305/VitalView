@@ -969,29 +969,23 @@ struct BloodTestExplanationView: View {
         // Complete Blood Count (CBC) Tests
         case "WBC":
             return "White blood cells; infection defense"
-        case "NEUTROPHILS":
-            return "Bacterial defense WBC"
-        case "NEUTROPHILS %":
+        case "NEUTROPHILS", "NEUTROPHILS %":
             return "Bacterial defense WBC percentage"
         case "NEUTROPHILS #":
             return "Absolute neutrophil count"
-        case "LYMPHS %":
+        case "LYMPHS", "LYMPHS %":
             return "Lymphocytes %; viral/immune response"
         case "LYMPHS #":
             return "Absolute lymphocyte count"
-        case "MONOS":
-            return "Monocytes; infection cleanup"
-        case "MONOS %":
+        case "MONOS", "MONOS %":
             return "Monocytes %; infection cleanup"
         case "MONOS #":
             return "Absolute monocyte count"
-        case "EOS":
-            return "Eosinophils; allergies/parasites"
-        case "EOS %":
+        case "EOS", "EOS %":
             return "Eosinophils %; allergies/parasites"
         case "EOS #":
             return "Absolute eosinophil count"
-        case "BASOS %":
+        case "BASOS", "BASOS %":
             return "Basophils %; allergy/inflammation"
         case "HGB":
             return "Oxygen-carrying protein in RBCs"
@@ -1049,23 +1043,23 @@ struct BloodTestExplanationView: View {
         // Complete Blood Count (CBC) Ranges
         case "WBC":
             return "4,000–11,000 /µL"
-        case "NEUTROPHILS %":
+        case "NEUTROPHILS", "NEUTROPHILS %":
             return "40–70%"
         case "NEUTROPHILS #":
             return "1.5–8.0 ×10³/µL"
-        case "LYMPHS %":
+        case "LYMPHS", "LYMPHS %":
             return "20–40%"
         case "LYMPHS #":
             return "1.0–3.0 ×10³/µL"
-        case "MONOS %":
+        case "MONOS", "MONOS %":
             return "2–8%"
         case "MONOS #":
             return "0.2–0.8 ×10³/µL"
-        case "EOS %":
+        case "EOS", "EOS %":
             return "1–4%"
         case "EOS #":
             return "0.0–0.5 ×10³/µL"
-        case "BASOS %":
+        case "BASOS", "BASOS %":
             return "0–1%"
         case "HGB":
             return "Men: 13.5–17.5 g/dL, Women: 12.0–15.5 g/dL"
@@ -1123,7 +1117,7 @@ struct BloodTestExplanationView: View {
         // CBC Tests - Health Significance
         case "WBC":
             return "High WBC may indicate infection, inflammation, or blood disorders. Low WBC may suggest immune suppression, bone marrow problems, or certain medications."
-        case "NEUTROPHILS":
+        case "NEUTROPHILS", "NEUTROPHILS %":
             return "High neutrophils often indicate bacterial infections or inflammation. Low neutrophils (neutropenia) increase infection risk and may indicate bone marrow problems."
         case "HGB":
             return "Low hemoglobin indicates anemia, which can cause fatigue, weakness, and shortness of breath. High levels may suggest dehydration or blood disorders."
