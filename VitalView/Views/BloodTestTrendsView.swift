@@ -37,13 +37,13 @@ struct BloodTestTrendsView: View {
     }
     
     private var testCategory: String {
-        switch selectedTest {
+        switch testName {
         // Complete Blood Count (CBC) Tests
-        case "WBC", "NEUTROPHILS", "NEUTROPHILS %", "NEUTROPHILS #", "LYMPHS %", "LYMPHS #", "MONOS", "MONOS %", "MONOS #", "EOS", "EOS %", "EOS #", "BASOS %", "HGB", "MCV", "MCH", "MCHC", "RDW", "PLATELET COUNT", "MPV":
+        case "WBC", "WHITE BLOOD CELLS", "WHITE BLOOD CELL COUNT", "NEUTROPHILS", "NEUTROPHILS %", "NEUTROPHILS #", "LYMPHS", "LYMPHS %", "LYMPHS #", "LYMPHOCYTES", "LYMPHOCYTES %", "LYMPHOCYTES #", "MONOS", "MONOS %", "MONOS #", "MONOCYTES", "MONOCYTES %", "MONOCYTES #", "EOS", "EOS %", "EOS #", "EOSINOPHILS", "EOSINOPHILS %", "EOSINOPHILS #", "BASOS", "BASOS %", "BASOPHILS", "BASOPHILS %", "HGB", "HEMOGLOBIN", "MCV", "MCH", "MCHC", "RDW", "PLATELET COUNT", "PLATELETS", "MPV":
             return "Complete Blood Count (CBC)"
         
         // Comprehensive Metabolic Panel (CMP) Tests
-        case "GLUCOSE", "UREA NITROGEN", "CREATININE", "SODIUM", "POTASSIUM", "CHLORIDE", "ECO2", "ANION GAP", "CALCIUM", "TOTAL PROTEIN", "ALBUMIN", "AST", "ALKALINE PHOSPHATASE", "BILIRUBIN TOTAL":
+        case "GLUCOSE", "BLOOD SUGAR", "UREA NITROGEN", "BUN", "CREATININE", "SODIUM", "NA", "POTASSIUM", "K", "CHLORIDE", "CL", "ECO2", "CO2", "BICARBONATE", "ANION GAP", "CALCIUM", "CA", "TOTAL PROTEIN", "ALBUMIN", "AST", "SGOT", "ALKALINE PHOSPHATASE", "ALP", "BILIRUBIN TOTAL", "BILIRUBIN", "ALT", "SGPT":
             return "Comprehensive Metabolic Panel (CMP)"
         
         // Default case
@@ -842,11 +842,71 @@ struct BloodTestExplanationView: View {
     private var testCategory: String {
         switch testName {
         // Complete Blood Count (CBC) Tests
-        case "WBC", "NEUTROPHILS", "NEUTROPHILS %", "NEUTROPHILS #", "LYMPHS %", "LYMPHS #", "MONOS", "MONOS %", "MONOS #", "EOS", "EOS %", "EOS #", "BASOS %", "HGB", "MCV", "MCH", "MCHC", "RDW", "PLATELET COUNT", "MPV":
+        case "WBC", "WHITE BLOOD CELLS", "WHITE BLOOD CELL COUNT":
+            return "Complete Blood Count (CBC)"
+        case "NEUTROPHILS", "NEUTROPHILS %":
+            return "Complete Blood Count (CBC)"
+        case "NEUTROPHILS #":
+            return "Complete Blood Count (CBC)"
+        case "LYMPHS", "LYMPHS %", "LYMPHOCYTES", "LYMPHOCYTES %":
+            return "Complete Blood Count (CBC)"
+        case "LYMPHS #", "LYMPHOCYTES #":
+            return "Complete Blood Count (CBC)"
+        case "MONOS", "MONOS %", "MONOCYTES", "MONOCYTES %":
+            return "Complete Blood Count (CBC)"
+        case "MONOS #", "MONOCYTES #":
+            return "Complete Blood Count (CBC)"
+        case "EOS", "EOS %", "EOSINOPHILS", "EOSINOPHILS %":
+            return "Complete Blood Count (CBC)"
+        case "EOS #", "EOSINOPHILS #":
+            return "Complete Blood Count (CBC)"
+        case "BASOS", "BASOS %", "BASOPHILS", "BASOPHILS %":
+            return "Complete Blood Count (CBC)"
+        case "HGB", "HEMOGLOBIN":
+            return "Complete Blood Count (CBC)"
+        case "MCV":
+            return "Complete Blood Count (CBC)"
+        case "MCH":
+            return "Complete Blood Count (CBC)"
+        case "MCHC":
+            return "Complete Blood Count (CBC)"
+        case "RDW":
+            return "Complete Blood Count (CBC)"
+        case "PLATELET COUNT", "PLATELETS":
+            return "Complete Blood Count (CBC)"
+        case "MPV":
             return "Complete Blood Count (CBC)"
         
         // Comprehensive Metabolic Panel (CMP) Tests
-        case "GLUCOSE", "UREA NITROGEN", "CREATININE", "SODIUM", "POTASSIUM", "CHLORIDE", "ECO2", "ANION GAP", "CALCIUM", "TOTAL PROTEIN", "ALBUMIN", "AST", "ALKALINE PHOSPHATASE", "BILIRUBIN TOTAL":
+        case "GLUCOSE", "BLOOD SUGAR":
+            return "Comprehensive Metabolic Panel (CMP)"
+        case "UREA NITROGEN", "BUN":
+            return "Comprehensive Metabolic Panel (CMP)"
+        case "CREATININE":
+            return "Comprehensive Metabolic Panel (CMP)"
+        case "SODIUM", "NA":
+            return "Comprehensive Metabolic Panel (CMP)"
+        case "POTASSIUM", "K":
+            return "Comprehensive Metabolic Panel (CMP)"
+        case "CHLORIDE", "CL":
+            return "Comprehensive Metabolic Panel (CMP)"
+        case "ECO2", "CO2", "BICARBONATE":
+            return "Comprehensive Metabolic Panel (CMP)"
+        case "ANION GAP":
+            return "Comprehensive Metabolic Panel (CMP)"
+        case "CALCIUM", "CA":
+            return "Comprehensive Metabolic Panel (CMP)"
+        case "TOTAL PROTEIN":
+            return "Comprehensive Metabolic Panel (CMP)"
+        case "ALBUMIN":
+            return "Comprehensive Metabolic Panel (CMP)"
+        case "AST", "SGOT":
+            return "Comprehensive Metabolic Panel (CMP)"
+        case "ALT", "SGPT":
+            return "Comprehensive Metabolic Panel (CMP)"
+        case "ALKALINE PHOSPHATASE", "ALP":
+            return "Comprehensive Metabolic Panel (CMP)"
+        case "BILIRUBIN TOTAL", "BILIRUBIN":
             return "Comprehensive Metabolic Panel (CMP)"
         
         // Default case
@@ -967,70 +1027,72 @@ struct BloodTestExplanationView: View {
     private var testDescription: String {
         switch testName {
         // Complete Blood Count (CBC) Tests
-        case "WBC":
-            return "White blood cells; infection defense"
+        case "WBC", "WHITE BLOOD CELLS", "WHITE BLOOD CELL COUNT":
+            return "White blood cell count that measures infection-fighting cells in your bloodstream."
         case "NEUTROPHILS", "NEUTROPHILS %":
-            return "Bacterial defense WBC percentage"
+            return "Main white blood cells responsible for fighting bacterial infections. These are your body's first line of defense against bacterial invaders."
         case "NEUTROPHILS #":
-            return "Absolute neutrophil count"
-        case "LYMPHS", "LYMPHS %":
-            return "Lymphocytes %; viral/immune response"
-        case "LYMPHS #":
-            return "Absolute lymphocyte count"
-        case "MONOS", "MONOS %":
-            return "Monocytes %; infection cleanup"
-        case "MONOS #":
-            return "Absolute monocyte count"
-        case "EOS", "EOS %":
-            return "Eosinophils %; allergies/parasites"
-        case "EOS #":
-            return "Absolute eosinophil count"
-        case "BASOS", "BASOS %":
-            return "Basophils %; allergy/inflammation"
-        case "HGB":
-            return "Oxygen-carrying protein in RBCs"
+            return "Absolute number of neutrophils in your blood, providing a precise count of these infection-fighting cells."
+        case "LYMPHS", "LYMPHS %", "LYMPHOCYTES", "LYMPHOCYTES %":
+            return "Lymphocytes percentage; these cells are crucial for viral infections and immune system responses."
+        case "LYMPHS #", "LYMPHOCYTES #":
+            return "Absolute lymphocyte count; the exact number of these important immune cells in your blood."
+        case "MONOS", "MONOS %", "MONOCYTES", "MONOCYTES %":
+            return "Monocytes percentage; these cells help fight infection and clear cellular debris from your body."
+        case "MONOS #", "MONOCYTES #":
+            return "Absolute monocyte count; the precise number of these infection-fighting and cleanup cells."
+        case "EOS", "EOS %", "EOSINOPHILS", "EOSINOPHILS %":
+            return "Eosinophils percentage; these cells often increase with allergies or parasitic infections."
+        case "EOS #", "EOSINOPHILS #":
+            return "Absolute eosinophil count; the exact number of these allergy and parasite-fighting cells."
+        case "BASOS", "BASOS %", "BASOPHILS", "BASOPHILS %":
+            return "Basophils percentage; the least common white blood cell type, involved in allergies and inflammation responses."
+        case "HGB", "HEMOGLOBIN":
+            return "Hemoglobin; the protein in red blood cells that carries oxygen throughout your body."
         case "MCV":
-            return "Average red blood cell size"
+            return "Mean corpuscular volume; the average size of your red blood cells, helping classify the type of anemia if present."
         case "MCH":
-            return "Hemoglobin amount per red cell"
+            return "Mean corpuscular hemoglobin; the average amount of hemoglobin per red blood cell."
         case "MCHC":
-            return "Hemoglobin concentration in red cells"
+            return "Mean corpuscular hemoglobin concentration; the average concentration of hemoglobin inside your red blood cells."
         case "RDW":
-            return "Variation in RBC size"
-        case "PLATELET COUNT":
-            return "Platelets; clotting function"
+            return "Red cell distribution width; a measure of variation in red blood cell size, indicating how uniform your red cells are."
+        case "PLATELET COUNT", "PLATELETS":
+            return "Number of platelets in your blood; these are essential for blood clotting and wound healing."
         case "MPV":
-            return "Average platelet size"
+            return "Mean platelet volume; the average size of your platelets, helping evaluate platelet production and function."
         
         // Comprehensive Metabolic Panel (CMP) Tests
-        case "GLUCOSE":
-            return "Blood sugar; diabetes screen"
-        case "UREA NITROGEN":
-            return "Protein waste; kidney function"
+        case "GLUCOSE", "BLOOD SUGAR":
+            return "Blood sugar level; used to diagnose and monitor diabetes, as well as assess overall metabolic health."
+        case "UREA NITROGEN", "BUN":
+            return "Waste product from protein metabolism; high levels can suggest kidney issues or dehydration."
         case "CREATININE":
-            return "Muscle waste; kidney function marker"
-        case "SODIUM":
-            return "Main electrolyte; fluid balance, nerve/muscle"
-        case "POTASSIUM":
-            return "Electrolyte; heart, nerve, muscle function"
-        case "CHLORIDE":
-            return "Electrolyte; acid-base balance"
-        case "ECO2":
-            return "Reflects acid-base balance"
+            return "Waste product from muscle metabolism; used to assess kidney function and overall renal health."
+        case "SODIUM", "NA":
+            return "Main electrolyte controlling fluid balance and nerve/muscle function throughout your body."
+        case "POTASSIUM", "K":
+            return "Key electrolyte essential for heart rhythm, muscle function, and nerve signal transmission."
+        case "CHLORIDE", "CL":
+            return "An electrolyte that helps maintain acid-base balance in your body."
+        case "ECO2", "CO2", "BICARBONATE":
+            return "Reflects acid-base balance; low levels can indicate acidosis and metabolic imbalances."
         case "ANION GAP":
-            return "Electrolyte balance; detects acid-base disorders"
-        case "CALCIUM":
-            return "Bone, nerve, muscle function; clotting"
+            return "A calculation from electrolytes (sodium, chloride, bicarbonate) that helps detect metabolic imbalances like acidosis."
+        case "CALCIUM", "CA":
+            return "Important mineral for bones, muscles, nerves, and blood clotting processes."
         case "TOTAL PROTEIN":
-            return "Albumin + globulins; reflects nutrition, liver/kidneys"
+            return "Combined albumin and globulins; reflects overall nutrition status and liver/kidney function."
         case "ALBUMIN":
-            return "Major blood protein; maintains fluid balance, transport"
-        case "AST":
-            return "Liver/heart enzyme; rises in liver/muscle injury"
-        case "ALKALINE PHOSPHATASE":
-            return "Enzyme from liver/bone; high in liver or bone disease"
-        case "BILIRUBIN TOTAL":
-            return "Red cell breakdown product; liver/bile duct marker"
+            return "Major blood protein that maintains fluid balance and transports nutrients throughout your body."
+        case "AST", "SGOT":
+            return "Liver and heart enzyme; levels rise in liver or muscle injury, helping assess organ damage."
+        case "ALT", "SGPT":
+            return "Liver enzyme; primarily found in the liver, elevated levels indicate liver damage or disease."
+        case "ALKALINE PHOSPHATASE", "ALP":
+            return "Enzyme from liver and bone; elevated levels may indicate liver disease or bone disorders."
+        case "BILIRUBIN TOTAL", "BILIRUBIN":
+            return "Red blood cell breakdown product; serves as a marker for liver function and bile duct health."
         
         // Default case
         default:
@@ -1041,27 +1103,27 @@ struct BloodTestExplanationView: View {
     private var testNormalRange: String? {
         switch testName {
         // Complete Blood Count (CBC) Ranges
-        case "WBC":
+        case "WBC", "WHITE BLOOD CELLS", "WHITE BLOOD CELL COUNT":
             return "4,000–11,000 /µL"
         case "NEUTROPHILS", "NEUTROPHILS %":
             return "40–70%"
         case "NEUTROPHILS #":
             return "1.5–8.0 ×10³/µL"
-        case "LYMPHS", "LYMPHS %":
+        case "LYMPHS", "LYMPHS %", "LYMPHOCYTES", "LYMPHOCYTES %":
             return "20–40%"
-        case "LYMPHS #":
+        case "LYMPHS #", "LYMPHOCYTES #":
             return "1.0–3.0 ×10³/µL"
-        case "MONOS", "MONOS %":
+        case "MONOS", "MONOS %", "MONOCYTES", "MONOCYTES %":
             return "2–8%"
-        case "MONOS #":
+        case "MONOS #", "MONOCYTES #":
             return "0.2–0.8 ×10³/µL"
-        case "EOS", "EOS %":
+        case "EOS", "EOS %", "EOSINOPHILS", "EOSINOPHILS %":
             return "1–4%"
-        case "EOS #":
+        case "EOS #", "EOSINOPHILS #":
             return "0.0–0.5 ×10³/µL"
-        case "BASOS", "BASOS %":
+        case "BASOS", "BASOS %", "BASOPHILS", "BASOPHILS %":
             return "0–1%"
-        case "HGB":
+        case "HGB", "HEMOGLOBIN":
             return "Men: 13.5–17.5 g/dL, Women: 12.0–15.5 g/dL"
         case "MCV":
             return "80–100 fL"
@@ -1071,39 +1133,41 @@ struct BloodTestExplanationView: View {
             return "32–36 g/dL"
         case "RDW":
             return "11.5–14.5%"
-        case "PLATELET COUNT":
+        case "PLATELET COUNT", "PLATELETS":
             return "150,000–450,000 /µL"
         case "MPV":
             return "7.5–11.5 fL"
         
         // Comprehensive Metabolic Panel (CMP) Ranges
-        case "GLUCOSE":
+        case "GLUCOSE", "BLOOD SUGAR":
             return "70–99 mg/dL (fasting)"
-        case "UREA NITROGEN":
+        case "UREA NITROGEN", "BUN":
             return "7–20 mg/dL"
         case "CREATININE":
             return "0.6–1.3 mg/dL"
-        case "SODIUM":
+        case "SODIUM", "NA":
             return "135–145 mEq/L"
-        case "POTASSIUM":
+        case "POTASSIUM", "K":
             return "3.5–5.0 mEq/L"
-        case "CHLORIDE":
+        case "CHLORIDE", "CL":
             return "98–106 mEq/L"
-        case "ECO2":
+        case "ECO2", "CO2", "BICARBONATE":
             return "22–29 mEq/L"
         case "ANION GAP":
             return "8–16 mEq/L"
-        case "CALCIUM":
+        case "CALCIUM", "CA":
             return "8.5–10.5 mg/dL"
         case "TOTAL PROTEIN":
             return "6.0–8.3 g/dL"
         case "ALBUMIN":
             return "3.5–5.0 g/dL"
-        case "AST":
+        case "AST", "SGOT":
             return "10–40 IU/L"
-        case "ALKALINE PHOSPHATASE":
+        case "ALT", "SGPT":
+            return "7–56 IU/L"
+        case "ALKALINE PHOSPHATASE", "ALP":
             return "44–147 IU/L"
-        case "BILIRUBIN TOTAL":
+        case "BILIRUBIN TOTAL", "BILIRUBIN":
             return "0.1–1.2 mg/dL"
         
         // Default case
@@ -1115,32 +1179,76 @@ struct BloodTestExplanationView: View {
     private var testHealthSignificance: String? {
         switch testName {
         // CBC Tests - Health Significance
-        case "WBC":
-            return "High WBC may indicate infection, inflammation, or blood disorders. Low WBC may suggest immune suppression, bone marrow problems, or certain medications."
+        case "WBC", "WHITE BLOOD CELLS", "WHITE BLOOD CELL COUNT":
+            return "High WBC may indicate infection, inflammation, or blood disorders. Low WBC may suggest immune suppression, bone marrow problems, or certain medications. Normal WBC levels are essential for fighting infections and maintaining immune health."
         case "NEUTROPHILS", "NEUTROPHILS %":
-            return "High neutrophils often indicate bacterial infections or inflammation. Low neutrophils (neutropenia) increase infection risk and may indicate bone marrow problems."
-        case "HGB":
-            return "Low hemoglobin indicates anemia, which can cause fatigue, weakness, and shortness of breath. High levels may suggest dehydration or blood disorders."
-        case "PLATELET COUNT":
-            return "Low platelets increase bleeding risk. High platelets may indicate inflammation, blood disorders, or increased clotting risk."
+            return "High neutrophils often indicate bacterial infections or inflammation. Low neutrophils (neutropenia) increase infection risk and may indicate bone marrow problems, chemotherapy effects, or autoimmune disorders."
+        case "NEUTROPHILS #":
+            return "Absolute neutrophil count provides precise information about your body's ability to fight bacterial infections. Low counts significantly increase infection risk and require medical attention."
+        case "LYMPHS", "LYMPHS %", "LYMPHOCYTES", "LYMPHOCYTES %":
+            return "Lymphocytes are crucial for viral infections and immune memory. High levels may indicate viral infections, while low levels can suggest immune deficiencies or certain medications."
+        case "LYMPHS #", "LYMPHOCYTES #":
+            return "Absolute lymphocyte count helps assess immune function. Low counts may indicate immune suppression, while high counts can suggest viral infections or blood disorders."
+        case "MONOS", "MONOS %", "MONOCYTES", "MONOCYTES %":
+            return "Monocytes help fight infection and clear cellular debris. Elevated levels may indicate chronic inflammation, while low levels can suggest bone marrow problems."
+        case "MONOS #", "MONOCYTES #":
+            return "Absolute monocyte count helps evaluate immune function and inflammation status. Changes can indicate various inflammatory conditions or immune disorders."
+        case "EOS", "EOS %", "EOSINOPHILS", "EOSINOPHILS %":
+            return "Eosinophils increase with allergies, parasitic infections, or certain skin conditions. Very high levels may indicate blood disorders or severe allergic reactions."
+        case "EOS #", "EOSINOPHILS #":
+            return "Absolute eosinophil count helps diagnose allergic conditions, parasitic infections, and certain blood disorders. Persistent elevation requires medical evaluation."
+        case "BASOS", "BASOS %", "BASOPHILS", "BASOPHILS %":
+            return "Basophils are involved in allergic and inflammatory responses. Elevated levels may indicate allergies, inflammation, or certain blood disorders."
+        case "HGB", "HEMOGLOBIN":
+            return "Low hemoglobin indicates anemia, which can cause fatigue, weakness, and shortness of breath. High levels may suggest dehydration, blood disorders, or lung disease. Normal levels are essential for oxygen delivery."
+        case "MCV":
+            return "MCV helps classify anemia types. Low MCV suggests iron deficiency, while high MCV may indicate vitamin B12/folate deficiency or alcohol use. Normal MCV indicates healthy red blood cell size."
+        case "MCH":
+            return "MCH measures hemoglobin content per red cell. Low MCH suggests iron deficiency, while high MCH may indicate vitamin B12/folate deficiency. Normal MCH ensures adequate oxygen-carrying capacity."
+        case "MCHC":
+            return "MCHC indicates hemoglobin concentration in red cells. Low MCHC suggests iron deficiency anemia, while normal levels ensure efficient oxygen transport."
+        case "RDW":
+            return "RDW measures red blood cell size variation. High RDW suggests mixed cell populations, often indicating iron deficiency or other anemias. Normal RDW indicates uniform cell sizes."
+        case "PLATELET COUNT", "PLATELETS":
+            return "Low platelets increase bleeding risk and may indicate bone marrow problems, immune disorders, or certain medications. High platelets may indicate inflammation, blood disorders, or increased clotting risk."
+        case "MPV":
+            return "MPV helps evaluate platelet production and function. High MPV may indicate active platelet production, while low MPV can suggest bone marrow problems or certain medications."
         
         // CMP Tests - Health Significance
-        case "GLUCOSE":
-            return "High glucose may indicate diabetes or prediabetes. Low glucose can cause dizziness, confusion, and in severe cases, unconsciousness."
+        case "GLUCOSE", "BLOOD SUGAR":
+            return "High glucose may indicate diabetes or prediabetes, requiring lifestyle changes or medication. Low glucose can cause dizziness, confusion, and in severe cases, unconsciousness. Normal levels are essential for energy and brain function."
+        case "UREA NITROGEN", "BUN":
+            return "High urea nitrogen suggests kidney function problems, dehydration, or high protein intake. Low levels may indicate malnutrition or liver disease. Normal levels indicate healthy kidney function."
         case "CREATININE":
-            return "High creatinine suggests kidney function problems. Low levels may indicate reduced muscle mass or certain medications."
-        case "SODIUM":
-            return "High sodium may indicate dehydration. Low sodium can cause confusion, seizures, and in severe cases, coma."
-        case "POTASSIUM":
-            return "High potassium can cause dangerous heart rhythm problems. Low potassium may cause muscle weakness and heart rhythm issues."
-        case "AST":
-            return "High AST may indicate liver damage, heart problems, or muscle injury. Levels help monitor liver disease progression."
+            return "High creatinine suggests kidney function problems and requires medical evaluation. Low levels may indicate reduced muscle mass, certain medications, or pregnancy. Normal levels indicate healthy kidney function."
+        case "SODIUM", "NA":
+            return "High sodium may indicate dehydration or kidney problems. Low sodium can cause confusion, seizures, and in severe cases, coma. Normal levels are essential for fluid balance and nerve function."
+        case "POTASSIUM", "K":
+            return "High potassium can cause dangerous heart rhythm problems and requires immediate medical attention. Low potassium may cause muscle weakness, heart rhythm issues, and fatigue."
+        case "CHLORIDE", "CL":
+            return "Chloride helps maintain acid-base balance. High levels may indicate dehydration or kidney problems, while low levels can suggest acid-base disorders or certain medications."
+        case "ECO2", "CO2", "BICARBONATE":
+            return "Low ECO2 (bicarbonate) can indicate acidosis, kidney problems, or respiratory disorders. High levels may suggest alkalosis or certain medications. Normal levels maintain proper acid-base balance."
+        case "ANION GAP":
+            return "High anion gap suggests metabolic acidosis, which can indicate diabetes, kidney failure, or poisoning. Normal anion gap helps maintain proper acid-base balance and electrolyte function."
+        case "CALCIUM", "CA":
+            return "High calcium may indicate parathyroid problems, cancer, or certain medications. Low calcium can cause muscle cramps, bone problems, and nerve issues. Normal levels are essential for bone health and muscle function."
+        case "TOTAL PROTEIN":
+            return "Low total protein may indicate malnutrition, liver disease, or kidney problems. High levels may suggest dehydration or certain blood disorders. Normal levels ensure proper nutrition and organ function."
         case "ALBUMIN":
-            return "Low albumin may indicate malnutrition, liver disease, or kidney problems. It's crucial for maintaining fluid balance and transporting nutrients."
+            return "Low albumin may indicate malnutrition, liver disease, or kidney problems. It's crucial for maintaining fluid balance and transporting nutrients. Normal levels ensure proper nutrition and organ function."
+        case "AST", "SGOT":
+            return "High AST may indicate liver damage, heart problems, or muscle injury. Levels help monitor liver disease progression and assess organ damage. Normal levels indicate healthy liver and muscle function."
+        case "ALT", "SGPT":
+            return "High ALT specifically indicates liver damage or disease. ALT is more liver-specific than AST and helps diagnose liver problems. Normal levels indicate healthy liver function."
+        case "ALKALINE PHOSPHATASE", "ALP":
+            return "High alkaline phosphatase may indicate liver disease, bone disorders, or certain medications. Normal levels ensure proper liver and bone function."
+        case "BILIRUBIN TOTAL", "BILIRUBIN":
+            return "High bilirubin may indicate liver disease, bile duct problems, or blood disorders. Normal levels indicate healthy liver function and red blood cell breakdown."
         
         // Default case
         default:
-            return "Abnormal results may indicate underlying health conditions. Always discuss results with your healthcare provider for proper interpretation and follow-up."
+            return "Abnormal results may indicate underlying health conditions. Always discuss results with your healthcare provider for proper interpretation and follow-up. Regular monitoring helps track changes and assess treatment effectiveness."
         }
     }
 }
