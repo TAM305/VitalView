@@ -92,8 +92,8 @@ struct VitalVuApp: App {
         }
         
         // Pre-warm HealthKit if available
-        if healthKitManager.isHealthKitAvailable() {
-            await healthKitManager.prewarmHealthKit()
+        if HKHealthStore.isHealthDataAvailable() {
+            healthKitManager.prewarmServices()
         }
     }
 }

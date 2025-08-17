@@ -217,35 +217,39 @@ struct HealthTrendsView: View {
 
     // MARK: - HealthKit
     func checkHealthKitAuthorization() {
-        guard let healthKitType = selectedMetric.healthKitType else { return }
-        if let quantityType = healthKitType as? HKQuantityType {
-            isAuthorized = healthKitManager.getAuthorizationStatus(for: quantityType) == .sharingAuthorized
-        } else if healthKitType is HKCorrelationType {
-            let systolicType = HKObjectType.quantityType(forIdentifier: .bloodPressureSystolic)!
-            let diastolicType = HKObjectType.quantityType(forIdentifier: .bloodPressureDiastolic)!
-            isAuthorized = healthKitManager.getAuthorizationStatus(for: systolicType) == .sharingAuthorized &&
-                           healthKitManager.getAuthorizationStatus(for: diastolicType) == .sharingAuthorized
+        guard let type = selectedMetric.healthKitType else { return }
+
+        if let qty = type as? HKQuantityType {
+            // ✅ call the object, NOT the binding
+            isAuthorized = healthKitManager.authorizationStatus(for: qty) == .sharingAuthorized
+        } else if type is HKCorrelationType {
+            // Blood pressure needs both
+            let systolic = HKObjectType.quantityType(forIdentifier: .bloodPressureSystolic)!
+            let diastolic = HKObjectType.quantityType(forIdentifier: .bloodPressureDiastolic)!
+            let sOK = healthKitManager.authorizationStatus(for: systolic) == .sharingAuthorized
+            let dOK = healthKitManager.authorizationStatus(for: diastolic) == .sharingAuthorized
+            isAuthorized = sOK && dOK
         }
     }
 
     func requestHealthKitAuthorization() {
-        guard let healthKitType = selectedMetric.healthKitType else { return }
-        var typesToRequest: Set<HKObjectType> = []
-        if let quantityType = healthKitType as? HKQuantityType {
-            typesToRequest.insert(quantityType)
-        } else if healthKitType is HKCorrelationType {
-            let systolicType = HKObjectType.quantityType(forIdentifier: .bloodPressureSystolic)!
-            let diastolicType = HKObjectType.quantityType(forIdentifier: .bloodPressureDiastolic)!
-            typesToRequest.insert(systolicType)
-            typesToRequest.insert(diastolicType)
+        guard let type = selectedMetric.healthKitType else { return }
+
+        var readTypes = Set<HKObjectType>()
+        if let qty = type as? HKQuantityType {
+            readTypes.insert(qty)
+        } else if type is HKCorrelationType {
+            readTypes.insert(HKObjectType.quantityType(forIdentifier: .bloodPressureSystolic)!)
+            readTypes.insert(HKObjectType.quantityType(forIdentifier: .bloodPressureDiastolic)!)
         }
-        healthKitManager.requestAuthorization(for: typesToRequest) { success, error in
+
+        healthKitManager.requestAuthorization(read: readTypes) { success, error in
             DispatchQueue.main.async {
                 if success {
-                    isAuthorized = true
-                    loadHealthData()
+                    self.isAuthorized = true
+                    self.loadHealthData()
                 } else {
-                    print("HealthKit authorization failed: \(error?.localizedDescription ?? "Unknown error")")
+                    print("HealthKit auth failed: \(error?.localizedDescription ?? "Unknown")")
                 }
             }
         }

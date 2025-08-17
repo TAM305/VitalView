@@ -3,7 +3,7 @@ import CoreData
 import SwiftUI
 import Combine
 import LocalAuthentication
-import HealthKit
+@preconcurrency import HealthKit
 
 /// Comprehensive data models for the VitalVu blood work analyzer application.
 ///
@@ -39,7 +39,7 @@ import HealthKit
 ///
 /// This class provides methods to check authorization status for different
 /// health data types and handle authorization requests properly.
-class HealthKitManager: ObservableObject {
+final class HealthKitManager: ObservableObject, @unchecked Sendable {
     let healthStore = HKHealthStore()
     private var isAuthorized = false
     
@@ -110,19 +110,18 @@ class HealthKitManager: ObservableObject {
             return false
         }
         
-        let typesToRead: Set<HKObjectType> = [
-            HKQuantityType.quantityType(forIdentifier: .heartRate)!,
+        let typesToRead: Set<HKSampleType> = [
             HKQuantityType.quantityType(forIdentifier: .bloodPressureSystolic)!,
             HKQuantityType.quantityType(forIdentifier: .bloodPressureDiastolic)!,
             HKQuantityType.quantityType(forIdentifier: .oxygenSaturation)!,
             HKQuantityType.quantityType(forIdentifier: .bodyTemperature)!,
             HKQuantityType.quantityType(forIdentifier: .respiratoryRate)!,
             HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!,
-            HKDataType.electrocardiogramType()
+            HKObjectType.electrocardiogramType()
         ]
         
         do {
-            try await healthStore.requestAuthorization(toShare: nil, read: typesToRead)
+            try await healthStore.requestAuthorization(toShare: Set<HKSampleType>(), read: typesToRead)
             isAuthorized = true
             print("HealthKit authorization successful!")
             return true
@@ -130,6 +129,30 @@ class HealthKitManager: ObservableObject {
             print("HealthKit authorization failed: \(error)")
             return false
         }
+    }
+    
+    /// Get authorization status for a specific health data type
+    func authorizationStatus(for healthKitType: HKSampleType) -> HKAuthorizationStatus {
+        return healthStore.authorizationStatus(for: healthKitType)
+    }
+    
+    /// Request authorization for specific health data types
+    func requestAuthorization(
+        toShare: Set<HKSampleType> = [],
+        read: Set<HKObjectType>,
+        completion: @escaping (Bool, Error?) -> Void
+    ) {
+        healthStore.requestAuthorization(toShare: toShare, read: read, completion: completion)
+    }
+    
+    /// Check if HealthKit is available and authorized
+    var isHealthKitAvailable: Bool {
+        return HKHealthStore.isHealthDataAvailable()
+    }
+    
+    /// Get current authorization status
+    var authorizationStatus: Bool {
+        return isAuthorized
     }
     
     // MARK: - Memory-Efficient Data Fetching
@@ -140,45 +163,43 @@ class HealthKitManager: ObservableObject {
             return [:]
         }
         
-        // Limit concurrent queries to prevent memory spikes
-        let semaphore = DispatchSemaphore(value: maxConcurrentQueries)
         var results: [String: Any] = [:]
         
         // Use TaskGroup for controlled concurrency
         await withTaskGroup(of: (String, Any).self) { group in
             // Heart Rate
             group.addTask {
-                await self.fetchHeartRate(semaphore: semaphore)
+                await self.fetchHeartRate()
             }
             
             // Blood Pressure
             group.addTask {
-                await self.fetchBloodPressure(semaphore: semaphore)
+                await self.fetchBloodPressure()
             }
             
             // Oxygen Saturation
             group.addTask {
-                await self.fetchOxygenSaturation(semaphore: semaphore)
+                await self.fetchOxygenSaturation()
             }
             
             // Body Temperature
             group.addTask {
-                await self.fetchBodyTemperature(semaphore: semaphore)
+                await self.fetchBodyTemperature()
             }
             
             // Respiratory Rate
             group.addTask {
-                await self.fetchRespiratoryRate(semaphore: semaphore)
+                await self.fetchRespiratoryRate()
             }
             
             // Heart Rate Variability
             group.addTask {
-                await self.fetchHeartRateVariability(semaphore: semaphore)
+                await self.fetchHeartRateVariability()
             }
             
             // ECG Data
             group.addTask {
-                await self.fetchECGData(semaphore: semaphore)
+                await self.fetchECGData()
             }
             
             // Collect results
@@ -192,350 +213,244 @@ class HealthKitManager: ObservableObject {
     
     // MARK: - Individual Fetch Methods with Memory Optimization
     
-    private func fetchHeartRate(semaphore: DispatchSemaphore) async -> (String, Any) {
-        defer { semaphore.signal() }
-        semaphore.wait()
-        
+    private func fetchHeartRate() async -> (String, Any) {
         return await withCheckedContinuation { continuation in
             autoreleasepool {
                 let heartRateType = HKQuantityType.quantityType(forIdentifier: .heartRate)!
                 let predicate = HKQuery.predicateForSamples(withStart: nil, end: nil, options: .strictEndDate)
                 let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-                
+
                 let query = HKSampleQuery(sampleType: heartRateType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
-                    defer {
-                        // Clean up query
-                        if let query = samples?.first?.sourceRevision.productType {
-                            self.removeQuery(query)
-                        }
-                    }
-                    
                     if let error = error {
                         print("Heart rate query error: \(error)")
-                        continuation.resume(returning: ("heartRate", nil))
+                        continuation.resume(returning: ("heartRate", NSNull()))
                         return
                     }
-                    
+
                     if let sample = samples?.first as? HKQuantitySample {
-                        let heartRate = sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
+                        let cpm = HKUnit.count().unitDivided(by: .minute())
+                        let heartRate = sample.quantity.doubleValue(for: cpm)
                         print("Heart rate fetched: \(heartRate) BPM")
                         continuation.resume(returning: ("heartRate", heartRate))
                     } else {
-                        continuation.resume(returning: ("heartRate", nil))
+                        continuation.resume(returning: ("heartRate", NSNull()))
                     }
                 }
-                
-                self.addQuery(query)
+
                 self.healthStore.execute(query)
             }
         }
     }
     
-    private func fetchBloodPressure(semaphore: DispatchSemaphore) async -> (String, Any) {
-        defer { semaphore.signal() }
-        semaphore.wait()
-        
+    private func fetchBloodPressure() async -> (String, Any) {
         return await withCheckedContinuation { continuation in
             autoreleasepool {
                 let bloodPressureType = HKCorrelationType.correlationType(forIdentifier: .bloodPressure)!
                 let predicate = HKQuery.predicateForSamples(withStart: nil, end: nil, options: .strictEndDate)
                 let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-                
+
                 let query = HKSampleQuery(sampleType: bloodPressureType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
-                    defer {
-                        // Clean up query
-                        if let query = samples?.first?.sourceRevision.productType {
-                            self.removeQuery(query)
-                        }
-                    }
-                    
                     if let error = error {
                         print("Blood pressure query error: \(error)")
-                        continuation.resume(returning: ("bloodPressure", nil))
+                        continuation.resume(returning: ("bloodPressure", NSNull()))
                         return
                     }
-                    
+
                     if let correlation = samples?.first as? HKCorrelation {
-                        let systolic = correlation.objects(for: HKQuantityType.quantityType(forIdentifier: .bloodPressureSystolic)!).first as? HKQuantitySample
-                        let diastolic = correlation.objects(for: HKQuantityType.quantityType(forIdentifier: .bloodPressureDiastolic)!).first as? HKQuantitySample
-                        
-                        if let systolicValue = systolic?.quantity.doubleValue(for: HKUnit.millimeterOfMercury()),
-                           let diastolicValue = diastolic?.quantity.doubleValue(for: HKUnit.millimeterOfMercury()) {
-                            let bloodPressure = "\(Int(systolicValue))/\(Int(diastolicValue))"
-                            print("Blood pressure fetched: \(bloodPressure) mmHg")
-                            continuation.resume(returning: ("bloodPressure", bloodPressure))
+                        let sys = HKQuantityType.quantityType(forIdentifier: .bloodPressureSystolic)!
+                        let dia = HKQuantityType.quantityType(forIdentifier: .bloodPressureDiastolic)!
+                        let systolic = correlation.objects(for: sys).first as? HKQuantitySample
+                        let diastolic = correlation.objects(for: dia).first as? HKQuantitySample
+
+                        if let s = systolic?.quantity.doubleValue(for: .millimeterOfMercury()),
+                           let d = diastolic?.quantity.doubleValue(for: .millimeterOfMercury()) {
+                            continuation.resume(returning: ("bloodPressure", "\(Int(s))/\(Int(d))"))
                         } else {
-                            continuation.resume(returning: ("bloodPressure", nil))
+                            continuation.resume(returning: ("bloodPressure", NSNull()))
                         }
                     } else {
-                        continuation.resume(returning: ("bloodPressure", nil))
+                        continuation.resume(returning: ("bloodPressure", NSNull()))
                     }
                 }
-                
-                self.addQuery(query)
+
                 self.healthStore.execute(query)
             }
         }
     }
     
-    private func fetchOxygenSaturation(semaphore: DispatchSemaphore) async -> (String, Any) {
-        defer { semaphore.signal() }
-        semaphore.wait()
-        
+    private func fetchOxygenSaturation() async -> (String, Any) {
         return await withCheckedContinuation { continuation in
             autoreleasepool {
                 let oxygenType = HKQuantityType.quantityType(forIdentifier: .oxygenSaturation)!
                 let predicate = HKQuery.predicateForSamples(withStart: nil, end: nil, options: .strictEndDate)
                 let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-                
+
                 let query = HKSampleQuery(sampleType: oxygenType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
-                    defer {
-                        // Clean up query
-                        if let query = samples?.first?.sourceRevision.productType {
-                            self.removeQuery(query)
-                        }
-                    }
-                    
                     if let error = error {
                         print("Oxygen saturation query error: \(error)")
-                        continuation.resume(returning: ("oxygenSaturation", nil))
+                        continuation.resume(returning: ("oxygenSaturation", NSNull()))
                         return
                     }
-                    
+
                     if let sample = samples?.first as? HKQuantitySample {
-                        let oxygen = sample.quantity.doubleValue(for: HKUnit.percent())
-                        print("Oxygen saturation fetched: \(oxygen)%")
-                        continuation.resume(returning: ("oxygenSaturation", oxygen))
+                        let raw = sample.quantity.doubleValue(for: .percent())
+                        continuation.resume(returning: ("oxygenSaturation", raw * 100.0))
                     } else {
-                        continuation.resume(returning: ("oxygenSaturation", nil))
+                        continuation.resume(returning: ("oxygenSaturation", NSNull()))
                     }
                 }
-                
-                self.addQuery(query)
+
                 self.healthStore.execute(query)
             }
         }
     }
     
-    private func fetchBodyTemperature(semaphore: DispatchSemaphore) async -> (String, Any) {
-        defer { semaphore.signal() }
-        semaphore.wait()
-        
+    private func fetchBodyTemperature() async -> (String, Any) {
         return await withCheckedContinuation { continuation in
             autoreleasepool {
                 let temperatureType = HKQuantityType.quantityType(forIdentifier: .bodyTemperature)!
                 let predicate = HKQuery.predicateForSamples(withStart: nil, end: nil, options: .strictEndDate)
                 let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-                
+
                 let query = HKSampleQuery(sampleType: temperatureType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
-                    defer {
-                        // Clean up query
-                        if let query = samples?.first?.sourceRevision.productType {
-                            self.removeQuery(query)
-                        }
-                    }
-                    
                     if let error = error {
                         print("Body temperature query error: \(error)")
-                        continuation.resume(returning: ("bodyTemperature", nil))
+                        continuation.resume(returning: ("bodyTemperature", NSNull()))
                         return
                     }
-                    
+
                     if let sample = samples?.first as? HKQuantitySample {
-                        let temperature = sample.quantity.doubleValue(for: HKUnit.degreeFahrenheit())
-                        print("Temperature fetched: \(temperature) °F")
-                        continuation.resume(returning: ("bodyTemperature", temperature))
+                        let tempF = sample.quantity.doubleValue(for: .degreeFahrenheit())
+                        continuation.resume(returning: ("bodyTemperature", tempF))
                     } else {
-                        continuation.resume(returning: ("bodyTemperature", nil))
+                        continuation.resume(returning: ("bodyTemperature", NSNull()))
                     }
                 }
-                
-                self.addQuery(query)
+
                 self.healthStore.execute(query)
             }
         }
     }
     
-    private func fetchRespiratoryRate(semaphore: DispatchSemaphore) async -> (String, Any) {
-        defer { semaphore.signal() }
-        semaphore.wait()
-        
+    private func fetchRespiratoryRate() async -> (String, Any) {
         return await withCheckedContinuation { continuation in
             autoreleasepool {
                 let respiratoryType = HKQuantityType.quantityType(forIdentifier: .respiratoryRate)!
                 let predicate = HKQuery.predicateForSamples(withStart: nil, end: nil, options: .strictEndDate)
                 let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-                
+
                 let query = HKSampleQuery(sampleType: respiratoryType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
-                    defer {
-                        // Clean up query
-                        if let query = samples?.first?.sourceRevision.productType {
-                            self.removeQuery(query)
-                        }
-                    }
-                    
                     if let error = error {
                         print("Respiratory rate query error: \(error)")
-                        continuation.resume(returning: ("respiratoryRate", nil))
+                        continuation.resume(returning: ("respiratoryRate", NSNull()))
                         return
                     }
-                    
+
                     if let sample = samples?.first as? HKQuantitySample {
-                        let respiratoryRate = sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
-                        print("Respiratory rate fetched: \(respiratoryRate) breaths/min")
-                        continuation.resume(returning: ("respiratoryRate", respiratoryRate))
+                        let cpm = HKUnit.count().unitDivided(by: .minute())
+                        let rr = sample.quantity.doubleValue(for: cpm)
+                        continuation.resume(returning: ("respiratoryRate", rr))
                     } else {
-                        continuation.resume(returning: ("respiratoryRate", nil))
+                        continuation.resume(returning: ("respiratoryRate", NSNull()))
                     }
                 }
-                
-                self.addQuery(query)
+
                 self.healthStore.execute(query)
             }
         }
     }
     
-    private func fetchHeartRateVariability(semaphore: DispatchSemaphore) async -> (String, Any) {
-        defer { semaphore.signal() }
-        semaphore.wait()
-        
+    private func fetchHeartRateVariability() async -> (String, Any) {
         return await withCheckedContinuation { continuation in
-            autoreleasepool {
-                let hrvType = HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!
-                let predicate = HKQuery.predicateForSamples(withStart: nil, end: nil, options: .strictEndDate)
-                let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-                
-                let query = HKSampleQuery(sampleType: hrvType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
-                    defer {
-                        // Clean up query
-                        if let query = samples?.first?.sourceRevision.productType {
-                            self.removeQuery(query)
-                        }
-                    }
-                    
-                    if let error = error {
-                        print("Heart rate variability query error: \(error)")
-                        continuation.resume(returning: ("heartRateVariability", nil))
-                        return
-                    }
-                    
-                    if let sample = samples?.first as? HKQuantitySample {
-                        let hrv = sample.quantity.doubleValue(for: HKUnit.secondUnit(with: .milli))
-                        print("Heart rate variability fetched: \(hrv) ms")
-                        continuation.resume(returning: ("heartRateVariability", hrv))
-                    } else {
-                        continuation.resume(returning: ("heartRateVariability", nil))
-                    }
-                }
-                
-                self.addQuery(query)
-                self.healthStore.execute(query)
-            }
-        }
-    }
-    
-    private func fetchECGData(semaphore: DispatchSemaphore) async -> (String, Any) {
-        defer { semaphore.signal() }
-        semaphore.wait()
-        
-        return await withCheckedContinuation { continuation in
-            autoreleasepool {
-                let ecgType = HKDataType.electrocardiogramType()
-                let predicate = HKQuery.predicateForSamples(withStart: nil, end: nil, options: .strictEndDate)
-                let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-                
-                let query = HKSampleQuery(sampleType: ecgType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
-                    defer {
-                        // Clean up query
-                        if let query = samples?.first?.sourceRevision.productType {
-                            self.removeQuery(query)
-                        }
-                    }
-                    
-                    if let error = error {
-                        print("ECG query error: \(error)")
-                        continuation.resume(returning: ("ecgData", nil))
-                        return
-                    }
-                    
-                    if let ecgSample = samples?.first as? HKElectrocardiogram {
-                        // Process ECG data efficiently
-                        self.processECGData(ecgSample) { result in
-                            continuation.resume(returning: ("ecgData", result))
-                        }
-                    } else {
-                        continuation.resume(returning: ("ecgData", nil))
-                    }
-                }
-                
-                self.addQuery(query)
-                self.healthStore.execute(query)
-            }
-        }
-    }
-    
-    // MARK: - Query Management
-    
-    private func addQuery(_ query: HKQuery) {
-        queryQueue.async {
-            if self.activeQueries.count >= self.maxConcurrentQueries {
-                // Remove oldest query
-                if let oldestQuery = self.activeQueries.first {
-                    self.healthStore.stop(oldestQuery)
-                    self.activeQueries.removeFirst()
-                }
-            }
-            self.activeQueries.append(query)
-        }
-    }
-    
-    private func removeQuery(_ query: HKQuery) {
-        queryQueue.async {
-            self.activeQueries.removeAll { $0 === query }
-        }
-    }
-    
-    // MARK: - ECG Processing
-    
-    private func processECGData(_ ecgSample: HKElectrocardiogram, completion: @escaping ([String: Any]) -> Void) {
-        autoreleasepool {
-            var ecgData: [String: Any] = [:]
-            
-            // Get basic ECG information
-            ecgData["startDate"] = ecgSample.startDate
-            ecgData["endDate"] = ecgSample.endDate
-            ecgData["samplingFrequency"] = ecgSample.samplingFrequency
-            
-            // Process voltage data efficiently
-            let voltageQuery = HKQuantityType.quantityType(forIdentifier: .electrocardiogramVoltage)!
-            let predicate = HKQuery.predicateForSamples(withStart: ecgSample.startDate, end: ecgSample.endDate, options: .strictStartDate)
-            
-            let query = HKQuantitySeriesSampleQuery(quantityType: voltageQuery, predicate: predicate) { _, samples, _, error in
+            let hrvType = HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!
+            let predicate = HKQuery.predicateForSamples(withStart: nil, end: nil, options: .strictEndDate)
+            let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+
+            let query = HKSampleQuery(sampleType: hrvType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
                 if let error = error {
-                    print("ECG voltage query error: \(error)")
-                    completion(ecgData)
+                    print("Heart rate variability query error: \(error)")
+                    continuation.resume(returning: ("heartRateVariability", NSNull()))
                     return
                 }
-                
-                if let samples = samples, !samples.isEmpty {
-                    // Calculate peak amplitude efficiently
-                    let voltages = samples.compactMap { sample -> Double? in
-                        guard let sample = sample as? HKQuantitySample else { return nil }
-                        return sample.quantity.doubleValue(for: HKUnit.voltUnit(with: .micro))
-                    }
-                    
-                    if let maxVoltage = voltages.max() {
-                        ecgData["peakAmplitude"] = maxVoltage
-                        ecgData["voltageCount"] = voltages.count
-                    }
+
+                if let sample = samples?.first as? HKQuantitySample {
+                    let hrv = sample.quantity.doubleValue(for: .secondUnit(with: .milli))
+                    continuation.resume(returning: ("heartRateVariability", hrv))
+                } else {
+                    continuation.resume(returning: ("heartRateVariability", NSNull()))
                 }
-                
-                completion(ecgData)
             }
-            
-            self.addQuery(query)
+
             self.healthStore.execute(query)
         }
+    }
+    
+    private func fetchECGData() async -> (String, Any) {
+        return await withCheckedContinuation { continuation in
+            let ecgType = HKObjectType.electrocardiogramType()
+            let predicate = HKQuery.predicateForSamples(withStart: nil, end: nil, options: .strictEndDate)
+            let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+
+            let query = HKSampleQuery(sampleType: ecgType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { [weak self] _, samples, error in
+                guard let self = self else { return }
+
+                if let error = error {
+                    print("ECG query error: \(error)")
+                    continuation.resume(returning: ("ecgData", NSNull()))
+                    return
+                }
+
+                guard let ecg = samples?.first as? HKElectrocardiogram else {
+                    continuation.resume(returning: ("ecgData", NSNull()))
+                    return
+                }
+
+                self.processECGSample(ecg) { dict in
+                    continuation.resume(returning: ("ecgData", dict))
+                }
+            }
+
+            self.healthStore.execute(query)
+        }
+    }
+    
+    // MARK: - ECG Processing (voltage & metadata)
+    private func processECGSample(_ ecg: HKElectrocardiogram,
+                                  completion: @escaping ([String: Any]) -> Void) {
+        var info: [String: Any] = [
+            "startDate": ecg.startDate,
+            "endDate": ecg.endDate,
+            "samplingFrequency": ecg.samplingFrequency as Any,
+            "classification": ecg.classification.rawValue
+        ]
+
+        var sampleCount = 0
+        var peak_mV: Double = .leastNonzeroMagnitude
+
+        let query = HKElectrocardiogramQuery(ecg) { _, result in
+            switch result {
+            case .measurement(let m):
+                // Pick a lead to read (appleWatchSimilarToLeadI is common); you can iterate several if desired.
+                if let mv = m.quantity(for: .appleWatchSimilarToLeadI)?
+                    .doubleValue(for: HKUnit.voltUnit(with: .milli)) {
+                    peak_mV = max(peak_mV, abs(mv))
+                }
+                sampleCount += 1
+
+            case .done:
+                info["samples"] = sampleCount
+                info["peakAmplitude_mV"] = (peak_mV == .leastNonzeroMagnitude) ? nil : peak_mV
+                completion(info)
+
+            case .error(let error):
+                print("ECG query error: \(error)")
+                completion(info)
+            @unknown default:
+                completion(info)
+            }
+        }
+
+        self.healthStore.execute(query)
     }
     
     // MARK: - Pre-warming
@@ -1044,87 +959,78 @@ class BloodTestViewModel: ObservableObject {
     func loadTests() {
         isLoading = true
         
-        // Use memory-optimized fetching
-        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "BloodTestEntity")
-        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \BloodTestEntity.date, ascending: false)]
-        
-        // Set memory limits
-        fetchRequest.fetchBatchSize = 50
-        fetchRequest.fetchLimit = maxTestsInMemory
+        let fetchRequest: NSFetchRequest<NSManagedObject> = NSFetchRequest(entityName: "BloodTestEntity")
+        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
         
         do {
-            let testEntities = try persistenceController.fetchWithMemoryOptimization(fetchRequest)
-            print("=== loadTests Debug ===")
+            let testEntities = try viewContext.fetch(fetchRequest)
             print("Found \(testEntities.count) test entities in Core Data")
             
-            // Process entities in batches to avoid memory spikes
-            let batchSize = 20
+            // Process in batches to avoid memory issues
+            let batchSize = 50
             var processedTests: [BloodTest] = []
             
             for i in stride(from: 0, to: testEntities.count, by: batchSize) {
                 let endIndex = min(i + batchSize, testEntities.count)
                 let batch = Array(testEntities[i..<endIndex])
                 
-                let batchTests = batch.compactMap { testEntity -> BloodTest? in
-                    autoreleasepool {
-                        guard let id = testEntity.value(forKey: "id") as? UUID,
-                              let date = testEntity.value(forKey: "date") as? Date,
-                              let testType = testEntity.value(forKey: "testType") as? String,
-                              let resultEntities = testEntity.value(forKey: "results") as? Set<NSManagedObject> else {
-                            print("Failed to parse test entity: id=\(testEntity.value(forKey: "id") ?? "nil"), date=\(testEntity.value(forKey: "date") ?? "nil"), testType=\(testEntity.value(forKey: "testType") ?? "nil"), results=\(testEntity.value(forKey: "results") ?? "nil")")
-                            return nil
+                autoreleasepool {
+                    for entity in batch {
+                        guard let testType = entity.value(forKey: "testType") as? String,
+                              let date = entity.value(forKey: "date") as? Date,
+                              let resultEntities = entity.value(forKey: "results") as? Set<NSManagedObject> else {
+                            continue
                         }
                         
                         print("Parsing test: \(testType) with \(resultEntities.count) results")
                         
-                        let results = resultEntities.compactMap { resultEntity -> TestResult? in
-                            guard let id = resultEntity.value(forKey: "id") as? UUID,
-                                  let name = resultEntity.value(forKey: "name") as? String,
-                                  let value = resultEntity.value(forKey: "value") as? Double,
-                                  let unit = resultEntity.value(forKey: "unit") as? String,
-                                  let referenceRange = resultEntity.value(forKey: "referenceRange") as? String,
-                                  let explanation = resultEntity.value(forKey: "explanation") as? String else {
-                                print("Failed to parse result entity: name=\(resultEntity.value(forKey: "name") ?? "nil"), value=\(resultEntity.value(forKey: "value") ?? "nil")")
-                                return nil
+                        var results: [TestResult] = []
+                        for resultEntity in resultEntities {
+                            guard let name = resultEntity.value(forKey: "name") as? String,
+                                  let unit = resultEntity.value(forKey: "unit") as? String else {
+                                continue
                             }
                             
-                            return TestResult(
-                                id: id,
+                            // Robust value extraction with fallbacks
+                            let value: Double = {
+                                if let d = resultEntity.value(forKey: "value") as? Double { return d }
+                                if let s = resultEntity.value(forKey: "value") as? String, let d = Double(s) { return d }
+                                return 0.0
+                            }()
+                            
+                            // Get optional values with defaults
+                            let referenceRange = resultEntity.value(forKey: "referenceRange") as? String ?? "0-0"
+                            let explanation = resultEntity.value(forKey: "explanation") as? String ?? "No explanation available"
+                            
+                            let result = TestResult(
                                 name: name,
                                 value: value,
                                 unit: unit,
                                 referenceRange: referenceRange,
                                 explanation: explanation
                             )
+                            results.append(result)
                         }
                         
-                        print("Successfully parsed \(results.count) results for test: \(testType)")
+                        let test = BloodTest(id: UUID(), date: date, testType: testType, results: results)
+                        processedTests.append(test)
                         
-                        return BloodTest(
-                            id: id,
-                            date: date,
-                            testType: testType,
-                            results: results
-                        )
+                        print("Successfully parsed \(results.count) results for test: \(testType)")
                     }
                 }
                 
-                processedTests.append(contentsOf: batchTests)
-                
-                // Small delay to prevent UI blocking
+                // Continue processing if there are more batches
                 if endIndex < testEntities.count {
-                    Thread.sleep(forTimeInterval: 0.01)
+                    print("Processed batch \(i/batchSize + 1), continuing...")
                 }
             }
             
-            bloodTests = processedTests
-            loadedTestIds = Set(processedTests.map { $0.id })
-            
-            print("Successfully loaded \(bloodTests.count) blood tests from Core Data")
-            errorMessage = nil
+            DispatchQueue.main.async {
+                self.bloodTests = processedTests
+                print("Successfully loaded \(self.bloodTests.count) blood tests from Core Data")
+            }
         } catch {
-            print("Failed to load test data: \(error)")
-            errorMessage = "Failed to load test data: \(error.localizedDescription)"
+            print("Error loading tests from Core Data: \(error)")
         }
         
         isLoading = false
@@ -1138,21 +1044,21 @@ class BloodTestViewModel: ObservableObject {
             performMemoryCleanup()
         }
         
-        let testEntity = BloodTestEntity(context: viewContext)
-        testEntity.id = test.id
-        testEntity.date = test.date
-        testEntity.testType = test.testType
+        let testEntity = NSEntityDescription.insertNewObject(forEntityName: "BloodTestEntity", into: viewContext)
+        testEntity.setValue(test.id, forKey: "id")
+        testEntity.setValue(test.date, forKey: "date")
+        testEntity.setValue(test.testType, forKey: "testType")
         
         // Create result entities
         for result in test.results {
-            let resultEntity = TestResultEntity(context: viewContext)
-            resultEntity.id = result.id
-            resultEntity.name = result.name
-            resultEntity.value = result.value
-            resultEntity.unit = result.unit
-            resultEntity.referenceRange = result.referenceRange
-            resultEntity.explanation = result.explanation
-            resultEntity.test = testEntity
+            let resultEntity = NSEntityDescription.insertNewObject(forEntityName: "TestResultEntity", into: viewContext)
+            resultEntity.setValue(result.id, forKey: "id")
+            resultEntity.setValue(result.name, forKey: "name")
+            resultEntity.setValue(String(result.value), forKey: "value") // Convert Double to String for Core Data
+            resultEntity.setValue(result.unit, forKey: "unit")
+            resultEntity.setValue(result.referenceRange, forKey: "referenceRange")
+            resultEntity.setValue(result.explanation, forKey: "explanation")
+            resultEntity.setValue(testEntity, forKey: "test")
         }
         
         do {
@@ -1166,21 +1072,23 @@ class BloodTestViewModel: ObservableObject {
     }
     
     func deleteTest(_ test: BloodTest) {
-        // Find and delete the test entity
-        let fetchRequest: NSFetchRequest<BloodTestEntity> = BloodTestEntity.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "id == %@", test.id as CVarArg)
+        let fetchRequest: NSFetchRequest<NSManagedObject> = NSFetchRequest(entityName: "BloodTestEntity")
+        fetchRequest.predicate = NSPredicate(format: "testType == %@ AND date == %@", test.testType, test.date as NSDate)
         
         do {
-            let testEntities = try viewContext.fetch(fetchRequest)
-            for entity in testEntities {
+            let entities = try viewContext.fetch(fetchRequest)
+            for entity in entities {
                 viewContext.delete(entity)
             }
             
             try viewContext.save()
-            loadTests() // Refresh the list
-            print("Successfully deleted test")
+            
+            // Remove from memory
+            bloodTests.removeAll { $0.testType == test.testType && $0.date == test.date }
+            
+            print("Successfully deleted test: \(test.testType) from \(test.date)")
         } catch {
-            errorMessage = "Failed to delete test: \(error.localizedDescription)"
+            print("Error deleting test: \(error)")
         }
     }
     
@@ -1195,21 +1103,178 @@ class BloodTestViewModel: ObservableObject {
     }
     
     func clearAllTests() {
-        // Clear from memory
-        bloodTests.removeAll()
-        loadedTestIds.removeAll()
-        
-        // Clear from Core Data
-        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "BloodTestEntity")
-        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+        let fetchRequest: NSFetchRequest<NSManagedObject> = NSFetchRequest(entityName: "BloodTestEntity")
         
         do {
-            try viewContext.execute(deleteRequest)
+            let entities = try viewContext.fetch(fetchRequest)
+            for entity in entities {
+                viewContext.delete(entity)
+            }
+            
             try viewContext.save()
+            
+            // Clear from memory
+            bloodTests.removeAll()
+            
             print("Successfully cleared all tests")
         } catch {
-            errorMessage = "Failed to clear tests: \(error.localizedDescription)"
+            print("Error clearing tests: \(error)")
         }
+    }
+    
+    // MARK: - Import Functionality
+    
+    /// Imports lab data from JSON string
+    /// - Parameter jsonData: JSON string containing lab results
+    /// - Returns: Success status and error message if any
+    func importLabData(_ jsonData: String) -> (success: Bool, errorMessage: String?) {
+        // Check memory before importing
+        if bloodTests.count >= maxTestsInMemory {
+            performMemoryCleanup()
+        }
+        
+        do {
+            // Parse JSON data
+            guard let data = jsonData.data(using: .utf8) else {
+                return (false, "Failed to convert JSON string to data")
+            }
+            
+            // Try to parse as a simple lab results format
+            let labResults = try parseLabResults(from: data)
+            
+            // Create and add blood test
+            let bloodTest = BloodTest(
+                date: labResults.date,
+                testType: labResults.testType,
+                results: labResults.results
+            )
+            
+            addTest(bloodTest)
+            return (true, nil)
+            
+        } catch {
+            print("Failed to import lab data: \(error)")
+            return (false, "Failed to parse JSON: \(error.localizedDescription)")
+        }
+    }
+    
+    // MARK: - JSON Parsing
+    
+    private func parseLabResults(from data: Data) throws -> (date: Date, testType: String, results: [TestResult]) {
+        // Simple parsing for basic lab results
+        // This can be expanded based on your JSON format needs
+        
+        let json = try JSONSerialization.jsonObject(with: data, options: [])
+        
+        guard let jsonDict = json as? [String: Any],
+              let labTests = jsonDict["lab_tests"] as? [String: Any] else {
+            throw NSError(domain: "ImportError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid JSON format"])
+        }
+        
+        // Parse date
+        let dateString = labTests["test_date"] as? String ?? "01/01/2025"
+        let date = parseDate(dateString) ?? Date()
+        
+        // Parse test type
+        let testType = labTests["test_name"] as? String ?? "Complete Blood Count (CBC)"
+        
+        // Parse results
+        var results: [TestResult] = []
+        
+        for (key, value) in labTests["results"] as? [String: Any] ?? [:] {
+            if let resultDict = value as? [String: Any],
+               let resultValue = resultDict["value"] as? Double {
+                
+                let name = resultDict["name"] as? String ?? key
+                let unit = resultDict["units"] as? String ?? ""
+                let referenceRange = getReferenceRange(for: key)
+                let explanation = getExplanation(for: key)
+                
+                let testResult = TestResult(
+                    name: name,
+                    value: resultValue,
+                    unit: unit,
+                    referenceRange: referenceRange,
+                    explanation: explanation
+                )
+                
+                results.append(testResult)
+            }
+        }
+        
+        return (date: date, testType: testType, results: results)
+    }
+    
+    private func parseDate(_ dateString: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MM/dd/yyyy"
+        return formatter.date(from: dateString)
+    }
+    
+    private func getReferenceRange(for testKey: String) -> String {
+        switch testKey.lowercased() {
+        case "wbc": return "4,000–11,000 /µL"
+        case "neutrophils_percent", "neutrophils": return "40–70%"
+        case "lymphs_percent", "lymphs": return "20–40%"
+        case "monos_percent", "monos": return "2–8%"
+        case "eos_percent", "eos": return "1–4%"
+        case "basos_percent", "basos": return "0–1%"
+        case "hgb": return "M: 13.5–17.5, W: 12.0–15.5 g/dL"
+        case "mcv": return "80–100 fL"
+        case "mch": return "27–33 pg"
+        case "mchc": return "32–36 g/dL"
+        case "rdw": return "11.5–14.5%"
+        case "platelet_count": return "150,000–450,000 /µL"
+        case "mpv": return "7.5–11.5 fL"
+        default: return "N/A"
+        }
+    }
+    
+    private func getExplanation(for testKey: String) -> String {
+        switch testKey.lowercased() {
+        case "wbc": return "White blood cells; infection defense"
+        case "neutrophils_percent", "neutrophils": return "Bacterial defense WBC percentage"
+        case "lymphs_percent", "lymphs": return "Lymphocytes %; viral/immune response"
+        case "monos_percent", "monos": return "Monocytes %; infection cleanup"
+        case "eos_percent", "eos": return "Eosinophils %; allergies/parasites"
+        case "basos_percent", "basos": return "Basophils %; allergy/inflammation"
+        case "hgb": return "Oxygen-carrying protein in RBCs"
+        case "mcv": return "Average red blood cell size"
+        case "mch": return "Hemoglobin amount per red cell"
+        case "mchc": return "Hemoglobin concentration in red cells"
+        case "rdw": return "Variation in RBC size"
+        case "platelet_count": return "Platelets; clotting function"
+        case "mpv": return "Average platelet size"
+        default: return "Blood test measurement"
+        }
+    }
+    
+    // MARK: - Utility Methods
+    
+    /// Returns the appropriate color for a test result based on its status
+    /// - Parameter result: The test result to evaluate
+    /// - Returns: Color representing the result status (normal, high, low)
+    func getResultColor(_ result: TestResult) -> Color {
+        switch result.status {
+        case .normal:
+            return .green
+        case .high:
+            return .red
+        case .low:
+            return .orange
+        }
+    }
+    
+    /// Updates an existing test with new data
+    /// - Parameter updatedTest: The updated test data
+    func updateTest(_ updatedTest: BloodTest) {
+        // Find and remove the old test
+        if let index = bloodTests.firstIndex(where: { $0.id == updatedTest.id }) {
+            bloodTests.remove(at: index)
+        }
+        
+        // Add the updated test
+        addTest(updatedTest)
     }
 }
 

@@ -109,12 +109,12 @@ struct ImportLabDataView: View {
         isImporting = true
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            let result = viewModel.importComprehensiveLabData(jsonInput)
+            let result = viewModel.importLabData(jsonInput)
             
             isImporting = false
             
             if result.success {
-                alertMessage = "Lab data imported successfully! Your CBC and CMP results have been added to your records."
+                alertMessage = "Lab data imported successfully! Your CBC results have been added to your records."
             } else {
                 alertMessage = result.errorMessage ?? "Failed to import lab data. Please check the JSON format and try again."
             }

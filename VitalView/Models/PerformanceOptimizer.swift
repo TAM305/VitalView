@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 import CoreData
 import Combine
+import UIKit
 
 /// Performance optimization utility for the VitalVu app
 ///
@@ -198,7 +199,7 @@ class PerformanceOptimizer: ObservableObject {
         
         // Reset Core Data context if needed
         if memoryUsage > 100.0 { // If using more than 100MB
-            PersistenceController.shared.resetViewContext()
+            PersistenceController.shared.container.viewContext.reset()
         }
     }
     
@@ -212,14 +213,14 @@ class PerformanceOptimizer: ObservableObject {
         
         // Pre-warm HealthKit if available
         if let healthKitManager = try? await getHealthKitManager() {
-            await healthKitManager.prewarmHealthKit()
+            healthKitManager.prewarmServices()
         }
     }
     
     private func getHealthKitManager() async throws -> HealthKitManager {
-        // This would need to be implemented based on your app's architecture
-        // For now, returning a placeholder
-        throw NSError(domain: "PerformanceOptimizer", code: 1, userInfo: [NSLocalizedDescriptionKey: "Not implemented"])
+        // Return the shared HealthKitManager instance
+        // This assumes you have a shared instance available
+        return HealthKitManager()
     }
     
     // MARK: - Performance Metrics

@@ -31,12 +31,12 @@ class PersistenceController: ObservableObject {
         container.persistentStoreDescriptions = [description]
         
         // Create background context with memory optimization
-        backgroundContext = NSManagedObjectContext(concurrencyType: .privateQueue)
+        backgroundContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
         backgroundContext.persistentStoreCoordinator = container.persistentStoreCoordinator
         backgroundContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         
-        // Set memory limits for background context
-        backgroundContext.setOption(NSNumber(value: 50 * 1024 * 1024), forKey: "NSManagedObjectContextMemoryLimit")
+        // Note: Memory limits are handled through fetch request configuration
+        // rather than context-level options
         
         container.loadPersistentStores { _, error in
             if let error = error {
@@ -48,8 +48,8 @@ class PersistenceController: ObservableObject {
         container.viewContext.automaticallyMergesChangesFromParent = true
         container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         
-        // Set memory limits for main context
-        container.viewContext.setOption(NSNumber(value: 100 * 1024 * 1024), forKey: "NSManagedObjectContextMemoryLimit")
+        // Note: Memory limits are handled through fetch request configuration
+        // rather than context-level options
         
         // Setup memory management
         setupMemoryManagement()
