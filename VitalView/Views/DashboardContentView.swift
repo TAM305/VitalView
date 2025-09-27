@@ -111,11 +111,39 @@ struct DashboardContentView: View {
                         .foregroundColor(.secondary)
                         .padding(.horizontal, 12)
                     
-                    // Apple Intelligence Insights Widget
+                    // Apple Intelligence Insights Widget (when entitlements are available)
                     if #available(iOS 18.0, *) {
-                        InsightsWidgetView(
-                            healthKitManager: HealthKitManager(),
-                            bloodTestViewModel: BloodTestViewModel(context: PersistenceController.shared.container.viewContext)
+                        // Note: This will show a placeholder until Apple Intelligence entitlements are properly configured
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "brain.head.profile")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.blue)
+                                    
+                                    Text("AI Insights")
+                                        .font(.headline)
+                                        .fontWeight(.semibold)
+                                }
+                                
+                                Spacer()
+                                
+                                Text("Coming Soon")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.blue)
+                            }
+                            
+                            Text("Apple Intelligence health insights will be available once the provisioning profile is updated with the required entitlements.")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding()
+                        .background(Color(UIColor.secondarySystemGroupedBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.blue.opacity(0.2), lineWidth: 1)
                         )
                         .padding(.horizontal, 12)
                     }

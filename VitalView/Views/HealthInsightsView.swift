@@ -4,9 +4,9 @@ import SwiftUI
 @available(iOS 18.0, *)
 struct HealthInsightsView: View {
     @StateObject private var insightsManager: HealthInsightsManager
-    @State private var selectedCategory: HealthInsightCategory?
+    @State private var selectedCategory: AIHealthInsightCategory?
     @State private var showingInsightDetail = false
-    @State private var selectedInsight: HealthInsight?
+    @State private var selectedInsight: AIHealthInsight?
     
     init(healthKitManager: HealthKitManager, bloodTestViewModel: BloodTestViewModel) {
         self._insightsManager = StateObject(wrappedValue: HealthInsightsManager(
@@ -150,7 +150,7 @@ struct HealthInsightsView: View {
                 }
                 
                 // Category buttons
-                ForEach(HealthInsightCategory.allCases, id: \.self) { category in
+                ForEach(AIHealthInsightCategory.allCases, id: \.self) { category in
                     Button(action: { selectedCategory = category }) {
                         HStack(spacing: 6) {
                             Image(systemName: category.icon)
@@ -190,7 +190,7 @@ struct HealthInsightsView: View {
     
     // MARK: - Computed Properties
     
-    private var filteredInsights: [HealthInsight] {
+    private var filteredInsights: [AIHealthInsight] {
         if let category = selectedCategory {
             return insightsManager.currentInsights.filter { $0.category == category }
         } else {
@@ -203,7 +203,7 @@ struct HealthInsightsView: View {
 
 @available(iOS 18.0, *)
 struct InsightCardView: View {
-    let insight: HealthInsight
+    let insight: AIHealthInsight
     let onTap: () -> Void
     
     var body: some View {
@@ -281,7 +281,7 @@ struct InsightCardView: View {
 
 @available(iOS 18.0, *)
 struct InsightDetailView: View {
-    let insight: HealthInsight
+    let insight: AIHealthInsight
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {

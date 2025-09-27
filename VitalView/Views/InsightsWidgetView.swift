@@ -119,7 +119,7 @@ struct InsightsWidgetView: View {
 
 @available(iOS 18.0, *)
 struct InsightRowView: View {
-    let insight: HealthInsight
+    let insight: AIHealthInsight
     
     var body: some View {
         HStack(spacing: 12) {
@@ -165,7 +165,7 @@ struct InsightRowView: View {
 
 @available(iOS 18.0, *)
 struct QuickInsightCard: View {
-    let insight: HealthInsight
+    let insight: AIHealthInsight
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -218,7 +218,7 @@ struct InsightsWidgetView_Previews: PreviewProvider {
             )
             
             QuickInsightCard(
-                insight: HealthInsight(
+                insight: AIHealthInsight(
                     id: UUID(),
                     category: .vitalSigns,
                     priority: .medium,

@@ -121,13 +121,57 @@ struct ContentView: View {
                 Text("Trends")
             }
             
-            // AI Insights tab (iOS 18+)
+            // AI Insights tab (iOS 18+ - when entitlements are available)
             if #available(iOS 18.0, *) {
                 NavigationView {
-                    HealthInsightsView(
-                        healthKitManager: HealthKitManager(),
-                        bloodTestViewModel: viewModel
-                    )
+                    VStack(spacing: 20) {
+                        Image(systemName: "brain.head.profile")
+                            .font(.system(size: 60))
+                            .foregroundColor(.blue)
+                        
+                        Text("AI Insights")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                        
+                        Text("Apple Intelligence health insights will be available once the provisioning profile is updated with the required entitlements.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                        
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("To enable AI insights:")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                            
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Text("1.")
+                                        .fontWeight(.bold)
+                                    Text("Request Apple Intelligence entitlements in your Apple Developer account")
+                                }
+                                
+                                HStack {
+                                    Text("2.")
+                                        .fontWeight(.bold)
+                                    Text("Update your provisioning profile to include the entitlements")
+                                }
+                                
+                                HStack {
+                                    Text("3.")
+                                        .fontWeight(.bold)
+                                    Text("Re-enable the entitlements in the app configuration")
+                                }
+                            }
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        }
+                        .padding()
+                        .background(Color(UIColor.secondarySystemGroupedBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .padding(.horizontal)
+                    }
+                    .padding()
                 }
                 .navigationViewStyle(StackNavigationViewStyle())
                 .tabItem {
