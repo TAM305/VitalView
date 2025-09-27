@@ -26,6 +26,9 @@
 	<key>NSFaceIDUsageDescription</key>
 	<string>This app uses Face ID to securely access your health data.</string>
 
+	<key>NSAppleIntelligenceUsageDescription</key>
+	<string>This app uses Apple Intelligence to analyze your health data and provide personalized insights and recommendations.</string>
+
 	<key>NSPrivacyPolicyURL</key>
 	<string>https://vitvu.com/privacy</string>
 	<key>UIRequiredDeviceCapabilities</key>

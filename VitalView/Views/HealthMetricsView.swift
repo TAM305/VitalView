@@ -23,11 +23,21 @@ struct HealthMetricsView: View {
     @State private var showManualTemperatureEntry = false
     @State private var authorizationAttempted = false
     
+    // Apple Intelligence integration
+    @State private var showInsights = false
+    
     // MARK: - Performance Optimization
     @State private var isDataLoaded = false
     @State private var refreshTimer: Timer?
     
     private let healthStore = HKHealthStore()
+    
+    // MARK: - Initialization
+    
+    init() {
+        // Initialize insights manager with default values
+        // This will be properly initialized when the view appears
+    }
     
     // Health data states
     @State private var heartRate = HealthData()

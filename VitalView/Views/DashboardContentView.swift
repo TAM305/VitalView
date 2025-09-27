@@ -111,6 +111,15 @@ struct DashboardContentView: View {
                         .foregroundColor(.secondary)
                         .padding(.horizontal, 12)
                     
+                    // Apple Intelligence Insights Widget
+                    if #available(iOS 18.0, *) {
+                        InsightsWidgetView(
+                            healthKitManager: HealthKitManager(),
+                            bloodTestViewModel: BloodTestViewModel(context: PersistenceController.shared.container.viewContext)
+                        )
+                        .padding(.horizontal, 12)
+                    }
+                    
                     Spacer().frame(height: 32)
                     
                     let minCardWidth: CGFloat = (horizontalSizeClass == .regular) ? 220 : 160

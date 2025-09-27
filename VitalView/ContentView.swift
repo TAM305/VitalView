@@ -120,6 +120,21 @@ struct ContentView: View {
                 Image(systemName: "chart.line.uptrend.xyaxis")
                 Text("Trends")
             }
+            
+            // AI Insights tab (iOS 18+)
+            if #available(iOS 18.0, *) {
+                NavigationView {
+                    HealthInsightsView(
+                        healthKitManager: HealthKitManager(),
+                        bloodTestViewModel: viewModel
+                    )
+                }
+                .navigationViewStyle(StackNavigationViewStyle())
+                .tabItem {
+                    Image(systemName: "brain.head.profile")
+                    Text("Insights")
+                }
+            }
         }
         .onAppear {
             // Animate floating button appearance
