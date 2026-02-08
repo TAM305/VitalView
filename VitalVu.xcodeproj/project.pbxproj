@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		384915312E888C1E000BC82F /* FoundationModels.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 384915302E888C1E000BC82F /* FoundationModels.framework */; };
 		384915332E888C45000BC82F /* AppIntents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 384915322E888C45000BC82F /* AppIntents.framework */; };
-		384915352E888C56000BC82F /* VisualIntelligence.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 384915342E888C56000BC82F /* VisualIntelligence.framework */; };
 		384A0FAF2E1C7CD100CA1637 /* Documentation.docc in Sources */ = {isa = PBXBuildFile; fileRef = 384A0FAE2E1C7CD000CA1637 /* Documentation.docc */; };
 /* End PBXBuildFile section */
 
@@ -33,7 +32,6 @@
 /* Begin PBXFileReference section */
 		384915302E888C1E000BC82F /* FoundationModels.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FoundationModels.framework; path = System/Library/Frameworks/FoundationModels.framework; sourceTree = SDKROOT; };
 		384915322E888C45000BC82F /* AppIntents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppIntents.framework; path = System/Library/Frameworks/AppIntents.framework; sourceTree = SDKROOT; };
-		384915342E888C56000BC82F /* VisualIntelligence.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = VisualIntelligence.framework; path = System/Library/Frameworks/VisualIntelligence.framework; sourceTree = SDKROOT; };
 		384A0FAE2E1C7CD000CA1637 /* Documentation.docc */ = {isa = PBXFileReference; lastKnownFileType = folder.documentationcatalog; path = Documentation.docc; sourceTree = "<group>"; };
 		38B1598D2DD54CC7007B7E32 /* VitalVu.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VitalVu.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		38B1599A2DD54CC9007B7E32 /* VitalVuTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VitalVuTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -54,7 +52,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				384915332E888C45000BC82F /* AppIntents.framework in Frameworks */,
-				384915352E888C56000BC82F /* VisualIntelligence.framework in Frameworks */,
 				384915312E888C1E000BC82F /* FoundationModels.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -79,7 +76,6 @@
 		3849152F2E888C1E000BC82F /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				384915342E888C56000BC82F /* VisualIntelligence.framework */,
 				384915322E888C45000BC82F /* AppIntents.framework */,
 				384915302E888C1E000BC82F /* FoundationModels.framework */,
 			);
