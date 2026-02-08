@@ -102,14 +102,17 @@ class PersistenceController: ObservableObject {
         let memoryUsage = getCurrentMemoryUsage()
         
         if memoryUsage > memoryThreshold {
+            #if DEBUG
             print("⚠️ High memory usage detected: \(memoryUsage / 1024 / 1024) MB")
+            #endif
             performMemoryCleanup()
         }
         
-        // Log memory usage for debugging
+        #if DEBUG
         if memoryUsage > 50 * 1024 * 1024 { // 50 MB
             print("📊 Current memory usage: \(memoryUsage / 1024 / 1024) MB")
         }
+        #endif
     }
     
     private func getCurrentMemoryUsage() -> UInt64 {
@@ -134,17 +137,23 @@ class PersistenceController: ObservableObject {
     }
     
     private func handleMemoryWarning() {
+        #if DEBUG
         print("🚨 Memory warning received - performing cleanup")
+        #endif
         performMemoryCleanup()
     }
     
     private func handleMemoryPressure() {
+        #if DEBUG
         print("🚨 Memory pressure detected - performing aggressive cleanup")
+        #endif
         performAggressiveMemoryCleanup()
     }
     
     private func handleAppBackgrounding() {
+        #if DEBUG
         print("📱 App entering background - performing memory cleanup")
+        #endif
         performMemoryCleanup()
     }
     
@@ -160,7 +169,9 @@ class PersistenceController: ObservableObject {
             // Clear any cached data
         }
         
+        #if DEBUG
         print("🧹 Memory cleanup completed")
+        #endif
     }
     
     private func performAggressiveMemoryCleanup() {
@@ -176,7 +187,9 @@ class PersistenceController: ObservableObject {
             // Additional cleanup
         }
         
+        #if DEBUG
         print("🧹 Aggressive memory cleanup completed")
+        #endif
     }
     
     // MARK: - Context Management

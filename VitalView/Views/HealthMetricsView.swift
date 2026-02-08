@@ -732,7 +732,7 @@ struct HealthMetricsView: View {
                                         print("Wrist temperature delta fetched: \(String(format: "%.2f", value)) \(self.temperatureUnitSymbol)")
                                         self.temperature = HealthData(value: value, date: sample.endDate)
                                         self.temperatureIsDelta = true
-                                    } else if let wristError = wristError {
+                                    } else if let wristError = wristError, !wristError.localizedDescription.lowercased().contains("not determined") {
                                         print("Error fetching wrist temperature: \(wristError.localizedDescription)")
                                     } else {
                                         print("No wrist temperature data found")
@@ -756,7 +756,7 @@ struct HealthMetricsView: View {
                                 print("Wrist temperature delta fetched: \(String(format: "%.2f", value)) \(self.temperatureUnitSymbol)")
                                 self.temperature = HealthData(value: value, date: sample.endDate)
                                 self.temperatureIsDelta = true
-                            } else if let wristError = wristError {
+                            } else if let wristError = wristError, !wristError.localizedDescription.lowercased().contains("not determined") {
                                 print("Error fetching wrist temperature: \(wristError.localizedDescription)")
                             } else {
                                 print("No wrist temperature data found")
@@ -791,7 +791,7 @@ struct HealthMetricsView: View {
                         print("Wrist temperature delta fetched: \(String(format: "%.2f", value)) \(self.temperatureUnitSymbol)")
                         self.temperature = HealthData(value: value, date: sample.endDate)
                         self.temperatureIsDelta = true
-                    } else if let wristError = wristError {
+                    } else if let wristError = wristError, !wristError.localizedDescription.lowercased().contains("not determined") {
                         print("Error fetching wrist temperature: \(wristError.localizedDescription)")
                     } else {
                         print("No wrist temperature data found")

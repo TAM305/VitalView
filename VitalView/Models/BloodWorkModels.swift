@@ -87,7 +87,9 @@ final class HealthKitManager: ObservableObject, @unchecked Sendable {
             // Additional cleanup
         }
         
+        #if DEBUG
         print("🧹 HealthKitManager memory cleanup completed")
+        #endif
     }
     
     private func cleanup() {
@@ -888,14 +890,17 @@ class BloodTestViewModel: ObservableObject {
         let currentMemory = getCurrentMemoryUsage()
         
         if currentMemory > 150 * 1024 * 1024 { // 150 MB (increased from 80 MB)
+            #if DEBUG
             print("⚠️ High memory usage in BloodTestViewModel: \(currentMemory / 1024 / 1024) MB")
+            #endif
             performMemoryCleanup()
         }
         
-        // Log memory usage periodically (less frequent)
+        #if DEBUG
         if currentMemory > 100 * 1024 * 1024 { // Only log when above 100 MB
             print("📊 BloodTestViewModel memory usage: \(currentMemory / 1024 / 1024) MB")
         }
+        #endif
     }
     
     private func getCurrentMemoryUsage() -> UInt64 {
@@ -920,7 +925,9 @@ class BloodTestViewModel: ObservableObject {
     }
     
     private func handleMemoryWarning() {
+        #if DEBUG
         print("🚨 Memory warning in BloodTestViewModel - performing cleanup")
+        #endif
         performMemoryCleanup()
     }
     
@@ -931,8 +938,11 @@ class BloodTestViewModel: ObservableObject {
         // Clear blood tests array if too many loaded
         if bloodTests.count > maxTestsInMemory {
             let testsToKeep = Array(bloodTests.prefix(maxTestsInMemory / 2))
+            let clearedCount = bloodTests.count - testsToKeep.count
             bloodTests = testsToKeep
-            print("🧹 Cleared \(bloodTests.count - testsToKeep.count) tests from memory")
+            #if DEBUG
+            print("🧹 Cleared \(clearedCount) tests from memory")
+            #endif
         }
         
         // Force garbage collection
@@ -940,7 +950,9 @@ class BloodTestViewModel: ObservableObject {
             // Additional cleanup
         }
         
+        #if DEBUG
         print("🧹 BloodTestViewModel memory cleanup completed")
+        #endif
     }
     
     private func cleanup() {

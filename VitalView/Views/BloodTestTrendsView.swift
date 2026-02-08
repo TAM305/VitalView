@@ -247,16 +247,7 @@ struct BloodTestTrendsView: View {
         let allTests = Set(viewModel.bloodTests.flatMap { test in
             test.results.map { $0.name }
         })
-        let sortedTests = Array(allTests).sorted()
-        
-        print("=== Blood Trends Debug ===")
-        print("Total blood tests in view model: \(viewModel.bloodTests.count)")
-        print("Available test names: \(sortedTests)")
-        if !viewModel.bloodTests.isEmpty {
-            print("Sample test: \(viewModel.bloodTests.first?.testType ?? "unknown") with \(viewModel.bloodTests.first?.results.count ?? 0) results")
-        }
-        
-        return sortedTests
+        return Array(allTests).sorted()
     }
     
     private func autoSelectTimeRange() {
