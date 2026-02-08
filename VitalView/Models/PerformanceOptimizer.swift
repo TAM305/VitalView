@@ -116,7 +116,7 @@ class PerformanceOptimizer: ObservableObject {
     
     func beginBackgroundTask(name: String, expirationHandler: (() -> Void)? = nil) -> UIBackgroundTaskIdentifier {
         // Create a weak reference to self to avoid retain cycles
-        weak var weakSelf = self
+        weak let weakSelf = self
         
         // Create the background task without capturing taskID in the closure
         let taskID = UIApplication.shared.beginBackgroundTask(withName: name) {
