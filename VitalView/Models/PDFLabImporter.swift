@@ -22,66 +22,81 @@ class PDFLabImporter: ObservableObject {
     /// Extracts text from a PDF file
     /// - Parameter url: URL to the PDF file
     func extractTextFromPDF(url: URL) {
+        #if DEBUG
         print("=== PDF Import Debug ===")
         print("Starting PDF extraction from: \(url)")
+        #endif
         isProcessing = true
         errorMessage = nil
         
         DispatchQueue.global(qos: .userInitiated).async {
             let document = PDFDocument(url: url)
             guard let document = document else {
+                #if DEBUG
                 print("Failed to create PDF document from URL")
+                #endif
                 DispatchQueue.main.async {
                     self.errorMessage = "Could not open PDF document"
                     self.isProcessing = false
                 }
                 return
             }
-            
+            #if DEBUG
             print("PDF document created successfully with \(document.pageCount) pages")
+            #endif
             var fullText = ""
             for i in 0..<document.pageCount {
                 if let page = document.page(at: i) {
+                    #if DEBUG
                     print("Processing page \(i + 1)")
-                    
+                    #endif
                     // Method 1: Try direct string extraction
                     if let pageContent = page.string, !pageContent.isEmpty {
+                        #if DEBUG
                         print("Page \(i+1): Direct text extraction successful (\(pageContent.count) characters)")
+                        #endif
                         fullText += pageContent + "\n"
                     } else {
+                        #if DEBUG
                         print("Page \(i+1): Direct text extraction failed, trying alternative methods")
-                        
+                        #endif
                         // Method 2: Try using PDFPage's attributedString
                         if let attributedString = page.attributedString {
                             let pageContent = attributedString.string
                             if !pageContent.isEmpty {
+                                #if DEBUG
                                 print("Page \(i+1): AttributedString extraction successful (\(pageContent.count) characters)")
+                                #endif
                                 fullText += pageContent + "\n"
                             }
                         }
-                        
                         // Method 3: Try OCR for scanned pages
                         if fullText.isEmpty {
+                            #if DEBUG
                             print("Page \(i+1): Attempting OCR extraction...")
+                            #endif
                             let pageImage = self.renderPageImage(page, dpi: 320)
+                            #if DEBUG
                             print("Page \(i+1): Page image generated for OCR (\(pageImage.size.width) x \(pageImage.size.height))")
-                            
-                            // Optionally enhance image for better OCR (uncomment if needed)
-                            // let enhancedImage = self.enhance(pageImage)
-                            let imageForOCR = pageImage // or enhancedImage if enhancement is enabled
-                            
-                            // Perform OCR on the page image
+                            #endif
+                            let imageForOCR = pageImage
                             self.performOCR(on: imageForOCR) { ocrText in
                                 if !ocrText.isEmpty {
+                                    #if DEBUG
                                     print("Page \(i+1): OCR successful - extracted \(ocrText.count) characters")
+                                    #endif
                                     DispatchQueue.main.async {
                                         self.extractedText += ocrText + "\n"
+                                        #if DEBUG
                                         print("Updated extractedText length: \(self.extractedText.count)")
+                                        #endif
                                         self.parseLabResults(from: self.extractedText)
                                         self.isProcessing = false
                                     }
                                 } else {
+                                    #if DEBUG
                                     print("Page \(i+1): OCR failed - no text found")
+                                    #endif
                                     DispatchQueue.main.async {
                                         self.isProcessing = false
                                     }
@@ -91,25 +106,24 @@ class PDFLabImporter: ObservableObject {
                     }
                 }
             }
-            
-            // Check if we need to wait for OCR
             let needsOCR = fullText.isEmpty
-            
             if !needsOCR {
-                // We have direct text, parse immediately
+                #if DEBUG
                 print("Total extracted text length: \(fullText.count)")
                 print("First 200 characters: \(String(fullText.prefix(200)))")
-                
+                #endif
                 DispatchQueue.main.async {
                     self.extractedText = fullText
                     self.parseLabResults(from: fullText)
+                    #if DEBUG
                     print("Parsed \(self.parsedResults.count) test results")
+                    #endif
                     self.isProcessing = false
                 }
             } else {
-                // We're using OCR, wait for completion handlers
+                #if DEBUG
                 print("Using OCR extraction - waiting for completion...")
-                // The OCR completion handlers will handle parsing and setting isProcessing = false
+                #endif
             }
         }
     }
@@ -163,14 +177,13 @@ class PDFLabImporter: ObservableObject {
             let cleanedLines = self.postFix(reconstructedLines)
             
             let extractedText = cleanedLines.joined(separator: "\n")
+            #if DEBUG
             print("Enhanced OCR: Extracted \(extractedText.count) characters from image")
             print("Enhanced OCR: Reconstructed \(cleanedLines.count) lines")
-            
-            // Debug: Print first few reconstructed lines
             for (i, line) in cleanedLines.prefix(5).enumerated() {
                 print("Enhanced OCR Line \(i + 1): '\(line)'")
             }
-            
+            #endif
             completion(extractedText)
         }
         
@@ -348,9 +361,10 @@ class PDFLabImporter: ObservableObject {
             )
             
             results.append(result)
+            #if DEBUG
             print("Enhanced parsing found: \(testName) = \(value) \(unit) \(flag)")
+            #endif
         }
-        
         return results.isEmpty ? nil : results
     }
     
