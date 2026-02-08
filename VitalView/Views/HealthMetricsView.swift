@@ -58,9 +58,11 @@ struct HealthMetricsView: View {
                 healthMetrics: healthMetrics,
                 authorizationAttempted: authorizationAttempted,
                 onRefresh: {
+                    #if DEBUG
                     print("\n=== Manual Refresh Triggered ===")
                     print("Current authorization status: \(isAuthorized)")
                     print("HealthKit available: \(HKHealthStore.isHealthDataAvailable())")
+                    #endif
                     fetchLatestVitalSigns()
                 },
                 onAuthorize: {
@@ -88,8 +90,9 @@ struct HealthMetricsView: View {
         }
         .onAppear {
             // Remove automatic authorization - only trigger on user action
+            #if DEBUG
             print("=== App Launch - Ready for HealthKit Authorization ===")
-            
+            #endif
             // Start background refresh timer for better performance
             startBackgroundRefresh()
         }
@@ -267,7 +270,7 @@ struct HealthMetricsView: View {
     
     // Computed property for metrics to avoid complex expressions in body
     private var healthMetrics: [Metric] {
-        // Debug all health data values
+        #if DEBUG
         print("=== Health Metrics Debug ===")
         print("Heart Rate: \(heartRate.value?.description ?? "nil")")
         print("Blood Pressure: systolic=\(bloodPressure.systolic?.description ?? "nil"), diastolic=\(bloodPressure.diastolic?.description ?? "nil")")
@@ -275,6 +278,7 @@ struct HealthMetricsView: View {
         print("Respiratory Rate: \(respiratoryRate.value?.description ?? "nil")")
         print("Heart Rate Variability: \(heartRateVariability.value?.description ?? "nil")")
         print("Temperature: \(temperature.value?.description ?? "nil")")
+        #endif
         
         let heartRateMetric = Metric(
             title: "Heart Rate",
@@ -309,9 +313,9 @@ struct HealthMetricsView: View {
             date: oxygenSaturation.date
         )
         
-        // Debug temperature data
+        #if DEBUG
         print("Temperature debug - value: \(temperature.value?.description ?? "nil"), date: \(temperature.date?.description ?? "nil"), isDelta: \(temperatureIsDelta)")
-        
+        #endif
         let temperatureValue: String
         let temperatureUnit: String
         let temperatureColor: Color
@@ -320,19 +324,25 @@ struct HealthMetricsView: View {
             temperatureValue = String(format: "%.1f", tempValue)
             temperatureUnit = temperatureIsDelta ? "Δ \(temperatureUnitSymbol)" : temperatureUnitSymbol
             temperatureColor = .orange
+            #if DEBUG
             print("Temperature data found: \(temperatureValue) \(temperatureUnit)")
+            #endif
         } else {
             // Check if we're on simulator or if HealthKit is available
             if !HKHealthStore.isHealthDataAvailable() {
                 temperatureValue = "N/A"
                 temperatureUnit = "Simulator"
                 temperatureColor = .gray
+                #if DEBUG
                 print("Temperature not available on simulator")
+                #endif
             } else {
                 temperatureValue = "Tap to add"
                 temperatureUnit = "Manual entry"
                 temperatureColor = .blue
+                #if DEBUG
                 print("No temperature data available on device - showing manual entry option")
+                #endif
             }
         }
         
@@ -364,7 +374,9 @@ struct HealthMetricsView: View {
         )
         
         let ecgValue: String
+        #if DEBUG
         print("ECG data count: \(ecgData.count)")
+        #endif
         if let firstECG = ecgData.first {
             // Use µV if very small, else mV; also show one decimal for mV, no decimals for µV
             if firstECG.value < 1.0 {
@@ -372,15 +384,21 @@ struct HealthMetricsView: View {
             } else {
                 ecgValue = String(format: "%.1f", firstECG.value) // mV
             }
+            #if DEBUG
             print("ECG value displayed: \(ecgValue) \(firstECG.value < 1.0 ? "µV" : "mV")")
+            #endif
         } else {
             // Check if we're on a simulator or device without ECG capability
             if !HKHealthStore.isHealthDataAvailable() {
                 ecgValue = "N/A"
+                #if DEBUG
                 print("ECG not available on simulator")
+                #endif
             } else {
                 ecgValue = "--"
+                #if DEBUG
                 print("No ECG data available (requires Apple Watch Series 4+)")
+                #endif
             }
         }
         // Determine base unit for amplitude
@@ -411,22 +429,25 @@ struct HealthMetricsView: View {
             ecgMetric
         ]
         
-        // Debug final metric values
+        #if DEBUG
         print("=== Final Metric Values ===")
         for metric in metrics {
             print("\(metric.title): \(metric.value) \(metric.unit)")
         }
-        
+        #endif
         return metrics
     }
     
     private func requestHealthKitAuthorization() {
+        #if DEBUG
         print("=== HealthKit Authorization Debug ===")
         print("HealthKit available: \(HKHealthStore.isHealthDataAvailable())")
-        
+        #endif
         // Check if HealthKit is available
         guard HKHealthStore.isHealthDataAvailable() else {
+            #if DEBUG
             print("HealthKit is not available on this device")
+            #endif
             // Allow user to continue with manual data entry even without HealthKit
             isAuthorized = true
             return
@@ -443,12 +464,13 @@ struct HealthMetricsView: View {
             HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!
         ]
         
+        #if DEBUG
         print("Current authorization status:")
         for type in allTypes {
             let status = healthStore.authorizationStatus(for: type)
             print("  \(type.identifier): \(status.rawValue)")
         }
-        
+        #endif
         // Request authorization for all health data types the app needs
         let basicTypes: Set<HKObjectType> = [
             HKObjectType.quantityType(forIdentifier: .heartRate)!,
@@ -461,11 +483,11 @@ struct HealthMetricsView: View {
             HKObjectType.electrocardiogramType()
         ]
         
+        #if DEBUG
         print("Requesting authorization for basic types: \(basicTypes.count)")
         print("Authorization dialog should appear now...")
-        
-        // Request authorization with just basic types
         print("Requesting HealthKit authorization...")
+        #endif
         authorizationAttempted = true
         
         // Try multiple authorization attempts with different timing
@@ -474,30 +496,39 @@ struct HealthMetricsView: View {
         
         func attemptAuthorization() {
             attemptCount += 1
+            #if DEBUG
             print("Authorization attempt \(attemptCount) of \(maxAttempts)")
-            
+            #endif
             healthStore.requestAuthorization(toShare: nil, read: basicTypes) { success, error in
                 DispatchQueue.main.async {
+                    #if DEBUG
                     print("Authorization attempt \(attemptCount) result: success=\(success), error=\(error?.localizedDescription ?? "none")")
-                    
+                    #endif
                     if success {
+                        #if DEBUG
                         print("HealthKit authorization successful!")
+                        #endif
                         isAuthorized = true
                         fetchLatestVitalSigns()
                     } else {
+                        #if DEBUG
                         print("HealthKit authorization failed: \(error?.localizedDescription ?? "Unknown error")")
                         if let error = error {
                             print("Error details: \(error)")
                         }
-                        
+                        #endif
                         // Try again if we haven't reached max attempts
                         if attemptCount < maxAttempts {
                             DispatchQueue.main.asyncAfter(deadline: .now() + Double(attemptCount) * 1.0) {
+                                #if DEBUG
                                 print("Retrying HealthKit authorization...")
+                                #endif
                                 attemptAuthorization()
                             }
                         } else {
+                            #if DEBUG
                             print("All authorization attempts failed. Continuing without HealthKit.")
+                            #endif
                             // Even if authorization fails, allow the app to continue
                             isAuthorized = true
                             fetchLatestVitalSigns()
@@ -512,48 +543,64 @@ struct HealthMetricsView: View {
     }
     
     private func fetchLatestVitalSigns() {
+        #if DEBUG
         print("=== fetchLatestVitalSigns() called ===")
         print("isAuthorized: \(isAuthorized)")
-        
-        guard isAuthorized else { 
+        #endif
+        guard isAuthorized else {
+            #if DEBUG
             print("Not authorized, returning early")
-            return 
+            #endif
+            return
         }
-        
+        #if DEBUG
         print("Starting to fetch latest vital signs...")
-        
+        #endif
         // Use a background queue for data fetching
         DispatchQueue.global(qos: .userInitiated).async {
+            #if DEBUG
             print("Fetching heart rate...")
+            #endif
             self.fetchHeartRate()
-            
+            #if DEBUG
             print("Fetching blood pressure...")
+            #endif
             self.fetchBloodPressure()
-            
+            #if DEBUG
             print("Fetching oxygen saturation...")
+            #endif
             self.fetchOxygenSaturation()
-            
+            #if DEBUG
             print("Fetching body temperature...")
+            #endif
             self.fetchBodyTemperature()
-            
+            #if DEBUG
             print("Fetching respiratory rate...")
+            #endif
             self.fetchRespiratoryRate()
-            
+            #if DEBUG
             print("Fetching heart rate variability...")
+            #endif
             self.fetchHeartRateVariability()
-            
+            #if DEBUG
             print("Fetching ECG data...")
+            #endif
             self.fetchECGData()
-            
+            #if DEBUG
             print("All fetch operations initiated")
+            #endif
         }
     }
     
     private func fetchHeartRate() {
+        #if DEBUG
         print("fetchHeartRate() called")
-        guard let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate) else { 
+        #endif
+        guard let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate) else {
+            #if DEBUG
             print("Heart rate type not available")
-            return 
+            #endif
+            return
         }
         
         // Fetch the most recent available sample (no 24h restriction)
@@ -564,10 +611,14 @@ struct HealthMetricsView: View {
             DispatchQueue.main.async {
                 if let sample = samples?.first as? HKQuantitySample {
                     let value = sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
+                    #if DEBUG
                     print("Heart rate fetched: \(value) BPM")
+                    #endif
                     self.heartRate = HealthData(value: value, date: sample.endDate)
                 } else {
+                    #if DEBUG
                     print("No heart rate data found or error: \(error?.localizedDescription ?? "none")")
+                    #endif
                 }
             }
         }
@@ -575,44 +626,48 @@ struct HealthMetricsView: View {
     }
 
     private func fetchBloodPressure() {
+        #if DEBUG
         print("=== fetchBloodPressure() called ===")
-        
+        #endif
         guard let bloodPressureType = HKObjectType.correlationType(forIdentifier: .bloodPressure),
               let systolicType = HKObjectType.quantityType(forIdentifier: .bloodPressureSystolic),
-              let diastolicType = HKObjectType.quantityType(forIdentifier: .bloodPressureDiastolic) else { 
+              let diastolicType = HKObjectType.quantityType(forIdentifier: .bloodPressureDiastolic) else {
+            #if DEBUG
             print("Blood pressure types not available")
-            return 
+            #endif
+            return
         }
-        
+        #if DEBUG
         print("Blood pressure types available:")
         print("  - Blood pressure correlation: \(bloodPressureType)")
         print("  - Systolic type: \(systolicType)")
         print("  - Diastolic type: \(diastolicType)")
-        
+        print("Querying blood pressure samples...")
+        #endif
         // Use nil predicate to get most recent data regardless of time
         let predicate: NSPredicate? = nil
-        
-        print("Querying blood pressure samples...")
         let query = HKCorrelationQuery(
             type: bloodPressureType,
             predicate: predicate,
             samplePredicates: nil
         ) { [self] _, correlations, error in
+            #if DEBUG
             print("Blood pressure query completed - correlations count: \(correlations?.count ?? 0)")
-            
+            #endif
             DispatchQueue.main.async {
                 if let correlation = correlations?.first {
                     let systolicSamples = correlation.objects(for: systolicType)
                     let diastolicSamples = correlation.objects(for: diastolicType)
-                    
+                    #if DEBUG
                     print("Systolic samples: \(systolicSamples.count), Diastolic samples: \(diastolicSamples.count)")
-                    
+                    #endif
                     if let systolicSample = systolicSamples.first as? HKQuantitySample,
                        let diastolicSample = diastolicSamples.first as? HKQuantitySample {
                         let systolic = systolicSample.quantity.doubleValue(for: HKUnit.millimeterOfMercury())
                         let diastolic = diastolicSample.quantity.doubleValue(for: HKUnit.millimeterOfMercury())
-                        
+                        #if DEBUG
                         print("Blood pressure fetched: \(Int(systolic))/\(Int(diastolic)) mmHg")
+                        #endif
                         
                         self.bloodPressure = BloodPressureData(
                             systolic: systolic,
@@ -620,12 +675,18 @@ struct HealthMetricsView: View {
                             date: correlation.endDate
                         )
                     } else {
+                        #if DEBUG
                         print("Could not extract systolic/diastolic values from correlation")
+                        #endif
                     }
                 } else if let error = error {
+                    #if DEBUG
                     print("Error fetching blood pressure: \(error.localizedDescription)")
+                    #endif
                 } else {
+                    #if DEBUG
                     print("No blood pressure data found")
+                    #endif
                 }
             }
         }
@@ -633,32 +694,41 @@ struct HealthMetricsView: View {
     }
     
     private func fetchOxygenSaturation() {
+        #if DEBUG
         print("=== fetchOxygenSaturation() called ===")
-        
-        guard let oxygenType = HKObjectType.quantityType(forIdentifier: .oxygenSaturation) else { 
+        #endif
+        guard let oxygenType = HKObjectType.quantityType(forIdentifier: .oxygenSaturation) else {
+            #if DEBUG
             print("Oxygen saturation type not available")
-            return 
+            #endif
+            return
         }
-        
+        #if DEBUG
         print("Oxygen saturation type available: \(oxygenType)")
-        
+        print("Querying oxygen saturation samples...")
+        #endif
         // Use nil predicate to get most recent data regardless of time
         let predicate: NSPredicate? = nil
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-        
-        print("Querying oxygen saturation samples...")
         let query = HKSampleQuery(sampleType: oxygenType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
+            #if DEBUG
             print("Oxygen saturation query completed - samples count: \(samples?.count ?? 0)")
-            
+            #endif
             DispatchQueue.main.async {
                 if let sample = samples?.first as? HKQuantitySample {
                     let value = sample.quantity.doubleValue(for: HKUnit.percent())
+                    #if DEBUG
                     print("Oxygen saturation fetched: \(Int(value * 100))%")
+                    #endif
                     self.oxygenSaturation = HealthData(value: value * 100, date: sample.endDate)
                 } else if let error = error {
+                    #if DEBUG
                     print("Error fetching oxygen saturation: \(error.localizedDescription)")
+                    #endif
                 } else {
+                    #if DEBUG
                     print("No oxygen saturation data found")
+                    #endif
                 }
             }
         }
@@ -666,16 +736,19 @@ struct HealthMetricsView: View {
     }
     
     private func fetchBodyTemperature() {
+        #if DEBUG
         print("=== fetchBodyTemperature() called ===")
+        #endif
         // Try both body temperature and basal body temperature
         let bodyTempType = HKObjectType.quantityType(forIdentifier: .bodyTemperature)
         let basalTempType = HKObjectType.quantityType(forIdentifier: .basalBodyTemperature)
         let wristDeltaType = HKObjectType.quantityType(forIdentifier: .appleSleepingWristTemperature)
-        
+        #if DEBUG
         print("Temperature types available:")
         print("  - Body temperature: \(bodyTempType != nil)")
         print("  - Basal temperature: \(basalTempType != nil)")
         print("  - Wrist temperature: \(wristDeltaType != nil)")
+        #endif
         
         // Use nil predicate to get most recent data regardless of time
         let predicate: NSPredicate? = nil
@@ -686,17 +759,22 @@ struct HealthMetricsView: View {
             DispatchQueue.main.async {
                 if let sample = samples?.first as? HKQuantitySample {
                     let value = sample.quantity.doubleValue(for: self.temperatureHKUnit)
+                    #if DEBUG
                     print("Temperature fetched: \(String(format: "%.2f", value)) \(self.temperatureUnitSymbol)")
+                    #endif
                     self.temperature = HealthData(value: value, date: sample.endDate)
                 } else if let error = error {
+                    #if DEBUG
                     print("Error fetching temperature: \(error.localizedDescription)")
+                    #endif
                 } else {
+                    #if DEBUG
                     print("No temperature data found")
+                    #endif
                 }
             }
         }
-        
-        // Check authorization status for temperature types
+        #if DEBUG
         print("Checking temperature authorization...")
         if let bodyTempType = bodyTempType {
             let authStatus = healthStore.authorizationStatus(for: bodyTempType)
@@ -710,32 +788,48 @@ struct HealthMetricsView: View {
             let authStatus = healthStore.authorizationStatus(for: wristDeltaType)
             print("Wrist temperature authorization status: \(authStatus.rawValue)")
         }
-        
+        #endif
         // Try body temperature first
         if let tempType = bodyTempType {
+            #if DEBUG
             print("Querying body temperature samples...")
+            #endif
             let query = HKSampleQuery(sampleType: tempType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
+                #if DEBUG
                 print("Body temperature query completed - samples count: \(samples?.count ?? 0)")
+                #endif
                 if samples?.isEmpty ?? true, let basalType = basalTempType {
-                    // If no body temperature, try basal temperature
+                    #if DEBUG
                     print("No body temperature samples; attempting basal body temperature")
+                    #endif
                     let basalQuery = HKSampleQuery(sampleType: basalType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, basalSamples, basalError in
+                        #if DEBUG
                         print("Basal temperature query completed - samples count: \(basalSamples?.count ?? 0)")
-                        // If basal also empty, try wrist delta before giving up
+                        #endif
                         if (basalSamples?.isEmpty ?? true), let wristType = wristDeltaType {
+                            #if DEBUG
                             print("No basal temperature; attempting Apple Sleeping Wrist Temperature (delta)")
+                            #endif
                             let wristQuery = HKSampleQuery(sampleType: wristType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, wristSamples, wristError in
+                                #if DEBUG
                                 print("Wrist temperature query completed - samples count: \(wristSamples?.count ?? 0)")
+                                #endif
                                 DispatchQueue.main.async {
                                     if let sample = wristSamples?.first as? HKQuantitySample {
                                         let value = sample.quantity.doubleValue(for: self.temperatureHKUnit)
+                                        #if DEBUG
                                         print("Wrist temperature delta fetched: \(String(format: "%.2f", value)) \(self.temperatureUnitSymbol)")
+                                        #endif
                                         self.temperature = HealthData(value: value, date: sample.endDate)
                                         self.temperatureIsDelta = true
                                     } else if let wristError = wristError, !wristError.localizedDescription.lowercased().contains("not determined") {
+                                        #if DEBUG
                                         print("Error fetching wrist temperature: \(wristError.localizedDescription)")
+                                        #endif
                                     } else {
+                                        #if DEBUG
                                         print("No wrist temperature data found")
+                                        #endif
                                     }
                                 }
                             }
@@ -746,55 +840,78 @@ struct HealthMetricsView: View {
                     }
                     self.healthStore.execute(basalQuery)
                 } else if samples?.isEmpty ?? true, let wristType = wristDeltaType {
-                    // If still no data, try wrist temperature delta (iOS 17+)
+                    #if DEBUG
                     print("No basal temperature; attempting Apple Sleeping Wrist Temperature (delta)")
+                    #endif
                     let wristQuery = HKSampleQuery(sampleType: wristType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, wristSamples, wristError in
+                        #if DEBUG
                         print("Wrist temperature query completed - samples count: \(wristSamples?.count ?? 0)")
+                        #endif
                         DispatchQueue.main.async {
                             if let sample = wristSamples?.first as? HKQuantitySample {
                                 let value = sample.quantity.doubleValue(for: self.temperatureHKUnit)
+                                #if DEBUG
                                 print("Wrist temperature delta fetched: \(String(format: "%.2f", value)) \(self.temperatureUnitSymbol)")
+                                #endif
                                 self.temperature = HealthData(value: value, date: sample.endDate)
                                 self.temperatureIsDelta = true
                             } else if let wristError = wristError, !wristError.localizedDescription.lowercased().contains("not determined") {
+                                #if DEBUG
                                 print("Error fetching wrist temperature: \(wristError.localizedDescription)")
+                                #endif
                             } else {
+                                #if DEBUG
                                 print("No wrist temperature data found")
+                                #endif
                             }
                         }
                     }
                     self.healthStore.execute(wristQuery)
                 } else {
+                    #if DEBUG
                     print("Using body temperature samples")
+                    #endif
                     processTemperature(samples, error)
                 }
             }
             healthStore.execute(query)
         } else if let basalType = basalTempType {
-            // If no body temperature type, try basal temperature directly
+            #if DEBUG
             print("Body temperature type unavailable; using basal body temperature type")
             print("Querying basal body temperature samples...")
+            #endif
             let query = HKSampleQuery(sampleType: basalType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
+                #if DEBUG
                 print("Basal temperature query completed - samples count: \(samples?.count ?? 0)")
+                #endif
                 processTemperature(samples, error)
             }
             healthStore.execute(query)
         } else if let wristType = wristDeltaType {
-            // Fallback: wrist temperature delta only
+            #if DEBUG
             print("Using Apple Sleeping Wrist Temperature (delta) as fallback")
             print("Querying wrist temperature samples...")
+            #endif
             let query = HKSampleQuery(sampleType: wristType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, wristSamples, wristError in
+                #if DEBUG
                 print("Wrist temperature query completed - samples count: \(wristSamples?.count ?? 0)")
+                #endif
                 DispatchQueue.main.async {
                     if let sample = wristSamples?.first as? HKQuantitySample {
                         let value = sample.quantity.doubleValue(for: self.temperatureHKUnit)
+                        #if DEBUG
                         print("Wrist temperature delta fetched: \(String(format: "%.2f", value)) \(self.temperatureUnitSymbol)")
+                        #endif
                         self.temperature = HealthData(value: value, date: sample.endDate)
                         self.temperatureIsDelta = true
                     } else if let wristError = wristError, !wristError.localizedDescription.lowercased().contains("not determined") {
+                        #if DEBUG
                         print("Error fetching wrist temperature: \(wristError.localizedDescription)")
+                        #endif
                     } else {
+                        #if DEBUG
                         print("No wrist temperature data found")
+                        #endif
                     }
                 }
             }
@@ -812,32 +929,40 @@ struct HealthMetricsView: View {
     }
     
     private func fetchRespiratoryRate() {
+        #if DEBUG
         print("=== fetchRespiratoryRate() called ===")
-        
-        guard let respiratoryType = HKObjectType.quantityType(forIdentifier: .respiratoryRate) else { 
+        #endif
+        guard let respiratoryType = HKObjectType.quantityType(forIdentifier: .respiratoryRate) else {
+            #if DEBUG
             print("Respiratory rate type not available")
-            return 
+            #endif
+            return
         }
-        
+        #if DEBUG
         print("Respiratory rate type available: \(respiratoryType)")
-        
-        // Use nil predicate to get most recent data regardless of time
+        print("Querying respiratory rate samples...")
+        #endif
         let predicate: NSPredicate? = nil
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-        
-        print("Querying respiratory rate samples...")
         let query = HKSampleQuery(sampleType: respiratoryType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
+            #if DEBUG
             print("Respiratory rate query completed - samples count: \(samples?.count ?? 0)")
-            
+            #endif
             DispatchQueue.main.async {
                 if let sample = samples?.first as? HKQuantitySample {
                     let value = sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
+                    #if DEBUG
                     print("Respiratory rate fetched: \(String(format: "%.1f", value)) breaths/min")
+                    #endif
                     self.respiratoryRate = HealthData(value: value, date: sample.endDate)
                 } else if let error = error {
+                    #if DEBUG
                     print("Error fetching respiratory rate: \(error.localizedDescription)")
+                    #endif
                 } else {
+                    #if DEBUG
                     print("No respiratory rate data found")
+                    #endif
                 }
             }
         }
@@ -845,32 +970,41 @@ struct HealthMetricsView: View {
     }
     
     private func fetchHeartRateVariability() {
+        #if DEBUG
         print("=== fetchHeartRateVariability() called ===")
-        
-        guard let hrvType = HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN) else { 
+        #endif
+        guard let hrvType = HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN) else {
+            #if DEBUG
             print("Heart rate variability type not available")
-            return 
+            #endif
+            return
         }
-        
+        #if DEBUG
         print("Heart rate variability type available: \(hrvType)")
-        
-        // Use nil predicate to get most recent data regardless of time
+        print("Querying heart rate variability samples...")
+        #endif
         let predicate: NSPredicate? = nil
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-        
-        print("Querying heart rate variability samples...")
         let query = HKSampleQuery(sampleType: hrvType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
+            #if DEBUG
             print("Heart rate variability query completed - samples count: \(samples?.count ?? 0)")
+            #endif
             
             DispatchQueue.main.async {
                 if let sample = samples?.first as? HKQuantitySample {
                     let value = sample.quantity.doubleValue(for: HKUnit.secondUnit(with: .milli))
+                    #if DEBUG
                     print("Heart rate variability fetched: \(String(format: "%.1f", value)) ms")
+                    #endif
                     self.heartRateVariability = HealthData(value: value, date: sample.endDate)
                 } else if let error = error {
+                    #if DEBUG
                     print("Error fetching heart rate variability: \(error.localizedDescription)")
+                    #endif
                 } else {
+                    #if DEBUG
                     print("No heart rate variability data found")
+                    #endif
                 }
             }
         }
@@ -878,39 +1012,45 @@ struct HealthMetricsView: View {
     }
     
     private func fetchECGData() {
+        #if DEBUG
         print("fetchECGData() called")
-        
-        // Check if ECG is available on this device
+        #endif
         if !HKHealthStore.isHealthDataAvailable() {
+            #if DEBUG
             print("HealthKit not available - cannot fetch ECG")
+            #endif
             return
         }
-        
         let ecgType = HKObjectType.electrocardiogramType()
+        #if DEBUG
         print("ECG type available: \(ecgType)")
-        
-        // Use nil predicate to get most recent data regardless of time
+        #endif
         let predicate: NSPredicate? = nil
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-        
         let query = HKSampleQuery(sampleType: ecgType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
+            #if DEBUG
             print("ECG query completed - samples count: \(samples?.count ?? 0)")
+            #endif
             if let error = error {
+                #if DEBUG
                 print("ECG query error: \(error.localizedDescription)")
+                #endif
                 return
             }
-            
-            guard let ecg = samples?.first as? HKElectrocardiogram else { 
+            guard let ecg = samples?.first as? HKElectrocardiogram else {
+                #if DEBUG
                 print("No ECG data found")
+                #endif
                 DispatchQueue.main.async {
                     self.ecgData = []
                 }
-                return 
+                return
             }
-            
+            #if DEBUG
             print("ECG found: \(ecg)")
             print("ECG start date: \(ecg.startDate)")
             print("ECG end date: \(ecg.endDate)")
+            #endif
             
             // Aggregate voltage measurements to compute peak absolute amplitude (in mV)
             var peakMillivolts: Double = 0
@@ -929,23 +1069,27 @@ struct HealthMetricsView: View {
                         }
                     }
                 case .done:
-                    // Average heart rate is available as a property on HKElectrocardiogram (iOS 14+)
                     let bpmUnit = HKUnit.count().unitDivided(by: .minute())
                     let avg = ecg.averageHeartRate?.doubleValue(for: bpmUnit)
+                    #if DEBUG
                     print("ECG query completed; peak amplitude: \(peakMillivolts) mV, avg BPM: \(avg?.description ?? "n/a")")
+                    #endif
                     DispatchQueue.main.async {
                         self.ecgData = [ECGReading(value: peakMillivolts, date: peakTimestamp)]
                         self.ecgAverageHeartRateBPM = avg
                     }
                     self.healthStore.stop(query)
                 case .error(let error):
+                    #if DEBUG
                     print("Error fetching ECG data: \(error.localizedDescription)")
+                    #endif
                 @unknown default:
                     break
                 }
             }
-            
+            #if DEBUG
             print("Executing ECG voltage query")
+            #endif
             self.healthStore.execute(voltageQuery)
         }
         healthStore.execute(query)
