@@ -1,14 +1,18 @@
 import SwiftUI
+import HealthKit
 
 struct MetricDetailView: View {
     let metric: Metric
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var healthKitManager: HealthKitManager
     @State private var showingManualEntry = false
     @State private var manualSystolic = ""
     @State private var manualDiastolic = ""
     @State private var manualTemperature = ""
     @State private var manualDate = Date()
     @State private var showingSuccessAlert = false
+    @State private var saveError: String?
+    @State private var showingSaveError = false
     
     var body: some View {
         ScrollView {
@@ -178,9 +182,16 @@ struct MetricDetailView: View {
             )
         }
         .alert("Reading Saved", isPresented: $showingSuccessAlert) {
+            Button("OK") {
+                showingManualEntry = false
+            }
+        } message: {
+            Text("Your manual reading has been saved to Health.")
+        }
+        .alert("Could Not Save", isPresented: $showingSaveError) {
             Button("OK") { }
         } message: {
-            Text("Your manual reading has been saved successfully.")
+            Text(saveError ?? "An error occurred.")
         }
     }
     
@@ -269,57 +280,37 @@ struct MetricDetailView: View {
     }
     
     private func saveManualReading() {
-        // Save to HealthKit
-        Task {
-            await saveToHealthKit()
+        if metric.title == "Blood Pressure" {
+            guard let systolicValue = Double(manualSystolic),
+                  let diastolicValue = Double(manualDiastolic) else { return }
+            healthKitManager.saveBloodPressure(systolic: systolicValue, diastolic: diastolicValue, date: manualDate) { success, error in
+                if success {
+                    showingSuccessAlert = true
+                    resetManualForm()
+                } else {
+                    saveError = error?.localizedDescription ?? "Could not save to Health. Check that you've allowed VitalVu to save blood pressure data in Health settings."
+                    showingSaveError = true
+                }
+            }
+        } else if metric.title == "Temperature" {
+            guard let tempValue = Double(manualTemperature) else { return }
+            healthKitManager.saveBodyTemperature(temperature: tempValue, date: manualDate, unit: .degreeFahrenheit()) { success, error in
+                if success {
+                    showingSuccessAlert = true
+                    resetManualForm()
+                } else {
+                    saveError = error?.localizedDescription ?? "Could not save to Health. Check that you've allowed VitalVu to save body temperature data in Health settings."
+                    showingSaveError = true
+                }
+            }
         }
-        
-        // Show success message
-        showingSuccessAlert = true
-        
-        // Reset form
+    }
+    
+    private func resetManualForm() {
         manualSystolic = ""
         manualDiastolic = ""
         manualTemperature = ""
         manualDate = Date()
-    }
-    
-    private func saveToHealthKit() async {
-        if metric.title == "Blood Pressure" {
-            guard let systolicValue = Double(manualSystolic),
-                  let diastolicValue = Double(manualDiastolic) else { return }
-            
-            // Save blood pressure to HealthKit
-            await saveBloodPressureToHealthKit(systolic: systolicValue, diastolic: diastolicValue, date: manualDate)
-            
-        } else if metric.title == "Temperature" {
-            guard let tempValue = Double(manualTemperature) else { return }
-            
-            // Save temperature to HealthKit
-            await saveTemperatureToHealthKit(temperature: tempValue, date: manualDate)
-        }
-    }
-    
-    private func saveBloodPressureToHealthKit(systolic: Double, diastolic: Double, date: Date) async {
-        // This would integrate with your HealthKitManager
-        // For now, we'll just print the values
-        print("Saving Blood Pressure to HealthKit: \(systolic)/\(diastolic) mmHg at \(date)")
-        
-        // TODO: Integrate with HealthKitManager to actually save the data
-        // Example:
-        // let healthKitManager = HealthKitManager()
-        // await healthKitManager.saveBloodPressure(systolic: systolic, diastolic: diastolic, date: date)
-    }
-    
-    private func saveTemperatureToHealthKit(temperature: Double, date: Date) async {
-        // This would integrate with your HealthKitManager
-        // For now, we'll just print the values
-        print("Saving Temperature to HealthKit: \(temperature)°F at \(date)")
-        
-        // TODO: Integrate with HealthKitManager to actually save the data
-        // Example:
-        // let healthKitManager = HealthKitManager()
-        // await healthKitManager.saveBodyTemperature(temperature: temperature, date: date)
     }
 }
 

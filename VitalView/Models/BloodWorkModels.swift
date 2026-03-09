@@ -157,6 +157,50 @@ final class HealthKitManager: ObservableObject, @unchecked Sendable {
         return isAuthorized
     }
     
+    // MARK: - Save (write) health data
+    
+    /// Types to request for writing (manual entries)
+    static var typesToShare: Set<HKSampleType> {
+        [
+            HKQuantityType.quantityType(forIdentifier: .bloodPressureSystolic)!,
+            HKQuantityType.quantityType(forIdentifier: .bloodPressureDiastolic)!,
+            HKQuantityType.quantityType(forIdentifier: .bodyTemperature)!
+        ]
+    }
+    
+    /// Saves a manual blood pressure reading to HealthKit.
+    /// Request write authorization for blood pressure types before calling (e.g. in app settings).
+    func saveBloodPressure(systolic: Double, diastolic: Double, date: Date, completion: @escaping (Bool, Error?) -> Void) {
+        guard HKHealthStore.isHealthDataAvailable(),
+              let systolicType = HKQuantityType.quantityType(forIdentifier: .bloodPressureSystolic),
+              let diastolicType = HKQuantityType.quantityType(forIdentifier: .bloodPressureDiastolic),
+              let correlationType = HKCorrelationType.correlationType(forIdentifier: .bloodPressure) else {
+            DispatchQueue.main.async { completion(false, NSError(domain: "HealthKit", code: -1, userInfo: [NSLocalizedDescriptionKey: "HealthKit or blood pressure types not available"])) }
+            return
+        }
+        let unit = HKUnit.millimeterOfMercury()
+        let systolicSample = HKQuantitySample(type: systolicType, quantity: HKQuantity(unit: unit, doubleValue: systolic), start: date, end: date)
+        let diastolicSample = HKQuantitySample(type: diastolicType, quantity: HKQuantity(unit: unit, doubleValue: diastolic), start: date, end: date)
+        let correlation = HKCorrelation(type: correlationType, start: date, end: date, objects: [systolicSample, diastolicSample])
+        healthStore.save(correlation) { success, error in
+            DispatchQueue.main.async { completion(success, error) }
+        }
+    }
+    
+    /// Saves a manual body temperature reading to HealthKit.
+    func saveBodyTemperature(temperature: Double, date: Date, unit: HKUnit = .degreeFahrenheit(), completion: @escaping (Bool, Error?) -> Void) {
+        guard HKHealthStore.isHealthDataAvailable(),
+              let type = HKQuantityType.quantityType(forIdentifier: .bodyTemperature) else {
+            DispatchQueue.main.async { completion(false, NSError(domain: "HealthKit", code: -1, userInfo: [NSLocalizedDescriptionKey: "HealthKit or body temperature type not available"])) }
+            return
+        }
+        let quantity = HKQuantity(unit: unit, doubleValue: temperature)
+        let sample = HKQuantitySample(type: type, quantity: quantity, start: date, end: date)
+        healthStore.save(sample) { success, error in
+            DispatchQueue.main.async { completion(success, error) }
+        }
+    }
+    
     // MARK: - Memory-Efficient Data Fetching
     
     func fetchLatestVitalSigns() async -> [String: Any] {

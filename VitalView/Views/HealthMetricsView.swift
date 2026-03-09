@@ -499,7 +499,7 @@ struct HealthMetricsView: View {
             #if DEBUG
             print("Authorization attempt \(attemptCount) of \(maxAttempts)")
             #endif
-            healthStore.requestAuthorization(toShare: nil, read: basicTypes) { success, error in
+            healthStore.requestAuthorization(toShare: HealthKitManager.typesToShare, read: basicTypes) { success, error in
                 DispatchQueue.main.async {
                     #if DEBUG
                     print("Authorization attempt \(attemptCount) result: success=\(success), error=\(error?.localizedDescription ?? "none")")
