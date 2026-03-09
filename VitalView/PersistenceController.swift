@@ -20,6 +20,7 @@ class PersistenceController: ObservableObject {
         
         // Configure persistent store with memory optimization
         let description = NSPersistentStoreDescription()
+        // History tracking: set to false if not using CloudKit/sync to reduce launch I/O and storage
         description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
         description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
         description.setOption(FileProtectionType.complete as NSString, forKey: NSPersistentStoreFileProtectionKey)
@@ -92,8 +93,8 @@ class PersistenceController: ObservableObject {
     }
     
     private func startMemoryMonitoring() {
-        // Monitor memory usage every 30 seconds (reduced from 5 seconds)
-        Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { [weak self] _ in
+        // Monitor memory every 60s to reduce CPU wakeups and battery use
+        Timer.scheduledTimer(withTimeInterval: 60.0, repeats: true) { [weak self] _ in
             self?.checkMemoryUsage()
         }
     }

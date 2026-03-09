@@ -234,28 +234,39 @@ class PDFLabImporter: ObservableObject {
         return lines
     }
     
-    /// Renders PDF page at high DPI for better OCR accuracy
+    /// Max dimension for rendered PDF (keeps memory and CPU lower)
+    private static let maxRenderDimension: CGFloat = 2048
+    /// DPI for OCR; lower than 320 to reduce memory and battery (OCR still works well at 200)
+    private static let ocrRenderDPI: CGFloat = 200
+
+    /// Renders PDF page at controlled size for OCR (memory- and battery-friendly)
     /// - Parameters:
     ///   - page: PDF page to render
-    ///   - dpi: DPI for rendering (default 320)
-    /// - Returns: High-quality UIImage
-    private func renderPageImage(_ page: PDFPage, dpi: CGFloat = 320) -> UIImage {
+    ///   - dpi: DPI for rendering (default 200; capped by maxRenderDimension)
+    /// - Returns: UIImage suitable for OCR
+    private func renderPageImage(_ page: PDFPage, dpi: CGFloat = PDFLabImporter.ocrRenderDPI) -> UIImage {
         let pageRect = page.bounds(for: .mediaBox)
-        let scale = dpi / 72.0
-        let size = CGSize(width: pageRect.width * scale, height: pageRect.height * scale)
-        
+        var scale = dpi / 72.0
+        var size = CGSize(width: pageRect.width * scale, height: pageRect.height * scale)
+        let maxDim = PDFLabImporter.maxRenderDimension
+        if size.width > maxDim || size.height > maxDim {
+            let r = min(maxDim / size.width, maxDim / size.height)
+            scale *= r
+            size = CGSize(width: size.width * r, height: size.height * r)
+        }
         let format = UIGraphicsImageRendererFormat()
-        format.scale = 1 // true pixel size
+        format.scale = 1
         let renderer = UIGraphicsImageRenderer(size: size, format: format)
-        
-        return renderer.image { ctx in
-            UIColor.white.set()
-            ctx.fill(CGRect(origin: .zero, size: size))
-            ctx.cgContext.saveGState()
-            ctx.cgContext.translateBy(x: 0, y: size.height)
-            ctx.cgContext.scaleBy(x: scale, y: -scale)
-            page.draw(with: .mediaBox, to: ctx.cgContext)
-            ctx.cgContext.restoreGState()
+        return autoreleasepool {
+            renderer.image { ctx in
+                UIColor.white.set()
+                ctx.fill(CGRect(origin: .zero, size: size))
+                ctx.cgContext.saveGState()
+                ctx.cgContext.translateBy(x: 0, y: size.height)
+                ctx.cgContext.scaleBy(x: scale, y: -scale)
+                page.draw(with: .mediaBox, to: ctx.cgContext)
+                ctx.cgContext.restoreGState()
+            }
         }
     }
     

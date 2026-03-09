@@ -45,10 +45,6 @@ struct BloodDropView: View {
             .foregroundColor(color)
             .shadow(color: showShadow ? color.opacity(0.3) : .clear, radius: 4, x: 0, y: 2)
             .accessibilityLabel("Blood drop")
-            .onAppear {
-                // Debug: Check if the symbol is available
-                print("BloodDropView: Using drop.fill symbol with size \(size), color \(color)")
-            }
     }
 }
 

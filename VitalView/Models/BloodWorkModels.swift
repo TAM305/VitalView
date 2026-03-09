@@ -881,7 +881,7 @@ class BloodTestViewModel: ObservableObject {
     }
     
     private func startMemoryMonitoring() {
-        memoryUsageTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { [weak self] _ in
+        memoryUsageTimer = Timer.scheduledTimer(withTimeInterval: 60.0, repeats: true) { [weak self] _ in
             self?.checkMemoryUsage()
         }
     }
@@ -968,87 +968,61 @@ class BloodTestViewModel: ObservableObject {
         loadedTestIds.removeAll()
     }
     
-    // MARK: - Data Loading
+    // MARK: - Data Loading (off main thread for launch performance)
+    
+    /// Initial fetch limit to keep launch fast; load more on demand if needed
+    private let initialFetchLimit = 100
     
     func loadTests() {
         isLoading = true
-        
-        let fetchRequest: NSFetchRequest<NSManagedObject> = NSFetchRequest(entityName: "BloodTestEntity")
-        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
-        
-        do {
-            let testEntities = try viewContext.fetch(fetchRequest)
-            print("Found \(testEntities.count) test entities in Core Data")
-            
-            // Process in batches to avoid memory issues
-            let batchSize = 50
+        let context = persistenceController.backgroundContext
+        context.perform {
+            let fetchRequest: NSFetchRequest<NSManagedObject> = NSFetchRequest(entityName: "BloodTestEntity")
+            fetchRequest.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+            fetchRequest.fetchLimit = self.initialFetchLimit
+            fetchRequest.fetchBatchSize = 50
             var processedTests: [BloodTest] = []
-            
-            for i in stride(from: 0, to: testEntities.count, by: batchSize) {
-                let endIndex = min(i + batchSize, testEntities.count)
-                let batch = Array(testEntities[i..<endIndex])
-                
-                autoreleasepool {
-                    for entity in batch {
-                        guard let testType = entity.value(forKey: "testType") as? String,
-                              let date = entity.value(forKey: "date") as? Date,
-                              let resultEntities = entity.value(forKey: "results") as? Set<NSManagedObject> else {
-                            continue
-                        }
-                        
-                        print("Parsing test: \(testType) with \(resultEntities.count) results")
-                        
-                        var results: [TestResult] = []
-                        for resultEntity in resultEntities {
-                            guard let name = resultEntity.value(forKey: "name") as? String,
-                                  let unit = resultEntity.value(forKey: "unit") as? String else {
+            do {
+                let testEntities = try context.fetch(fetchRequest)
+                let batchSize = 50
+                for i in stride(from: 0, to: testEntities.count, by: batchSize) {
+                    let endIndex = min(i + batchSize, testEntities.count)
+                    let batch = Array(testEntities[i..<endIndex])
+                    autoreleasepool {
+                        for entity in batch {
+                            guard let testType = entity.value(forKey: "testType") as? String,
+                                  let date = entity.value(forKey: "date") as? Date,
+                                  let resultEntities = entity.value(forKey: "results") as? Set<NSManagedObject> else {
                                 continue
                             }
-                            
-                            // Get value directly as Double (Core Data stores as NSNumber)
-                            let value: Double = {
-                                if let d = resultEntity.value(forKey: "value") as? Double { return d }
-                                // Fallback for legacy data that might be stored as String
-                                if let s = resultEntity.value(forKey: "value") as? String, let d = Double(s) { return d }
-                                return 0.0
-                            }()
-                            
-                            // Get optional values with defaults
-                            let referenceRange = resultEntity.value(forKey: "referenceRange") as? String ?? "0-0"
-                            let explanation = resultEntity.value(forKey: "explanation") as? String ?? "No explanation available"
-                            
-                            let result = TestResult(
-                                name: name,
-                                value: value,
-                                unit: unit,
-                                referenceRange: referenceRange,
-                                explanation: explanation
-                            )
-                            results.append(result)
+                            var results: [TestResult] = []
+                            for resultEntity in resultEntities {
+                                guard let name = resultEntity.value(forKey: "name") as? String,
+                                      let unit = resultEntity.value(forKey: "unit") as? String else {
+                                    continue
+                                }
+                                let value: Double = {
+                                    if let d = resultEntity.value(forKey: "value") as? Double { return d }
+                                    if let s = resultEntity.value(forKey: "value") as? String, let d = Double(s) { return d }
+                                    return 0.0
+                                }()
+                                let referenceRange = resultEntity.value(forKey: "referenceRange") as? String ?? "0-0"
+                                let explanation = resultEntity.value(forKey: "explanation") as? String ?? "No explanation available"
+                                results.append(TestResult(name: name, value: value, unit: unit, referenceRange: referenceRange, explanation: explanation))
+                            }
+                            processedTests.append(BloodTest(id: UUID(), date: date, testType: testType, results: results))
                         }
-                        
-                        let test = BloodTest(id: UUID(), date: date, testType: testType, results: results)
-                        processedTests.append(test)
-                        
-                        print("Successfully parsed \(results.count) results for test: \(testType)")
                     }
                 }
-                
-                // Continue processing if there are more batches
-                if endIndex < testEntities.count {
-                    print("Processed batch \(i/batchSize + 1), continuing...")
-                }
+            } catch {
+                DispatchQueue.main.async { self.isLoading = false }
+                return
             }
-            
             DispatchQueue.main.async {
                 self.bloodTests = processedTests
-                print("Successfully loaded \(self.bloodTests.count) blood tests from Core Data")
+                self.isLoading = false
             }
-        } catch {
-            print("Error loading tests from Core Data: \(error)")
         }
-        
-        isLoading = false
     }
     
     // MARK: - Test Management
