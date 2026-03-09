@@ -3,6 +3,8 @@ import HealthKit
 
 struct MetricDetailView: View {
     let metric: Metric
+    /// Called after a manual reading is saved so the parent can refresh (e.g. re-fetch from HealthKit).
+    var onDidSaveReading: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var healthKitManager: HealthKitManager
     @State private var showingManualEntry = false
@@ -285,6 +287,7 @@ struct MetricDetailView: View {
                   let diastolicValue = Double(manualDiastolic) else { return }
             healthKitManager.saveBloodPressure(systolic: systolicValue, diastolic: diastolicValue, date: manualDate) { success, error in
                 if success {
+                    onDidSaveReading?()
                     showingSuccessAlert = true
                     resetManualForm()
                 } else {
@@ -296,6 +299,7 @@ struct MetricDetailView: View {
             guard let tempValue = Double(manualTemperature) else { return }
             healthKitManager.saveBodyTemperature(temperature: tempValue, date: manualDate, unit: .degreeFahrenheit()) { success, error in
                 if success {
+                    onDidSaveReading?()
                     showingSuccessAlert = true
                     resetManualForm()
                 } else {

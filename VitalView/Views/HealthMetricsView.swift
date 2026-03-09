@@ -85,7 +85,7 @@ struct HealthMetricsView: View {
         }
         .sheet(item: $selectedMetricInfo) { metric in
             NavigationView {
-                MetricDetailView(metric: metric)
+                MetricDetailView(metric: metric, onDidSaveReading: { fetchLatestVitalSigns() })
             }
         }
         .onAppear {
@@ -270,16 +270,6 @@ struct HealthMetricsView: View {
     
     // Computed property for metrics to avoid complex expressions in body
     private var healthMetrics: [Metric] {
-        #if DEBUG
-        print("=== Health Metrics Debug ===")
-        print("Heart Rate: \(heartRate.value?.description ?? "nil")")
-        print("Blood Pressure: systolic=\(bloodPressure.systolic?.description ?? "nil"), diastolic=\(bloodPressure.diastolic?.description ?? "nil")")
-        print("Oxygen Saturation: \(oxygenSaturation.value?.description ?? "nil")")
-        print("Respiratory Rate: \(respiratoryRate.value?.description ?? "nil")")
-        print("Heart Rate Variability: \(heartRateVariability.value?.description ?? "nil")")
-        print("Temperature: \(temperature.value?.description ?? "nil")")
-        #endif
-        
         let heartRateMetric = Metric(
             title: "Heart Rate",
             value: heartRate.value.map { "\(Int($0))" } ?? "--",
@@ -313,9 +303,6 @@ struct HealthMetricsView: View {
             date: oxygenSaturation.date
         )
         
-        #if DEBUG
-        print("Temperature debug - value: \(temperature.value?.description ?? "nil"), date: \(temperature.date?.description ?? "nil"), isDelta: \(temperatureIsDelta)")
-        #endif
         let temperatureValue: String
         let temperatureUnit: String
         let temperatureColor: Color
@@ -324,25 +311,15 @@ struct HealthMetricsView: View {
             temperatureValue = String(format: "%.1f", tempValue)
             temperatureUnit = temperatureIsDelta ? "Δ \(temperatureUnitSymbol)" : temperatureUnitSymbol
             temperatureColor = .orange
-            #if DEBUG
-            print("Temperature data found: \(temperatureValue) \(temperatureUnit)")
-            #endif
         } else {
-            // Check if we're on simulator or if HealthKit is available
             if !HKHealthStore.isHealthDataAvailable() {
                 temperatureValue = "N/A"
                 temperatureUnit = "Simulator"
                 temperatureColor = .gray
-                #if DEBUG
-                print("Temperature not available on simulator")
-                #endif
             } else {
                 temperatureValue = "Tap to add"
                 temperatureUnit = "Manual entry"
                 temperatureColor = .blue
-                #if DEBUG
-                print("No temperature data available on device - showing manual entry option")
-                #endif
             }
         }
         
@@ -374,31 +351,17 @@ struct HealthMetricsView: View {
         )
         
         let ecgValue: String
-        #if DEBUG
-        print("ECG data count: \(ecgData.count)")
-        #endif
         if let firstECG = ecgData.first {
-            // Use µV if very small, else mV; also show one decimal for mV, no decimals for µV
             if firstECG.value < 1.0 {
                 ecgValue = String(format: "%.0f", firstECG.value * 1000.0) // µV
             } else {
                 ecgValue = String(format: "%.1f", firstECG.value) // mV
             }
-            #if DEBUG
-            print("ECG value displayed: \(ecgValue) \(firstECG.value < 1.0 ? "µV" : "mV")")
-            #endif
         } else {
-            // Check if we're on a simulator or device without ECG capability
             if !HKHealthStore.isHealthDataAvailable() {
                 ecgValue = "N/A"
-                #if DEBUG
-                print("ECG not available on simulator")
-                #endif
             } else {
                 ecgValue = "--"
-                #if DEBUG
-                print("No ECG data available (requires Apple Watch Series 4+)")
-                #endif
             }
         }
         // Determine base unit for amplitude
@@ -428,13 +391,6 @@ struct HealthMetricsView: View {
             hrvMetric,
             ecgMetric
         ]
-        
-        #if DEBUG
-        print("=== Final Metric Values ===")
-        for metric in metrics {
-            print("\(metric.title): \(metric.value) \(metric.unit)")
-        }
-        #endif
         return metrics
     }
     
@@ -654,8 +610,11 @@ struct HealthMetricsView: View {
             #if DEBUG
             print("Blood pressure query completed - correlations count: \(correlations?.count ?? 0)")
             #endif
+            // HKCorrelationQuery returns results in undefined order; use most recent by endDate
+            let sorted = (correlations ?? []).sorted { $0.endDate > $1.endDate }
+            let correlation = sorted.first
             DispatchQueue.main.async {
-                if let correlation = correlations?.first {
+                if let correlation = correlation {
                     let systolicSamples = correlation.objects(for: systolicType)
                     let diastolicSamples = correlation.objects(for: diastolicType)
                     #if DEBUG

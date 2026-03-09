@@ -94,4 +94,4 @@ For support and questions about VitalView, please contact our development team t
 
 **Version**: 1.0  
 **Platform**: iOS 18.4+  
-**Copyright**: © 2025 VitalView. All rights reserved. 
+**Copyright**: © 2026 VitalView. All rights reserved. 
